@@ -886,14 +886,7 @@ pairs.filter.sv = function(tbl, id.field, sv.field = "svaba_unfiltered_somatic_v
 
 
 #################### Inspecting jabbas
-gt.plot = function(gtrack, win, filename ="plot.png", title = "", h = 10, w = 10, ...) {
-    if (missing(win))
-        win = si2gr(gtrack) %>% keepStandardChromosomes(pruning.mode = "coarse") %>% gr.sort
-    ppng({par(mar = c(1, 1, 1, 1)); plot(gtrack, win = win, ...)}, filename = filename, res = 200, title = title, h = h, w = w)
-}
-
-
-plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "jabba_rds", cov.field.name = "cbs_cov_rds", cov.y.field = "ratio", title = "", doplot = TRUE, ...) {
+plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "jabba_rds", cov.field.name = "cbs_cov_rds", cov.y.field = "ratio", title = "", ...) {
     gg = gG(jabba = pairs[[field.name]])
     if (isTRUE(use.jab.cov))
         cov = readRDS(inputs(readRDS(pairs[[field.name]] %>% dig_dir("Job.rds$")))$CovFile)
@@ -902,14 +895,10 @@ plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "ja
     gcov = gTrack(cov, cov.y.field, circles = TRUE, lwd.border = 0.0001)
     if (missing(win))
         win = si2gr(gg) %>% keepStandardChromosomes(pruning.mode = "coarse") %>% gr.sort
-    gt = c(gcov, gg$gtrack())
-    if (isTRUE(doplot)) {
-        if (missing(filename))
-            ppng(plot(gt, win = win, ...), res = 200, title = title)
-        else
-            ppng(plot(gt, win = win, ...), filename = filename, res = 200, title = title)
-    }
-    return(gt)
+    if (missing(filename))
+        ppng(plot(c(gcov, gg$gtrack()), win = win, ...), res = 200, title = title)
+    else
+        ppng(plot(c(gcov, gg$gtrack()), win = win, ...), filename = filename, res = 200, title = title)
 }
 
 
@@ -3908,18 +3897,15 @@ ggplot_mybar = function(y, col = NA, group = NA, fill_by = NA, facet1 = NULL, fa
 }
 
 
-gbar.error = function(frac, conf.low, conf.high, group, wes = "Royal1", other.palette = NULL, print = TRUE, fill = NULL, stat = "identity", position = position_dodge(width = 0.9)) {
+gbar.error = function(frac, conf.low, conf.high, group, wes = "Royal1", print = TRUE, fill = NULL) {
     dat = data.table(frac = frac, conf.low = conf.low, conf.high = conf.high, group = group)
     if (is.null(fill)) fill.arg = group else fill.arg = fill
     dat[, fill.arg := fill.arg]
     gg = ggplot(dat, aes(x = group, fill = fill.arg, y = frac)) +
-        geom_bar(stat = stat, position = position)
-    if (!is.na(conf.low) & !is.na(conf.high))
-        gg = gg + geom_errorbar(aes(ymin = conf.low, ymax = conf.high), size = 0.1, width = 0.3, position = position_dodge(width = rel(0.9)))
+        geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+        geom_errorbar(aes(ymin = conf.low, ymax = conf.high), size = 0.1, width = 0.3, position = position_dodge(width = rel(0.9)))
     if (!is.null(wes)) 
         gg = gg + scale_fill_manual(values = wesanderson::wes_palette(wes))
-    if (!is.null(other.palette)) 
-        gg = gg + scale_fill_manual(values = other.palette)
     if (print) print(gg) else gg
 }
 
@@ -5988,14 +5974,7 @@ file.info2 = function(fn, col = NULL, include.all = FALSE) {
 
 
 subset2 = function(x, sub.expr, ...) {
-    if (!missing(sub.expr))
-        this.sub = eval(as.list(match.call())$sub.expr)
-    else if (missing(sub.expr)) {
-        if (!is.null(dim(x)))
-            this.sub = seq_len(nrow(x))
-        else
-            this.sub = seq_along(x)
-    }
+    this.sub = eval(as.list(match.call())$sub.expr)
     subset(x, this.sub, ...)
 }
 
