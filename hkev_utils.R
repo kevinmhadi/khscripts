@@ -760,7 +760,7 @@ run_complex = function(gg) {
         tyfonas(mark = TRUE) %>%
         chromoplexy(mark = TRUE) %>%
         tic(mark = TRUE) %>%
-        qrp(mark = TRUE) %>% 
+        qrp(mark = TRUE) %>%
         bfb() %>%
         dm()
     gg
@@ -889,7 +889,7 @@ pairs.filter.sv = function(tbl, id.field, sv.field = "svaba_unfiltered_somatic_v
 gt.plot = function(gtrack, win, filename ="plot.png", title = "", h = 10, w = 10, ...) {
     if (missing(win))
         win = si2gr(gtrack) %>% keepStandardChromosomes(pruning.mode = "coarse") %>% gr.sort
-    ppng({par(mar = c(1, 1, 1, 1)); plot(gtrack, win = win, ...)}, filename = filename, res = 200, title = title, h = h, w = w)
+    ppng({par(mar = c(1, 1.5, 2, 3)); plot(gtrack, win = win, ...)}, filename = filename, res = 200, title = title, h = h, w = w)
 }
 
 
@@ -944,7 +944,7 @@ pairs.collect.junctions = function(pairs, jn.field = "complex", id.field = "pair
     paths = subset2(pairs[[jn.field]], file.exists(x))
     mask = rtracklayer::import(mask)
     iter.fun = function(x, tbl) {
-        ent = tbl[get(jn.field) == x]   
+        ent = tbl[get(jn.field) == x]
         .fun = function(gg) {
             ## dd.ov = gr.sum(gg$edges[type == "ALT"][class %in% c("DEL-like", "DUP-like")]$shadow) %Q% (score > 1)
             gg.alt.edge = gg$edges[type == "ALT"]
@@ -1232,6 +1232,74 @@ as.df = function(obj) {
 ######################
 ######################
 
+
+s4_gr_within = function(data, expr) {
+    e <- list2env(as.list(as(data, "DataFrame")))
+    e$X = NULL
+    e$granges <- granges(data)
+    S4Vectors:::safeEval(substitute(expr), e, S4Vectors:::top_prenv(expr))
+    ## reserved <- c("ranges", "start", "end", "width", "space")
+    reserved <- c("seqnames", "start", "end", "width", "strand", "granges")
+    l <- mget(setdiff(ls(e), reserved), e)
+    l <- l[!sapply(l, is.null)]
+    nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
+    browser()
+    mcols(data) = l
+    if (nD) {
+        for (nm in del)
+            mcols(data)[[nm]] = NULL
+    }
+    ## for (nm in nl) data[[nm]] <- l[[nm]]
+    ## for (nm in del) data[[nm]] <- NULL
+    if (!identical(granges(data), e$granges))
+        granges(data) <- e$granges
+    else {
+        if (!identical(start(data), e$start))
+            start(data) <- e$start
+        if (!identical(end(data), e$end))
+            end(data) <- e$end
+        if (!identical(width(data), e$width))
+            width(data) <- e$width
+    }
+    data
+}
+
+
+s4_grl_within = function(data, expr) {
+    e <- list2env(as.list(as(data, "DataFrame")))
+    e$X = NULL
+    e$grangeslist <- gr.noval(data)
+    S4Vectors:::safeEval(substitute(expr), e, S4Vectors:::top_prenv(expr))
+    ## reserved <- c("ranges", "start", "end", "width", "space")
+    reserved <- c("seqnames", "start", "end", "width", "strand", "granges", "grangeslist")
+    l <- mget(setdiff(ls(e), reserved), e)
+    l <- l[!sapply(l, is.null)]
+    nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
+    mcols(data) = l
+    if (nD) {
+        for (nm in del)
+            mcols(data)[[nm]] = NULL
+    }
+    if (!identical(gr.noval(data), e$grangeslist)) {
+        stop("change in the grangeslist detected")
+        ## granges(data) <- e$granges
+    } else {
+        if (!identical(start(data), start(e$grangeslist)))
+            start(data) <- start(e$grangeslist)
+        if (!identical(end(data), end(e$grangeslist)))
+            end(data) <- end(e$grangeslist)
+        if (!identical(width(data), width(e$grangeslist)))
+            width(data) <- width(e$grangeslist)
+    }
+    data
+}
+
+
+setMethod("within", signature(data = "GRanges"), s4_gr_within)
+setMethod("within", signature(data = "GRangesList"), s4_grl_within)
+setMethod("within", signature(data = "CompressedGRangesList"), s4_grl_within)
+
+
 gr.genome = function(si) {
     if (missing(si)) {
         gr = si2gr(hg_seqlengths())
@@ -1291,7 +1359,7 @@ gr2dtmod = function(x)
     cmd = paste(cmd, ')', sep = '')
 
 
-    out = tryCatch(data.table::as.data.table(eval(parse(text =cmd))), error = function(e) NULL)    
+    out = tryCatch(data.table::as.data.table(eval(parse(text =cmd))), error = function(e) NULL)
 
     nr = 0
     if (!is.null(out)) { nr = nrow(out) }
@@ -1329,7 +1397,7 @@ ra.order = function(grl, ignore.strand = TRUE) {
     if (ignore.strand == FALSE) {
         ix = df2gr(grl.dt) %>% sortSeqlevels %>% order
     } else {
-        ix = df2gr(grl.dt) %>% sortSeqlevels %>% gr.stripstrand %>% order        
+        ix = df2gr(grl.dt) %>% sortSeqlevels %>% gr.stripstrand %>% order
     }
     grl.dt = grl.dt[ix][order(group)]
     il = IntegerList(split(grl.dt$group.iix, grl.dt$group))
@@ -1344,7 +1412,7 @@ ra.sort2 = function(grl, ignore.strand = TRUE) {
     if (ignore.strand == FALSE) {
         ix = df2gr(grl.dt) %>% sortSeqlevels %>% order
     } else {
-        ix = df2gr(grl.dt) %>% sortSeqlevels %>% gr.stripstrand %>% order        
+        ix = df2gr(grl.dt) %>% sortSeqlevels %>% gr.stripstrand %>% order
     }
     grl.dt = grl.dt[ix][order(group)]
     il = IntegerList(split(grl.dt$group.iix, grl.dt$group))
@@ -1454,17 +1522,17 @@ rrbind = function (..., union = TRUE, as.data.table = FALSE) {
                 tmp = as.data.frame(tmp)
             }
             tmp[, unshared[[x]]] = NA
-            return(data.table::as.data.table(as.data.frame(tmp[, 
+            return(data.table::as.data.table(as.data.frame(tmp[,
                 cols, drop = FALSE])))
         })
     }
     else {
-        expanded.dts <- lapply(dfs, function(x) as.data.table(as.data.frame(x)[, 
+        expanded.dts <- lapply(dfs, function(x) as.data.table(as.data.frame(x)[,
             cols, drop = FALSE]))
     }
     rout = tryCatch(rbindlist(expanded.dts), error = function(e) NULL)
     if (is.null(rout)) {
-        rout = data.table::as.data.table(do.call("rbind", lapply(expanded.dts, 
+        rout = data.table::as.data.table(do.call("rbind", lapply(expanded.dts,
             as.data.frame)))
     }
     if (!as.data.table) {
@@ -1724,7 +1792,7 @@ gr.sort = function(gr, ignore.strand = TRUE) {
 setGeneric('%I%', function(x, y) standardGeneric('%I%'))
 setMethod("%I%", signature(x = 'GRanges'), function(x, y) {
     condition_call = substitute(y)
-    ## env = as(c(as.list(parent.frame(2)), as.list(mcols(x))), 
+    ## env = as(c(as.list(parent.frame(2)), as.list(mcols(x))),
     ##          "environment")
     ix = base::with(GenomicRanges::as.data.frame(x), eval(condition_call))
     ## eval(condition_call, envir = env)
@@ -1780,7 +1848,7 @@ walks2DF = function(walks) {
 }
 
 DF2walks = function(wdf, return_split = TRUE) {
-    
+
     tbl_match = data.table(o.ix = seq_along(wdf$from), ix = wdf$from, grl.ix = wdf$grl.ix, grl.iix = wdf$grl.iix, from = TRUE)
     tbl_match = merge(tbl_match, data.table(ix = setdiff(wdf$to, tbl_match$ix), from = FALSE), by = c("ix", "from"), all = TRUE)
     tbl_match[(!from), o.ix := match(.SD$ix, wdf$to)]
@@ -1791,7 +1859,7 @@ DF2walks = function(wdf, return_split = TRUE) {
     ## tbl_match[, grl.iix := seq_len(.N), by = grl.ix]
 
     tbl_match[(from), grl := grl.string(wdf$junction)]
-    
+
     out = wdf[tbl_match$o.ix,]$from.gr
     ## out[tbl_match[, which(!from)]] = wdf[match(tbl_match[, which(!from)], wdf$to),]$to.gr
     out[tbl_match[, which(!from)]] = wdf[tbl_match[(!from)]$o.ix,]$to.gr
@@ -1857,7 +1925,7 @@ cdsmaxspan = function(cds, promoters = NULL, prom.window = 1000) {
         ## values(tx.span) = values(promoters)
         values(promoters) = values(tx.span)
     }
-    
+
 
     tx.span$type = 'cds'
     promoters$type = 'gene'
@@ -1865,7 +1933,7 @@ cdsmaxspan = function(cds, promoters = NULL, prom.window = 1000) {
     utr.right$type = 'gene'
     tx.span$cds.id = 1:length(tx.span)
     promoters$cds.id = 1:length(promoters) ## KMH added
-    
+
     tx.dt = as.data.table(rrbind(as.data.frame(tx.span), as.data.frame(promoters)))[, list(seqnames = seqnames[1], start = min(start), end = max(end), strand = strand[1], gene_name = gene_name[1], transcript_id = transcript_id[1], transcript_name = transcript_name[1], cds.id = cds.id), keyby = cds.id]## [!is.na(cds.id), ]
     tx.dt[, start := min(start), by = gene_name]
     tx.dt[, end := max(end), by = gene_name]
@@ -1920,8 +1988,8 @@ gr.fix = function (gr, genome = NULL, gname = NULL, drop = FALSE, pruning.mode =
         if (is.vector(genome)) {
             genome = Seqinfo(names(genome), seqlengths = genome)
         }
-        else if (!(is(genome, "character") | inherits(genome, 
-            "GRanges") | inherits(genome, "BSgenome") | inherits(genome, 
+        else if (!(is(genome, "character") | inherits(genome,
+            "GRanges") | inherits(genome, "BSgenome") | inherits(genome,
             "GRangesList") | inherits(genome, "Seqinfo")) & !is.vector(genome)) {
             genome = seqinfo(genome)
         }
@@ -1930,7 +1998,7 @@ gr.fix = function (gr, genome = NULL, gname = NULL, drop = FALSE, pruning.mode =
                 levs = union(seqlevels(genome), as.character(seqnames(seqinfo(gr))))
                 lens = structure(rep(NA, length(levs)), names = levs)
                 lens[seqlevels(genome)] = seqlengths(genome)
-                lens[seqlevels(gr)] = pmax(seqlengths(gr), lens[seqlevels(gr)], 
+                lens[seqlevels(gr)] = pmax(seqlengths(gr), lens[seqlevels(gr)],
                   na.rm = TRUE)
             }
             else {
@@ -1949,11 +2017,11 @@ gr.fix = function (gr, genome = NULL, gname = NULL, drop = FALSE, pruning.mode =
             else {
                 tmp.gr = gr
             }
-            tmp.sl = data.table(sn = as.character(seqnames(tmp.gr)), 
-                end = end(tmp.gr))[, max(end, na.rm = TRUE), 
+            tmp.sl = data.table(sn = as.character(seqnames(tmp.gr)),
+                end = end(tmp.gr))[, max(end, na.rm = TRUE),
                 by = sn][, structure(V1, names = sn)][seqlevels(tmp.gr)]
             names(tmp.sl) = seqlevels(tmp.gr)
-            seqlengths(tmp.gr)[!is.na(tmp.sl)] = suppressWarnings(pmax(tmp.sl[!is.na(tmp.sl)], 
+            seqlengths(tmp.gr)[!is.na(tmp.sl)] = suppressWarnings(pmax(tmp.sl[!is.na(tmp.sl)],
                                                                        seqlengths(tmp.gr)[!is.na(tmp.sl)], na.rm = TRUE))
             if (inherits(gr, "GRangesList")) {
                 tmp.gr = relist(tmp.gr, gr)
@@ -1962,7 +2030,7 @@ gr.fix = function (gr, genome = NULL, gname = NULL, drop = FALSE, pruning.mode =
             gr = tmp.gr
         }
         if (drop) {
-            gr = keepSeqlevels(gr, seqlevels(gr)[!is.na(seqlengths(gr))], 
+            gr = keepSeqlevels(gr, seqlevels(gr)[!is.na(seqlengths(gr))],
                 pruning.mode = "coarse")
         }
     }
@@ -1983,39 +2051,39 @@ ra.size = function(ra, ignore.strand = TRUE) {
     this_dist
 }
 
-ra.overlaps = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALSE, 
-    ...) 
+ra.overlaps = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALSE,
+    ...)
 {
     ra1 = gr.noval(ra1)
     ra2 = gr.noval(ra2)
     bp1 = grl.unlist(ra1) + pad
     bp2 = grl.unlist(ra2) + pad
-    ix = gr.findoverlaps(bp1, bp2, ignore.strand = ignore.strand, 
+    ix = gr.findoverlaps(bp1, bp2, ignore.strand = ignore.strand,
         ...)
     .make_matches = function(ix, bp1, bp2) {
         if (length(ix) == 0) {
             return(NULL)
         }
-        tmp.match = cbind(bp1$grl.ix[ix$query.id], bp1$grl.iix[ix$query.id], 
+        tmp.match = cbind(bp1$grl.ix[ix$query.id], bp1$grl.iix[ix$query.id],
             bp2$grl.ix[ix$subject.id], bp2$grl.iix[ix$subject.id])
-        tmp.match.l = lapply(split(1:nrow(tmp.match), paste(tmp.match[, 
-            1], tmp.match[, 3])), function(x) tmp.match[x, , 
+        tmp.match.l = lapply(split(1:nrow(tmp.match), paste(tmp.match[,
+            1], tmp.match[, 3])), function(x) tmp.match[x, ,
             drop = F])
-        matched.l = sapply(tmp.match.l, function(x) all(c("11", 
-            "22") %in% paste(x[, 2], x[, 4], sep = "")) | all(c("12", 
+        matched.l = sapply(tmp.match.l, function(x) all(c("11",
+            "22") %in% paste(x[, 2], x[, 4], sep = "")) | all(c("12",
             "21") %in% paste(x[, 2], x[, 4], sep = "")))
-        return(do.call("rbind", lapply(tmp.match.l[matched.l], 
-            function(x) cbind(x[, 1], x[, 3])[!duplicated(paste(x[, 
+        return(do.call("rbind", lapply(tmp.match.l[matched.l],
+            function(x) cbind(x[, 1], x[, 3])[!duplicated(paste(x[,
                 1], x[, 3])), , drop = F])))
     }
     tmp = .make_matches(ix, bp1, bp2)
     if (is.null(tmp)) {
         if (arr.ind) {
-            return(as.matrix(data.table(ra1.ix = as.numeric(NA), 
+            return(as.matrix(data.table(ra1.ix = as.numeric(NA),
                 ra2.ix = as.numeric(NA))))
         }
         else {
-            return(Matrix::sparseMatrix(length(ra1), length(ra2), 
+            return(Matrix::sparseMatrix(length(ra1), length(ra2),
                 x = 0))
         }
     }
@@ -2024,13 +2092,13 @@ ra.overlaps = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALSE
     if (arr.ind) {
         ro = tmp[order(tmp[, 1], tmp[, 2]), , drop = FALSE]
         if (class(ro) == "integer") {
-            ro <- matrix(ro, ncol = 2, nrow = 1, dimnames = list(c(), 
+            ro <- matrix(ro, ncol = 2, nrow = 1, dimnames = list(c(),
                 c("ra1.ix", "ra2.ix")))
         }
         return(ro)
     }
     else {
-        ro = Matrix::sparseMatrix(tmp[, 1], tmp[, 2], x = 1, 
+        ro = Matrix::sparseMatrix(tmp[, 1], tmp[, 2], x = 1,
             dims = c(length(ra1), length(ra2)))
         return(ro)
     }
@@ -2099,17 +2167,17 @@ ra.dedup2 = function(grl, pad = 500, return.ix = FALSE, ignore.strand = FALSE) {
     }
 }
 
-ra.overlaps3 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALSE, 
+ra.overlaps3 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALSE,
                         ...) {
     bp1 = grl.unlist(ra1) + pad
     bp2 = grl.unlist(ra2) + pad
-    ix = gr.findoverlaps(bp1, bp2, ignore.strand = ignore.strand, 
+    ix = gr.findoverlaps(bp1, bp2, ignore.strand = ignore.strand,
                          ...)
     .make_matches = function(ix, bp1, bp2) {
         if (length(ix) == 0) {
             return(NULL)
         }
-        dt.match = data.table(V1 = bp1$grl.ix[ix$query.id], V2 = bp1$grl.iix[ix$query.id], 
+        dt.match = data.table(V1 = bp1$grl.ix[ix$query.id], V2 = bp1$grl.iix[ix$query.id],
                           V3 = bp2$grl.ix[ix$subject.id], V4 = bp2$grl.iix[ix$subject.id])
         dt.match[, jmatch_id := .GRP, by = list(V1, V3)]
         good.dt = dt.match[find_dups(jmatch_id, re_sort = TRUE)]
@@ -2127,11 +2195,11 @@ ra.overlaps3 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALS
     tmp = .make_matches(ix, bp1, bp2)
     if (is.null(tmp)) {
         if (arr.ind) {
-            return(as.matrix(data.table(ra1.ix = as.numeric(NA), 
+            return(as.matrix(data.table(ra1.ix = as.numeric(NA),
                 ra2.ix = as.numeric(NA))))
         }
         else {
-            return(Matrix::sparseMatrix(length(ra1), length(ra2), 
+            return(Matrix::sparseMatrix(length(ra1), length(ra2),
                 x = 0))
         }
     }
@@ -2140,20 +2208,20 @@ ra.overlaps3 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALS
     if (arr.ind) {
         ro = tmp[order(tmp[, 1], tmp[, 2]), , drop = FALSE]
         if (class(ro) == "integer") {
-            ro <- matrix(ro, ncol = 2, nrow = 1, dimnames = list(c(), 
+            ro <- matrix(ro, ncol = 2, nrow = 1, dimnames = list(c(),
                 c("ra1.ix", "ra2.ix")))
         }
         return(ro)
     }
     else {
-        ro = Matrix::sparseMatrix(tmp[, 1], tmp[, 2], x = 1, 
+        ro = Matrix::sparseMatrix(tmp[, 1], tmp[, 2], x = 1,
             dims = c(length(ra1), length(ra2)))
         return(ro)
     }
 }
 
 
-ra.overlaps4 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALSE, 
+ra.overlaps4 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALSE,
                          ...) {
     ## forcibly removing all metadata before doing the query... the finagling
     ## of metadata could be problematic especially when they are
@@ -2162,7 +2230,7 @@ ra.overlaps4 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALS
     ra1@elementMetadata = ra1@elementMetadata[,c()]
     ra2@unlistData@elementMetadata = ra2@unlistData@elementMetadata[,c()]
     ra2@elementMetadata = ra2@elementMetadata[,c()]
-    
+
     ## bp1 = grl.unlist(ra.sort(sortSeqlevels(gr.fix(ra1, ra2)))) + pad
     ## bp2 = grl.unlist(ra.sort(sortSeqlevels(gr.fix(ra2, ra1)))) + pad
     ## dt1 = gr2dt(bp1)
@@ -2186,7 +2254,7 @@ ra.overlaps4 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALS
     dt1[, o.ix := seq_len(.N)]
     ## dt2[, by_col := paste(seqnames, strand)]
     dt2[, o.ix := seq_len(.N)]
-    
+
     dt1 = dt1[, list(seqnames, strand, grl.ix, grl.iix, o.ix, start, end)]
     dt2 = dt2[, list(seqnames, strand, grl.ix, grl.iix, o.ix, start, end)]
     if (ignore.strand == ignore.strand) {
@@ -2196,16 +2264,16 @@ ra.overlaps4 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALS
         data.table::setkey(dt1, seqnames, start, end)
         data.table::setkey(dt2, seqnames, start, end)
     }
-    
+
     ## ix = data.table::foverlaps(dt1, dt2,  type = "any", nomatch = 0)
     ix = data.table::foverlaps(dt1[grl.iix == 1], dt2[grl.iix == 1], type = "any", nomatch = 0, which = TRUE)
-    
+
     ix2 = data.table::foverlaps(dt1[grl.iix == 2], dt2[grl.iix == 2], type = "any", nomatch = 0, which = TRUE)
     ix[,xid := dt1[grl.iix == 1][ix$xid]$grl.ix]
     ix[,yid := dt2[grl.iix == 1][ix$yid]$grl.ix]
     ix2[,xid := dt1[grl.iix == 2][ix2$xid]$grl.ix]
     ix2[,yid := dt2[grl.iix == 2][ix2$yid]$grl.ix]
-    
+
     data.table::setkeyv(ix, c("xid", "yid"))
     data.table::setkeyv(ix2, c("xid", "yid"))
     ## ix = ix[, list(i.grl.ix, grl.ix)]
@@ -2232,14 +2300,14 @@ ra.overlaps4 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALS
     ## tmp = as.matrix(good.dt[jmatch_id %in% tmp.dt$jmatch_id][!duplicated(jmatch_id)][, list(V1, V3)])
     rm(list = c("ix", "ix2"))
     tmp = as.matrix(tmp)
-    
+
     if (is.null(tmp)) {
         if (arr.ind) {
-            return(as.matrix(data.table(ra1.ix = as.numeric(NA), 
+            return(as.matrix(data.table(ra1.ix = as.numeric(NA),
                 ra2.ix = as.numeric(NA))))
         }
         else {
-            return(Matrix::sparseMatrix(length(ra1), length(ra2), 
+            return(Matrix::sparseMatrix(length(ra1), length(ra2),
                 x = 0))
         }
     }
@@ -2248,30 +2316,30 @@ ra.overlaps4 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALS
     if (arr.ind) {
         ro = tmp[order(tmp[, 1], tmp[, 2], method = "radix"), , drop = FALSE]
         if (class(ro) == "integer") {
-            ro <- matrix(ro, ncol = 2, nrow = 1, dimnames = list(c(), 
+            ro <- matrix(ro, ncol = 2, nrow = 1, dimnames = list(c(),
                 c("ra1.ix", "ra2.ix")))
         }
         return(ro)
     }
     else {
-        ro = Matrix::sparseMatrix(tmp[, 1], tmp[, 2], x = 1, 
+        ro = Matrix::sparseMatrix(tmp[, 1], tmp[, 2], x = 1,
             dims = c(length(ra1), length(ra2)))
         return(ro)
     }
 }
 
-ra.overlaps5 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALSE, 
-    ...) 
+ra.overlaps5 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALSE,
+    ...)
 {
     bp1 = grl.unlist(ra1) + pad
     bp2 = grl.unlist(ra2) + pad
-    ix = gr.findoverlaps(bp1, bp2, ignore.strand = ignore.strand, 
+    ix = gr.findoverlaps(bp1, bp2, ignore.strand = ignore.strand,
         ...)
     .make_matches = function(ix, bp1, bp2) {
         if (length(ix) == 0) {
             return(NULL)
         }
-        tmp.match = cbind(bp1$grl.ix[ix$query.id], bp1$grl.iix[ix$query.id], 
+        tmp.match = cbind(bp1$grl.ix[ix$query.id], bp1$grl.iix[ix$query.id],
                           bp2$grl.ix[ix$subject.id], bp2$grl.iix[ix$subject.id])
         tmp.match = tmp.match[!duplicated(tmp.match, MARGIN = 1),, drop = FALSE]
         this.mat = tmp.match[, c(2,4), drop = FALSE]
@@ -2283,11 +2351,11 @@ ra.overlaps5 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALS
     tmp = .make_matches(ix, bp1, bp2)
     if (is.null(tmp)) {
         if (arr.ind) {
-            return(as.matrix(data.table(ra1.ix = as.numeric(NA), 
+            return(as.matrix(data.table(ra1.ix = as.numeric(NA),
                 ra2.ix = as.numeric(NA))))
         }
         else {
-            return(Matrix::sparseMatrix(length(ra1), length(ra2), 
+            return(Matrix::sparseMatrix(length(ra1), length(ra2),
                 x = 0))
         }
     }
@@ -2296,13 +2364,13 @@ ra.overlaps5 = function (ra1, ra2, pad = 0, arr.ind = TRUE, ignore.strand = FALS
     if (arr.ind) {
         ro = tmp[order(tmp[, 1], tmp[, 2]), , drop = FALSE]
         if (class(ro) == "integer") {
-            ro <- matrix(ro, ncol = 2, nrow = 1, dimnames = list(c(), 
+            ro <- matrix(ro, ncol = 2, nrow = 1, dimnames = list(c(),
                 c("ra1.ix", "ra2.ix")))
         }
         return(ro)
     }
     else {
-        ro = Matrix::sparseMatrix(tmp[, 1], tmp[, 2], x = 1, 
+        ro = Matrix::sparseMatrix(tmp[, 1], tmp[, 2], x = 1,
             dims = c(length(ra1), length(ra2)))
         return(ro)
     }
@@ -2388,9 +2456,9 @@ gr.noval = function(gr, keep.col = NULL, drop.col = NULL) {
 
 
 
-anchorlift = function (query, subject, window = 1e+09, by = NULL, seqname = "Anchor", 
+anchorlift = function (query, subject, window = 1e+09, by = NULL, seqname = "Anchor",
     include.values = TRUE) {
-    if (as.numeric(length(query)) * as.numeric(length(subject)) == 
+    if (as.numeric(length(query)) * as.numeric(length(subject)) ==
         0) {
         return(NULL)
     }
@@ -2398,21 +2466,21 @@ anchorlift = function (query, subject, window = 1e+09, by = NULL, seqname = "Anc
     if (length(ov) == 0) {
         return(NULL)
     }
-    nov = query[ov$query.id] %-% (start(subject[ov$subject.id]) + 
+    nov = query[ov$query.id] %-% (start(subject[ov$subject.id]) +
         round(width(query[ov$query.id])/2))
     values(nov) = cbind(values(nov), values(ov))
     flip = ifelse(strand(subject)[ov$subject.id] == "+", 1, -1)
     tmp = cbind(start(nov) * flip, end(nov) * flip)
     tmp = cbind(matrixStats::rowMins(tmp), matrixStats::rowMaxs(tmp))
-    ## tmp = t(apply(cbind(start(nov) * flip, end(nov) * flip), 
+    ## tmp = t(apply(cbind(start(nov) * flip, end(nov) * flip),
     ##     1, sort))
     out = GRanges(seqname, IRanges(tmp[, 1], tmp[, 2]))
     values(out)$subject.id = ov$subject.id
     values(out)$query.id = ov$query.id
     if (include.values) {
-        values(out) = cbind(values(out), as.data.frame(values(query))[ov$query.id, 
+        values(out) = cbind(values(out), as.data.frame(values(query))[ov$query.id,
             , drop = FALSE])
-        values(out) = cbind(values(out), as.data.frame(values(subject))[ov$subject.id, 
+        values(out) = cbind(values(out), as.data.frame(values(subject))[ov$subject.id,
             , drop = FALSE])
     }
     return(out)
@@ -2458,7 +2526,7 @@ grl.anchorsum = function(grl, field = NULL, mean = FALSE) {
 ############################## we'll need to convert the counts
             tmp_count = coverage(as(GenomicRanges::shift(grl, SHIFT), "IRangesList"), weight = 1)
             tmp_ir_ct = IRanges(start = unlist(IntegerList(cumsum(runLength(tmp_count)) - (runLength(tmp_count) - 1))), end = unlist(IntegerList(cumsum(runLength(tmp_count)))))
-            tmp_ir_ct@elementMetadata = DataFrame(seq_along(tmp_ir_ct@start))[,integer(0)]            
+            tmp_ir_ct@elementMetadata = DataFrame(seq_along(tmp_ir_ct@start))[,integer(0)]
             tmp_irl = split(tmp_ir_ct, rep(seq_along(tmp_count), elementNROWS(runLength(tmp_count))))
             tmp_irl@unlistData@elementMetadata = DataFrame(seq_along(tmp_irl@unlistData@start))[,integer(0)]
             tmp_irl@unlistData@elementMetadata$score = unlist(runValue(wtf))
@@ -3008,11 +3076,11 @@ annotate.edges2 = function(edges, nodes, junctions = NULL, j_pad = 5, as.data.ta
     match_mat = matrix(match(mat1, mat2), ncol = 2)
     match_mat = as.matrix(cbind(matrixStats::rowMins(match_mat), matrixStats::rowMaxs(match_mat)))
     edges[, bi_key := paste(match_mat[,1], match_mat[,2])]
-    
+
     edges[, edge.bi.id := .GRP, by = bi_key]
 
     if (!is.null(junctions)) {
-        
+
         jmatch =  as.matrix(ra.overlaps2(edf$junction, junctions, pad = j_pad))
         ## dup_matches = which(duplicated(jmatch[, "ra1.ix"]))
         dup_matches = which(duplicated(jmatch[, 1]))
@@ -3065,25 +3133,25 @@ en2DF = function(ed, nodes, from_field = "from", to_field = "to", strand_sign = 
     return(edf)
 }
 
-reciprocal.cycles = function (juncs, paths = FALSE, thresh = 1000, mc.cores = 1, 
+reciprocal.cycles = function (juncs, paths = FALSE, thresh = 1000, mc.cores = 1,
     verbose = FALSE, chunksize = 1000) {
     bp = grl.unlist(juncs)[, c("grl.ix", "grl.iix")]
     ix = split(1:length(bp), ceiling(runif(length(bp)) * ceiling(length(bp)/chunksize)))
     ixu = unlist(ix)
     eps = 1e-09
     ij = do.call(rbind, split(1:length(bp), bp$grl.ix))
-    adj = sparseMatrix(1, 1, x = FALSE, dims = rep(length(bp), 
+    adj = sparseMatrix(1, 1, x = FALSE, dims = rep(length(bp),
         2))
     adj[ixu, ] = do.call(rbind, mclapply(ix, function(iix) {
-        if (verbose) 
+        if (verbose)
             cat(".")
-        tmpm = gr.dist(bp[iix], gr.flipstrand(bp), ignore.strand = FALSE) + 
+        tmpm = gr.dist(bp[iix], gr.flipstrand(bp), ignore.strand = FALSE) +
             eps
         tmpm[is.na(tmpm)] = 0
         tmpm[tmpm > thresh] = 0
         tmpm = as(tmpm > 0, "Matrix")
     }, mc.cores = mc.cores))
-    if (verbose) 
+    if (verbose)
         cat("\\n")
     adj = adj | t(adj)
     junpos = bp1 = bp$grl.iix == 1
@@ -3093,7 +3161,7 @@ reciprocal.cycles = function (juncs, paths = FALSE, thresh = 1000, mc.cores = 1,
     adj2[junpos, junneg] = adj[bp2, bp2]
     adj2[junneg, junpos] = adj[bp1, bp1]
     adj2[junneg, junneg] = adj[bp1, bp2]
-    cl = split(1:length(bp), igraph::clusters(graph.adjacency(adj2), 
+    cl = split(1:length(bp), igraph::clusters(graph.adjacency(adj2),
         "strong")$membership)
     cl = cl[S4Vectors::elementNROWS(cl) > 1]
     cl = cl[order(S4Vectors::elementNROWS(cl))]
@@ -3105,13 +3173,13 @@ reciprocal.cycles = function (juncs, paths = FALSE, thresh = 1000, mc.cores = 1,
         adj3[unlist(jcl), unlist(jcl)] = FALSE
         sinks = which(rowSums(adj3) == 0)
         sources = which(colSums(adj3) == 0)
-        cl2 = split(1:length(bp), igraph::clusters(graph.adjacency(adj3), 
+        cl2 = split(1:length(bp), igraph::clusters(graph.adjacency(adj3),
             "weak")$membership)
         cl2 = cl2[S4Vectors::elementNROWS(cl2) > 1]
         if (any(ix <- S4Vectors::elementNROWS(cl2) > 2)) {
             cl3 = do.call(c, mclapply(cl2[ix], function(x) {
                 tmp.adj = adj3[x, x]
-                lapply(all.paths(tmp.adj, sources = sources, 
+                lapply(all.paths(tmp.adj, sources = sources,
                   sinks = sinks)$paths, function(i) x[i])
             }, mc.cores = mc.cores))
             cl2 = c(cl2[!ix], cl3)
@@ -3126,7 +3194,7 @@ reciprocal.cycles = function (juncs, paths = FALSE, thresh = 1000, mc.cores = 1,
 
 
 ############### Complex event calling:
-### reciprocal cycle stat collector... 
+### reciprocal cycle stat collector...
 cx_caller_1 = function(edges, nodes, junctions, sample_id = "", thresh = 1e5, mc.cores = 1, thresh_quantile = 0.9) {
     require(JaBbA)
     require(Hmisc)
@@ -3147,7 +3215,7 @@ cx_caller_1 = function(edges, nodes, junctions, sample_id = "", thresh = 1e5, mc
         to.fus.ix = edges[these_rows,][!duplicated(edge.bi.id)]$to
         from.unfus.ix = edges[these_rows,][!duplicated(edge.bi.id)]$from.unfus
         to.unfus.ix = edges[these_rows,][!duplicated(edge.bi.id)]$to.unfus
-        
+
         ## q90_cn_fus = Hmisc::wtd.quantile(c(nodes[from.fus.ix]$cn, nodes[to.fus.ix]$cn), .90, weights = (c(width(nodes[from.fus.ix]), width(nodes[to.fus.ix]))))
         ## q90_cn_unfus = Hmisc::wtd.quantile(c(nodes[from.unfus.ix]$cn, nodes[to.unfus.ix]$cn), .90, weights = (c(width(nodes[from.unfus.ix]), width(nodes[to.unfus.ix]))))
         ## w_ecdf_fus_cn = Hmisc::Ecdf(c(nodes[from.fus.ix]$cn, nodes[to.fus.ix]$cn), weights = (c(width(nodes[from.fus.ix]), width(nodes[to.fus.ix]))), pl = FALSE)
@@ -3160,8 +3228,8 @@ cx_caller_1 = function(edges, nodes, junctions, sample_id = "", thresh = 1e5, mc
         unfus_cn_w = gr2dt(grbind(nodes[from.unfus.ix], nodes[to.unfus.ix])[, "cn"])[, list(width = sum(width)), keyby = .(cn = as.character(cn))]
         mode_fus_wtd = as.integer(fus_cn_w[width >= quantile(fus_cn_w$width, thresh_quantile)]$cn)
         mode_unfus_wtd = as.integer(unfus_cn_w[width >= quantile(unfus_cn_w$width, thresh_quantile)]$cn)
-        
-        
+
+
         ## w_ecdf_fus_cn = Hmisc::Ecdf(as.vector(tab_fus), weights = fus_cn_w[names(tab_fus)][["width"]], pl = FALSE)
         ## w_ecdf_unfus_cn = Hmisc::Ecdf(as.vector(tab_unfus), weights = unfus_cn_w[names(tab_unfus)][["width"]], pl = FALSE)
         tab_jcn = table(edges[these_rows,][!duplicated(edge.bi.id)]$cn)
@@ -3183,7 +3251,7 @@ cx_caller_1 = function(edges, nodes, junctions, sample_id = "", thresh = 1e5, mc
                                 num_frequent_cn = length(num_frequent_cn),
                                 num_frequent_wtd_cn = length(num_frequent_wtd_cn),
                                 frequent_cn_states = paste(num_frequent_cn, collapse = ","),
-                                frequent_cn_wtd_states = paste(num_frequent_wtd_cn, collapse = ","),                                
+                                frequent_cn_wtd_states = paste(num_frequent_wtd_cn, collapse = ","),
                                 mode_cn_delta = mode_cn_delta,
                                 mode_cn_delta_wtd = mode_cn_delta_wtd,
                                 event_windows = paste(gr.string(event_windows), collapse = ";"),
@@ -3250,7 +3318,7 @@ reset.job = function(x, ..., rootdir = x@rootdir, jb.mem = x@runinfo$mem, jb.cor
 
 
 getcache = function(object) {
-      path = paste(object@rootdir, "/", task(object)@name, 
+      path = paste(object@rootdir, "/", task(object)@name,
                    ".rds", sep = "")
       return(path)
 }
@@ -3916,9 +3984,9 @@ gbar.error = function(frac, conf.low, conf.high, group, wes = "Royal1", other.pa
         geom_bar(stat = stat, position = position)
     if (!is.na(conf.low) & !is.na(conf.high))
         gg = gg + geom_errorbar(aes(ymin = conf.low, ymax = conf.high), size = 0.1, width = 0.3, position = position_dodge(width = rel(0.9)))
-    if (!is.null(wes)) 
+    if (!is.null(wes))
         gg = gg + scale_fill_manual(values = wesanderson::wes_palette(wes))
-    if (!is.null(other.palette)) 
+    if (!is.null(other.palette))
         gg = gg + scale_fill_manual(values = other.palette)
     if (print) print(gg) else gg
 }
@@ -5121,7 +5189,7 @@ ppng = ppngmod
 
 ##     cat("rendering to", filename, "\n")
 ##     old_oma = par()$oma
-##     png(filename, height = height, width = width, pointsize = 12 * 
+##     png(filename, height = height, width = width, pointsize = 12 *
 ##                                                       cex.pointsize, ...) ## the default is 12... maybe the default previously was 24?
 
 ##     if (oma.scale > 0) {
@@ -5243,7 +5311,7 @@ generate.cos.sim = function(X, as_distance = FALSE) {
         B = X[ix[2],]
         return( sum(A*B)/sqrt(sum(A^2)*sum(B^2)) )
     }
-    n <- nrow(X) 
+    n <- nrow(X)
     cmb <- expand.grid(i=1:n, j=1:n)
     C <- matrix(apply(cmb,1,cos.sim),n,n)
     dimnames(C) = dimnames(X)
@@ -5266,7 +5334,7 @@ gr.breaks2 = function (bps = NULL, query = NULL) {
             query = hg_seqlengths()
             if (is.null(query)) {
                 message("Default BSgenome not found, let's hardcode it.")
-                cs = system.file("extdata", "hg19.regularChr.chrom.sizes", 
+                cs = system.file("extdata", "hg19.regularChr.chrom.sizes",
                   package = "gUtils")
                 sl = read.delim(cs, header = FALSE, sep = "\\t")
                 sl = setNames(sl$V2, sl$V1)
@@ -5333,15 +5401,15 @@ gr.breaks2 = function (bps = NULL, query = NULL) {
         bpsInner = bps %Q% (inner == T)
         qbMap = gr.findoverlaps(query, bpsInner)
         mappedQ = seq_along(query) %in% qbMap$query.id
-        tmpRange = data.table(qid2 = qbMap$query.id, startFrom = start(query[qbMap$query.id]), 
+        tmpRange = data.table(qid2 = qbMap$query.id, startFrom = start(query[qbMap$query.id]),
             breakAt = start(bpsInner[qbMap$subject.id]), upTo = end(query[qbMap$query.id]))
-        tmpCoor = tmpRange[, .(pos = sort(unique(c(startFrom, 
+        tmpCoor = tmpRange[, .(pos = sort(unique(c(startFrom,
             breakAt, upTo)))), by = qid2]
-        newRange = tmpCoor[, .(start = pos[-which.max(pos)], 
+        newRange = tmpCoor[, .(start = pos[-which.max(pos)],
             end = pos[-which.min(pos)]), by = qid2]
-        newRange[, `:=`(chr = as.vector(seqnames(query)[qid2]), 
+        newRange[, `:=`(chr = as.vector(seqnames(query)[qid2]),
             strand = as.vector(strand(query)[qid2]))]
-        newRange$start = newRange[, ifelse(start == min(start), 
+        newRange$start = newRange[, ifelse(start == min(start),
             start, start + 1)]
         newGr = GRanges(newRange, seqinfo = seqinfo(query))
         values(newGr) = values(query)[newGr$qid2, , drop = F]
@@ -5352,11 +5420,11 @@ gr.breaks2 = function (bps = NULL, query = NULL) {
     }
 }
 
-gr.simplify2 = function (gr, field = NULL, val = NULL, include.val = TRUE, split = FALSE, 
+gr.simplify2 = function (gr, field = NULL, val = NULL, include.val = TRUE, split = FALSE,
                          pad = 1, ignore.exact = TRUE) {
-    tmp = as.logical(suppressWarnings(width(GenomicRanges::pintersect(ranges(gr[-length(gr)]), 
-                                                                      ranges(gr[-1] + pad), resolve.empty = "max.start")) > 
-                                      0) & seqnames(gr[-length(gr)]) == seqnames(gr[-1]) & 
+    tmp = as.logical(suppressWarnings(width(GenomicRanges::pintersect(ranges(gr[-length(gr)]),
+                                                                      ranges(gr[-1] + pad), resolve.empty = "max.start")) >
+                                      0) & seqnames(gr[-length(gr)]) == seqnames(gr[-1]) &
                      strand(gr[-length(gr)]) == strand(gr[-1]))
     if (ignore.exact) {
         ## tmp.2 = as.logical(suppressWarnings(expr = {
@@ -5375,7 +5443,7 @@ gr.simplify2 = function (gr, field = NULL, val = NULL, include.val = TRUE, split
         tmp = paste(tmp, val)
     }
     r = rle(tmp)
-    lix = unlist(lapply(1:length(r$lengths), function(x) rep(x, 
+    lix = unlist(lapply(1:length(r$lengths), function(x) rep(x,
                                                              r$lengths[x])))
     sn.gr = split(as.character(seqnames(gr)), lix)
     st.gr = split(start(gr), lix)
@@ -5383,8 +5451,8 @@ gr.simplify2 = function (gr, field = NULL, val = NULL, include.val = TRUE, split
     str.gr = split(as.character(strand(gr)), lix)
     st.gr.min = sapply(st.gr, min)
     en.gr.max = sapply(en.gr, max)
-    out = GRanges(sapply(sn.gr, function(x) x[1]), IRanges(st.gr.min, 
-                                                           en.gr.max), strand = sapply(str.gr, function(x) x[1]), 
+    out = GRanges(sapply(sn.gr, function(x) x[1]), IRanges(st.gr.min,
+                                                           en.gr.max), strand = sapply(str.gr, function(x) x[1]),
                   seqinfo = seqinfo(gr))
     ix = match(1:length(out), lix)
     if (include.val) {
@@ -5401,15 +5469,15 @@ gr.simplify2 = function (gr, field = NULL, val = NULL, include.val = TRUE, split
     return(out)
 }
 
-## tmp_fun = function (FUN, args, nm = NULL) 
+## tmp_fun = function (FUN, args, nm = NULL)
 ## {
 ##     browser()
 ##     if (!is.null(nm)) {
 ##         nm = paste(nm, "=")
 ##     }
-##     if (!is.character(FUN)) 
+##     if (!is.character(FUN))
 ##         FUN = substitute(FUN)
-##     cmd = paste(FUN, "(", paste(nm, "args[[", 1:length(args), "]]", 
+##     cmd = paste(FUN, "(", paste(nm, "args[[", 1:length(args), "]]",
 ##         collapse = ","), ")", sep = "")
 ##     return(eval(parse(text = cmd)))
 ## }
@@ -5456,7 +5524,7 @@ parsesnpeff = function(vcf, id = NULL) {
     DF = cbind(as.data.frame((gr.noval(out2))), mcols(out2))
     lst_colnames = names(which(sapply(DF, function(x) inherits(x, c("list", "List")))))
     if (length(lst_colnames) > 0) {
-        DF = S4Vectors::expand(x = DF, colnames = lst_colnames, keepEmptyRows = TRUE)    
+        DF = S4Vectors::expand(x = DF, colnames = lst_colnames, keepEmptyRows = TRUE)
     }
     rm(list = c("out", "out2")); gc()
     DF$ALT = as.character(DF$ALT)
@@ -5740,7 +5808,7 @@ read_vcf = function(fn, gr = NULL, hg = 'hg19', geno = NULL, swap.header = NULL,
                     gt = cbind(gt, m)
                 }
             }
-            
+
             values(out) = cbind(values(out), as(gt, 'DataFrame'))
         }
     }
@@ -5917,6 +5985,25 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 
 
+make_heatmap = function(x, trans.fun) {
+    if (inherits(x, "data.frame"))
+        x = matrify(x)
+    if (!inherits(x, "matrix"))
+        stop("x must be coercible to a matrix")
+    if (missing(trans.fun) || is.null(trans.fun) || is.na(trans.fun))
+        trans.fun = identity
+    else if (is.character(trans.fun))
+        trans.fun = get(trans.fun)
+    else if (!is.function(trans.fun))
+        stop("trans.fun must be a function or the name of a function, if provided")
+    trans.fun(x) %>% {ppng(heatmap.2(., dendrogram = "none", colsep = 1:ncol(.), rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), na.color = alpha('grey', 0.8), Rowv = FALSE, Colv = FALSE, scale = "none", trace = "none",
+                    ## breaks = tmp_lst$breaks,
+                    ## col = tmp_lst$col
+                         ), oma.scale = 2, oma.val = c(2,0,0,4), height = 6, width = 6)}
+}
+
+
+
 good.file = function(x, size.thresh = 0) {
     (file.exists(x) & na2false(file.size(x) > size.thresh))
 }
@@ -6023,7 +6110,7 @@ file.mat.exists = function(x) {
 }
 
 
-`%nin%` = function (x, table) 
+`%nin%` = function (x, table)
 {
     match(x, table, nomatch = 0L) == 0L
 }
@@ -6037,7 +6124,7 @@ geval = function(expr) {
 }
 
 ave2 = function(x, ..., FUN = mean) {
-    if (missing(...)) 
+    if (missing(...))
         x[] <- FUN(x)
     else {
         g <- interaction(...)
@@ -6050,7 +6137,7 @@ f2int = function(this_factor) {
     if (inherits(this_factor, "factor")) {
         lvl = levels(this_factor)
         if (inherits(lvl, c("numeric", "integer"))) {
-            as.integer(levels(this_factor))[this_factor]   
+            as.integer(levels(this_factor))[this_factor]
         } else if (inherits(lvl, "character")) {
             match(as.character(this_factor), lvl)
         }
@@ -6065,19 +6152,19 @@ is.equivalent = function(x, y) {
 }
 
 
-system3 = function (command, args = character(), stdout = "", stderr = "", 
-    stdin = "", input = NULL, env = character(), wait = TRUE, 
-    minimized = FALSE, invisible = TRUE, timeout = 0) 
+system3 = function (command, args = character(), stdout = "", stderr = "",
+    stdin = "", input = NULL, env = character(), wait = TRUE,
+    minimized = FALSE, invisible = TRUE, timeout = 0)
 {
-    if (!missing(minimized) || !missing(invisible)) 
+    if (!missing(minimized) || !missing(invisible))
         message("arguments 'minimized' and 'invisible' are for Windows only")
-    if (!is.logical(wait) || is.na(wait)) 
+    if (!is.logical(wait) || is.na(wait))
         stop("'wait' must be TRUE or FALSE")
     intern <- FALSE
     command <- paste(c(env, shQuote(command), args), collapse = " ")
-    if (is.null(stdout)) 
+    if (is.null(stdout))
         stdout <- FALSE
-    if (is.null(stderr)) 
+    if (is.null(stderr))
         stderr <- FALSE
     if (isTRUE(stdout) || isTRUE(stderr))
         intern <- TRUE
@@ -6108,29 +6195,29 @@ system3 = function (command, args = character(), stdout = "", stderr = "",
             command = paste(command, "2>", shQuote(stderr))
         }
     } else if (is.character(stderr) & is.character(stdout)) {
-        if (length(stdout) != 1L) 
+        if (length(stdout) != 1L)
             stop("'stdout' must be of length 1")
         if (nzchar(stdout)) {
-            command <- if (identical(stdout, stderr)) 
+            command <- if (identical(stdout, stderr))
                            paste(command, ">", shQuote(stdout), "2>&1")
                        else paste(command, ">", shQuote(stdout))
         }
-        if (length(stderr) != 1L) 
+        if (length(stderr) != 1L)
             stop("'stderr' must be of length 1")
-        if (nzchar(stderr) && !identical(stdout, stderr)) 
+        if (nzchar(stderr) && !identical(stdout, stderr))
             command <- paste(command, "2>", shQuote(stderr))
     }
     if (!is.null(input)) {
-        if (!is.character(input)) 
+        if (!is.character(input))
             stop("'input' must be a character vector or 'NULL'")
         f <- tempfile()
         on.exit(unlink(f))
         writeLines(input, f)
         command <- paste(command, "<", shQuote(f))
     }
-    else if (nzchar(stdin)) 
+    else if (nzchar(stdin))
         command <- paste(command, "<", stdin)
-    if (!wait && !intern) 
+    if (!wait && !intern)
         command <- paste(command, "&")
     .Internal(system(command, intern, timeout))
 }
@@ -6291,17 +6378,17 @@ make_chunks = function(vec, num_per_chunk = 100) {
     split(case_id, rep(seq_along(ind), times = elementNROWS(ind)))
 }
 
-staveRDS = function (object, file, note = NULL, ..., verbose = FALSE) 
+staveRDS = function (object, file, note = NULL, ..., verbose = FALSE)
 {
-    stamped.file = gsub(".rds$", paste(".", timestamp(), ".rds", 
+    stamped.file = gsub(".rds$", paste(".", timestamp(), ".rds",
         sep = ""), file, ignore.case = TRUE)
     saveRDS(object, stamped.file, ...)
     if (file.exists(file)) {
-        if (verbose) 
+        if (verbose)
             message("Removing existing ", file)
         system(paste("rm", file))
     }
-    if (verbose) 
+    if (verbose)
         message("Symlinking ", file, " to ", stamped.file)
     system(paste("ln -sfn", normalizePath(stamped.file), file))
     if (!is.null(note)) {
@@ -6311,7 +6398,7 @@ staveRDS = function (object, file, note = NULL, ..., verbose = FALSE)
 
 
 save.r = function(file, note = NULL, verbose = FALSE, compress = FALSE, ...) {
-    stamped.file = gsub(".RData$", paste(".", timestamp(), ".RData", 
+    stamped.file = gsub(".RData$", paste(".", timestamp(), ".RData",
                                          sep = ""), file, ignore.case = TRUE)
     if ( compress ) {
         message("Compression of the .RData object set to TRUE... Saving will take a while...")
@@ -6321,11 +6408,11 @@ save.r = function(file, note = NULL, verbose = FALSE, compress = FALSE, ...) {
     }
     save.image(stamped.file, compress = compress, ...)
     if (file.exists(file)) {
-        if (verbose) 
+        if (verbose)
             message("Removing existing ", file)
         system(paste("rm", file))
     }
-    if (verbose) 
+    if (verbose)
         message("Symlinking ", file, " to ", stamped.file)
     system(paste("ln -sfn", normalizePath(stamped.file), file))
     if (!is.null(note)) {
@@ -6366,7 +6453,7 @@ select.matrix = function(x, rows = NULL, cols = NULL, int.rows = TRUE, int.cols 
     } else {
         sel.row = seq_len(dim(x)[1])
     }
-    if (!is.null(cols)) {        
+    if (!is.null(cols)) {
         if (inherits(cols, "character")) {
             if (int.cols) {
                 sel.col = intersect(cols, colnames(x))
@@ -6396,13 +6483,13 @@ longprint = function(var, width = 600, ...) {
 ##################################################
 ##################################################
 
-get_cox_data = function (fit, data = NULL, complain = TRUE) 
+get_cox_data = function (fit, data = NULL, complain = TRUE)
 {
     if (is.null(data)) {
-        if (complain) 
+        if (complain)
             warning("The `data` argument is not provided. Data will be extracted from model fit.")
         data <- eval(fit$call$data)
-        if (is.null(data)) 
+        if (is.null(data))
             stop("The `data` argument should be provided either to ggsurvfit or survfit.")
     }
     data
@@ -6418,12 +6505,12 @@ extract.terms = function(mod, data = NULL) {
             cbind(var = var, adf, pos = 1:nrow(adf))
         }
         else if (terms[i] == "numeric") {
-            data.frame(var = var, Var1 = "", Freq = nrow(data), 
+            data.frame(var = var, Var1 = "", Freq = nrow(data),
                 pos = 1)
         }
         else {
             vars = grep(paste0("^", var, "*."), coef$term, value = TRUE)
-            data.frame(var = vars, Var1 = "", Freq = nrow(data), 
+            data.frame(var = vars, Var1 = "", Freq = nrow(data),
                 pos = seq_along(vars))
         }
     })
@@ -6622,33 +6709,33 @@ breg.t = function(y, n) {
 }
 
 
-zeroinfl2 = function (formula, data, subset, na.action, weights, offset, 
-    dist = c("poisson", "negbin", "geometric"), link = c("logit", 
-        "probit", "cloglog", "cauchit", "log"), control = zeroinfl.control(...), 
-    model = TRUE, y = TRUE, x = FALSE, ...) 
+zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
+    dist = c("poisson", "negbin", "geometric"), link = c("logit",
+        "probit", "cloglog", "cauchit", "log"), control = zeroinfl.control(...),
+    model = TRUE, y = TRUE, x = FALSE, ...)
 {
     require(pscl)
     model_offset_2 = get("model_offset_2", envir = asNamespace("pscl"))
     ziPoisson <- function(parms) {
         mu <- as.vector(exp(X %*% parms[1:kx] + offsetx))
-        phi <- as.vector(linkinv(Z %*% parms[(kx + 1):(kx + kz)] + 
+        phi <- as.vector(linkinv(Z %*% parms[(kx + 1):(kx + kz)] +
             offsetz))
         loglik0 <- log(phi + exp(log(1 - phi) - mu))
         loglik1 <- log(1 - phi) + dpois(Y, lambda = mu, log = TRUE)
-        loglik <- sum(weights[Y0] * loglik0[Y0]) + sum(weights[Y1] * 
+        loglik <- sum(weights[Y0] * loglik0[Y0]) + sum(weights[Y1] *
             loglik1[Y1])
         loglik
     }
     ziNegBin <- function(parms) {
         mu <- as.vector(exp(X %*% parms[1:kx] + offsetx))
-        phi <- as.vector(linkinv(Z %*% parms[(kx + 1):(kx + kz)] + 
+        phi <- as.vector(linkinv(Z %*% parms[(kx + 1):(kx + kz)] +
             offsetz))
         theta <- exp(parms[(kx + kz) + 1])
-        loglik0 <- log(phi + exp(log(1 - phi) + suppressWarnings(dnbinom(0, 
+        loglik0 <- log(phi + exp(log(1 - phi) + suppressWarnings(dnbinom(0,
             size = theta, mu = mu, log = TRUE))))
-        loglik1 <- log(1 - phi) + suppressWarnings(dnbinom(Y, 
+        loglik1 <- log(1 - phi) + suppressWarnings(dnbinom(Y,
             size = theta, mu = mu, log = TRUE))
-        loglik <- sum(weights[Y0] * loglik0[Y0]) + sum(weights[Y1] * 
+        loglik <- sum(weights[Y0] * loglik0[Y0]) + sum(weights[Y1] *
             loglik1[Y1])
         loglik
     }
@@ -6659,13 +6746,13 @@ zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
         etaz <- as.vector(Z %*% parms[(kx + 1):(kx + kz)] + offsetz)
         muz <- linkinv(etaz)
         clogdens0 <- -mu
-        dens0 <- muz * (1 - as.numeric(Y1)) + exp(log(1 - muz) + 
+        dens0 <- muz * (1 - as.numeric(Y1)) + exp(log(1 - muz) +
             clogdens0)
-        wres_count <- ifelse(Y1, Y - mu, -exp(-log(dens0) + log(1 - 
+        wres_count <- ifelse(Y1, Y - mu, -exp(-log(dens0) + log(1 -
             muz) + clogdens0 + log(mu)))
-        wres_zero <- ifelse(Y1, -1/(1 - muz) * linkobj$mu.eta(etaz), 
+        wres_zero <- ifelse(Y1, -1/(1 - muz) * linkobj$mu.eta(etaz),
             (linkobj$mu.eta(etaz) - exp(clogdens0) * linkobj$mu.eta(etaz))/dens0)
-        colSums(cbind(wres_count * weights * X, wres_zero * weights * 
+        colSums(cbind(wres_count * weights * X, wres_zero * weights *
             Z))
     }
     gradGeom <- function(parms) {
@@ -6674,13 +6761,13 @@ zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
         etaz <- as.vector(Z %*% parms[(kx + 1):(kx + kz)] + offsetz)
         muz <- linkinv(etaz)
         clogdens0 <- dnbinom(0, size = 1, mu = mu, log = TRUE)
-        dens0 <- muz * (1 - as.numeric(Y1)) + exp(log(1 - muz) + 
+        dens0 <- muz * (1 - as.numeric(Y1)) + exp(log(1 - muz) +
             clogdens0)
-        wres_count <- ifelse(Y1, Y - mu * (Y + 1)/(mu + 1), -exp(-log(dens0) + 
+        wres_count <- ifelse(Y1, Y - mu * (Y + 1)/(mu + 1), -exp(-log(dens0) +
             log(1 - muz) + clogdens0 - log(mu + 1) + log(mu)))
-        wres_zero <- ifelse(Y1, -1/(1 - muz) * linkobj$mu.eta(etaz), 
+        wres_zero <- ifelse(Y1, -1/(1 - muz) * linkobj$mu.eta(etaz),
             (linkobj$mu.eta(etaz) - exp(clogdens0) * linkobj$mu.eta(etaz))/dens0)
-        colSums(cbind(wres_count * weights * X, wres_zero * weights * 
+        colSums(cbind(wres_count * weights * X, wres_zero * weights *
             Z))
     }
     gradNegBin <- function(parms) {
@@ -6690,42 +6777,42 @@ zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
         muz <- linkinv(etaz)
         theta <- exp(parms[(kx + kz) + 1])
         clogdens0 <- dnbinom(0, size = theta, mu = mu, log = TRUE)
-        dens0 <- muz * (1 - as.numeric(Y1)) + exp(log(1 - muz) + 
+        dens0 <- muz * (1 - as.numeric(Y1)) + exp(log(1 - muz) +
             clogdens0)
-        wres_count <- ifelse(Y1, Y - mu * (Y + theta)/(mu + theta), 
-            -exp(-log(dens0) + log(1 - muz) + clogdens0 + log(theta) - 
+        wres_count <- ifelse(Y1, Y - mu * (Y + theta)/(mu + theta),
+            -exp(-log(dens0) + log(1 - muz) + clogdens0 + log(theta) -
                 log(mu + theta) + log(mu)))
-        wres_zero <- ifelse(Y1, -1/(1 - muz) * linkobj$mu.eta(etaz), 
+        wres_zero <- ifelse(Y1, -1/(1 - muz) * linkobj$mu.eta(etaz),
             (linkobj$mu.eta(etaz) - exp(clogdens0) * linkobj$mu.eta(etaz))/dens0)
-        wres_theta <- theta * ifelse(Y1, digamma(Y + theta) - 
-            digamma(theta) + log(theta) - log(mu + theta) + 1 - 
-            (Y + theta)/(mu + theta), exp(-log(dens0) + log(1 - 
-            muz) + clogdens0) * (log(theta) - log(mu + theta) + 
+        wres_theta <- theta * ifelse(Y1, digamma(Y + theta) -
+            digamma(theta) + log(theta) - log(mu + theta) + 1 -
+            (Y + theta)/(mu + theta), exp(-log(dens0) + log(1 -
+            muz) + clogdens0) * (log(theta) - log(mu + theta) +
             1 - theta/(mu + theta)))
-        colSums(cbind(wres_count * weights * X, wres_zero * weights * 
+        colSums(cbind(wres_count * weights * X, wres_zero * weights *
             Z, wres_theta))
     }
     dist <- match.arg(dist)
-    loglikfun <- switch(dist, poisson = ziPoisson, geometric = ziGeom, 
+    loglikfun <- switch(dist, poisson = ziPoisson, geometric = ziGeom,
         negbin = ziNegBin)
-    gradfun <- switch(dist, poisson = gradPoisson, geometric = gradGeom, 
+    gradfun <- switch(dist, poisson = gradPoisson, geometric = gradGeom,
         negbin = gradNegBin)
     linkstr <- match.arg(link)
     linkobj <- make.link(linkstr)
     linkinv <- linkobj$linkinv
-    if (control$trace) 
-        cat("Zero-inflated Count Model\n", paste("count model:", 
-            dist, "with log link\n"), paste("zero-inflation model: binomial with", 
+    if (control$trace)
+        cat("Zero-inflated Count Model\n", paste("count model:",
+            dist, "with log link\n"), paste("zero-inflation model: binomial with",
             linkstr, "link\n"), sep = "")
     cl <- match.call()
-    if (missing(data)) 
+    if (missing(data))
         data <- environment(formula)
     mf <- match.call(expand.dots = FALSE)
-    m <- match(c("formula", "data", "subset", "na.action", "weights", 
+    m <- match(c("formula", "data", "subset", "na.action", "weights",
         "offset"), names(mf), 0)
     mf <- mf[c(1, m)]
     mf$drop.unused.levels <- TRUE
-    if (length(formula[[3]]) > 1 && identical(formula[[3]][[1]], 
+    if (length(formula[[3]]) > 1 && identical(formula[[3]][[1]],
         as.name("|"))) {
         ff <- formula
         formula[[3]][1] <- call("+")
@@ -6742,7 +6829,7 @@ zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
         ffz[[2]] <- NULL
     }
     if (inherits(try(terms(ffz), silent = TRUE), "try-error")) {
-        ffz <- eval(parse(text = sprintf(paste("%s -", deparse(ffc[[2]])), 
+        ffz <- eval(parse(text = sprintf(paste("%s -", deparse(ffc[[2]])),
             deparse(ffz))))
     }
     mf[[1]] <- as.name("model.frame")
@@ -6754,15 +6841,15 @@ zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
     mtZ <- terms(update(mtZ, ~.), data = data)
     Z <- model.matrix(mtZ, mf)
     Y <- model.response(mf, "numeric")
-    if (length(Y) < 1) 
+    if (length(Y) < 1)
         stop("empty model")
-    if (all(Y > 0)) 
+    if (all(Y > 0))
         stop("invalid dependent variable, minimum count is not zero")
-    if (!isTRUE(all.equal(as.vector(Y), as.integer(round(Y + 
-        0.001))))) 
+    if (!isTRUE(all.equal(as.vector(Y), as.integer(round(Y +
+        0.001)))))
         stop("invalid dependent variable, non-integer values")
     Y <- as.integer(round(Y + 0.001))
-    if (any(Y < 0)) 
+    if (any(Y < 0))
         stop("invalid dependent variable, negative counts")
     if (control$trace) {
         cat("dependent variable:\n")
@@ -6776,22 +6863,22 @@ zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
     Y0 <- Y <= 0
     Y1 <- Y > 0
     weights <- model.weights(mf)
-    if (is.null(weights)) 
+    if (is.null(weights))
         weights <- 1
-    if (length(weights) == 1) 
+    if (length(weights) == 1)
         weights <- rep.int(weights, n)
     weights <- as.vector(weights)
     names(weights) <- rownames(mf)
     offsetx <- model_offset_2(mf, terms = mtX, offset = TRUE)
-    if (is.null(offsetx)) 
+    if (is.null(offsetx))
         offsetx <- 0
-    if (length(offsetx) == 1) 
+    if (length(offsetx) == 1)
         offsetx <- rep.int(offsetx, n)
     offsetx <- as.vector(offsetx)
     offsetz <- model_offset_2(mf, terms = mtZ, offset = FALSE)
-    if (is.null(offsetz)) 
+    if (is.null(offsetz))
         offsetz <- 0
-    if (length(offsetz) == 1) 
+    if (length(offsetz) == 1)
         offsetz <- rep.int(offsetz, n)
     offsetz <- as.vector(offsetz)
     start <- control$start
@@ -6816,26 +6903,26 @@ zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
             warning("invalid starting values, wrong number of zero-inflation model coefficients")
         }
         if (dist == "negbin") {
-            if (!("theta" %in% names(start))) 
+            if (!("theta" %in% names(start)))
                 start$theta <- 1
-            start <- list(count = start$count, zero = start$zero, 
+            start <- list(count = start$count, zero = start$zero,
                 theta = as.vector(start$theta[1]))
         }
         else {
             start <- list(count = start$count, zero = start$zero)
         }
-        if (!valid) 
+        if (!valid)
             start <- NULL
     }
     if (is.null(start)) {
-        if (control$trace) 
+        if (control$trace)
             cat("generating starting values...")
-        model_count <- glm.fit(X, Y, family = poisson(), weights = weights, 
+        model_count <- glm.fit(X, Y, family = poisson(), weights = weights,
             offset = offsetx)
-        model_zero <- glm.fit(Z, as.integer(Y0), weights = weights, 
+        model_zero <- glm.fit(Z, as.integer(Y0), weights = weights,
             family = binomial(link = linkstr), offset = offsetz)
         start <- list(count = model_count$coefficients, zero = model_zero$coefficients)
-        if (dist == "negbin") 
+        if (dist == "negbin")
             start$theta <- 1
         if (control$EM & dist == "poisson") {
             mui <- model_count$fitted
@@ -6846,18 +6933,18 @@ zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
             ll_old <- 2 * ll_new
             while (abs((ll_old - ll_new)/ll_old) > control$reltol) {
                 ll_old <- ll_new
-                model_count <- glm.fit(X, Y, weights = weights * 
-                  (1 - probi), offset = offsetx, family = poisson(), 
+                model_count <- glm.fit(X, Y, weights = weights *
+                  (1 - probi), offset = offsetx, family = poisson(),
                   start = start$count)
-                model_zero <- suppressWarnings(glm.fit(Z, probi, 
-                  weights = weights, offset = offsetz, family = binomial(link = linkstr), 
+                model_zero <- suppressWarnings(glm.fit(Z, probi,
+                  weights = weights, offset = offsetz, family = binomial(link = linkstr),
                   start = start$zero))
                 mui <- model_count$fitted
                 probi <- model_zero$fitted
-                probi <- probi/(probi + (1 - probi) * dpois(0, 
+                probi <- probi/(probi + (1 - probi) * dpois(0,
                   mui))
                 probi[Y1] <- 0
-                start <- list(count = model_count$coefficients, 
+                start <- list(count = model_count$coefficients,
                   zero = model_zero$coefficients)
                 ll_new <- loglikfun(c(start$count, start$zero))
             }
@@ -6865,24 +6952,24 @@ zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
         if (control$EM & dist == "geometric") {
             mui <- model_count$fitted
             probi <- model_zero$fitted
-            probi <- probi/(probi + (1 - probi) * dnbinom(0, 
+            probi <- probi/(probi + (1 - probi) * dnbinom(0,
                 size = 1, mu = mui))
             probi[Y1] <- 0
             ll_new <- loglikfun(c(start$count, start$zero))
             ll_old <- 2 * ll_new
             while (abs((ll_old - ll_new)/ll_old) > control$reltol) {
                 ll_old <- ll_new
-                model_count <- suppressWarnings(glm.fit(X, Y, 
-                  weights = weights * (1 - probi), offset = offsetx, 
+                model_count <- suppressWarnings(glm.fit(X, Y,
+                  weights = weights * (1 - probi), offset = offsetx,
                   family = MASS::negative.binomial(1), start = start$count))
-                model_zero <- suppressWarnings(glm.fit(Z, probi, 
-                  weights = weights, offset = offsetz, family = binomial(link = linkstr), 
+                model_zero <- suppressWarnings(glm.fit(Z, probi,
+                  weights = weights, offset = offsetz, family = binomial(link = linkstr),
                   start = start$zero))
-                start <- list(count = model_count$coefficients, 
+                start <- list(count = model_count$coefficients,
                   zero = model_zero$coefficients)
                 mui <- model_count$fitted
                 probi <- model_zero$fitted
-                probi <- probi/(probi + (1 - probi) * dnbinom(0, 
+                probi <- probi/(probi + (1 - probi) * dnbinom(0,
                   size = 1, mu = mui))
                 probi[Y1] <- 0
                 ll_new <- loglikfun(c(start$count, start$zero))
@@ -6891,7 +6978,7 @@ zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
         if (control$EM & dist == "negbin") {
             mui <- model_count$fitted
             probi <- model_zero$fitted
-            probi <- probi/(probi + (1 - probi) * dnbinom(0, 
+            probi <- probi/(probi + (1 - probi) * dnbinom(0,
                 size = start$theta, mu = mui))
             probi[Y1] <- 0
             ll_new <- loglikfun(c(start$count, start$zero, log(start$theta)))
@@ -6899,36 +6986,36 @@ zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
             offset <- offsetx
             while (abs((ll_old - ll_new)/ll_old) > control$reltol) {
                 ll_old <- ll_new
-                model_count <- suppressWarnings(glm.nb(Y ~ 0 + 
-                  X + offset(offset), weights = weights * (1 - 
+                model_count <- suppressWarnings(glm.nb(Y ~ 0 +
+                  X + offset(offset), weights = weights * (1 -
                   probi), start = start$count, init.theta = start$theta))
-                model_zero <- suppressWarnings(glm.fit(Z, probi, 
-                  weights = weights, offset = offsetz, family = binomial(link = linkstr), 
+                model_zero <- suppressWarnings(glm.fit(Z, probi,
+                  weights = weights, offset = offsetz, family = binomial(link = linkstr),
                   start = start$zero))
-                start <- list(count = model_count$coefficients, 
+                start <- list(count = model_count$coefficients,
                   zero = model_zero$coefficients, theta = model_count$theta)
                 mui <- model_count$fitted
                 probi <- model_zero$fitted
-                probi <- probi/(probi + (1 - probi) * dnbinom(0, 
+                probi <- probi/(probi + (1 - probi) * dnbinom(0,
                   size = start$theta, mu = mui))
                 probi[Y1] <- 0
-                ll_new <- loglikfun(c(start$count, start$zero, 
+                ll_new <- loglikfun(c(start$count, start$zero,
                   log(start$theta)))
             }
         }
-        if (control$trace) 
+        if (control$trace)
             cat("done\n")
     }
-    if (control$trace) 
+    if (control$trace)
         cat("calling optim() for ML estimation:\n")
     method <- control$method
     hessian <- control$hessian
     ocontrol <- control
     control$method <- control$hessian <- control$EM <- control$start <- NULL
-    fit <- optim(fn = loglikfun, gr = gradfun, par = c(start$count, 
-        start$zero, if (dist == "negbin") log(start$theta) else NULL), 
+    fit <- optim(fn = loglikfun, gr = gradfun, par = c(start$count,
+        start$zero, if (dist == "negbin") log(start$theta) else NULL),
         method = method, hessian = hessian, control = control)
-    if (fit$convergence > 0) 
+    if (fit$convergence > 0)
         warning("optimization failed to converge")
     coefc <- fit$par[1:kx]
     names(coefc) <- names(start$count) <- colnames(X)
@@ -6945,49 +7032,49 @@ zeroinfl2 = function (formula, data, subset, na.action, weights, offset,
         theta <- NULL
         SE.logtheta <- NULL
     }
-    colnames(vc) <- rownames(vc) <- c(paste("count", colnames(X), 
+    colnames(vc) <- rownames(vc) <- c(paste("count", colnames(X),
         sep = "_"), paste("zero", colnames(Z), sep = "_"))
     mu <- exp(X %*% coefc + offsetx)[, 1]
     phi <- linkinv(Z %*% coefz + offsetz)[, 1]
     Yhat <- (1 - phi) * mu
     res <- sqrt(weights) * (Y - Yhat)
     nobs <- sum(weights > 0)
-    rval <- list(coefficients = list(count = coefc, zero = coefz), 
-        residuals = res, fitted.values = Yhat, optim = fit, method = method, 
-        control = ocontrol, start = start, weights = if (identical(as.vector(weights), 
-            rep.int(1L, n))) NULL else weights, offset = list(count = if (identical(offsetx, 
-            rep.int(0, n))) NULL else offsetx, zero = if (identical(offsetz, 
-            rep.int(0, n))) NULL else offsetz), n = nobs, df.null = nobs - 
-            2, df.residual = nobs - (kx + kz + (dist == "negbin")), 
-        terms = list(count = mtX, zero = mtZ, full = mt), theta = theta, 
-        SE.logtheta = SE.logtheta, loglik = fit$value, vcov = vc, 
-        dist = dist, link = linkstr, linkinv = linkinv, converged = fit$convergence < 
-            1, call = cl, formula = ff, levels = .getXlevels(mt, 
-            mf), contrasts = list(count = attr(X, "contrasts"), 
+    rval <- list(coefficients = list(count = coefc, zero = coefz),
+        residuals = res, fitted.values = Yhat, optim = fit, method = method,
+        control = ocontrol, start = start, weights = if (identical(as.vector(weights),
+            rep.int(1L, n))) NULL else weights, offset = list(count = if (identical(offsetx,
+            rep.int(0, n))) NULL else offsetx, zero = if (identical(offsetz,
+            rep.int(0, n))) NULL else offsetz), n = nobs, df.null = nobs -
+            2, df.residual = nobs - (kx + kz + (dist == "negbin")),
+        terms = list(count = mtX, zero = mtZ, full = mt), theta = theta,
+        SE.logtheta = SE.logtheta, loglik = fit$value, vcov = vc,
+        dist = dist, link = linkstr, linkinv = linkinv, converged = fit$convergence <
+            1, call = cl, formula = ff, levels = .getXlevels(mt,
+            mf), contrasts = list(count = attr(X, "contrasts"),
             zero = attr(Z, "contrasts")))
-    if (model) 
+    if (model)
         rval$model <- mf
-    if (y) 
+    if (y)
         rval$y <- Y
-    if (x) 
+    if (x)
         rval$x <- list(count = X, zero = Z)
     class(rval) <- "zeroinfl"
     return(rval)
 }
 
 
-hurdle2 = function (formula, data, subset, na.action, weights, offset, 
-    dist = c("poisson", "negbin", "geometric"), zero.dist = c("binomial", 
-        "poisson", "negbin", "geometric"), link = c("logit", 
-        "probit", "cloglog", "cauchit", "log"), control = hurdle.control(...), 
-    model = TRUE, y = TRUE, x = FALSE, ...) 
+hurdle2 = function (formula, data, subset, na.action, weights, offset,
+    dist = c("poisson", "negbin", "geometric"), zero.dist = c("binomial",
+        "poisson", "negbin", "geometric"), link = c("logit",
+        "probit", "cloglog", "cauchit", "log"), control = hurdle.control(...),
+    model = TRUE, y = TRUE, x = FALSE, ...)
 {
     require(pscl)
     model_offset_2 = get("model_offset_2", envir = asNamespace("pscl"))
     zeroPoisson <- function(parms) {
         mu <- as.vector(exp(Z %*% parms + offsetz))
         loglik0 <- -mu
-        loglik <- sum(weights[Y0] * loglik0[Y0]) + sum(weights[Y1] * 
+        loglik <- sum(weights[Y0] * loglik0[Y0]) + sum(weights[Y1] *
             log(1 - exp(loglik0[Y1])))
         loglik
     }
@@ -6995,27 +7082,27 @@ hurdle2 = function (formula, data, subset, na.action, weights, offset,
         mu <- as.vector(exp(X %*% parms + offsetx))[Y1]
         loglik0 <- -mu
         loglik1 <- dpois(Y[Y1], lambda = mu, log = TRUE)
-        loglik <- sum(weights[Y1] * loglik1) - sum(weights[Y1] * 
+        loglik <- sum(weights[Y1] * loglik1) - sum(weights[Y1] *
             log(1 - exp(loglik0)))
         loglik
     }
     zeroNegBin <- function(parms) {
         mu <- as.vector(exp(Z %*% parms[1:kz] + offsetz))
         theta <- exp(parms[kz + 1])
-        loglik0 <- suppressWarnings(dnbinom(0, size = theta, 
+        loglik0 <- suppressWarnings(dnbinom(0, size = theta,
             mu = mu, log = TRUE))
-        loglik <- sum(weights[Y0] * loglik0[Y0]) + sum(weights[Y1] * 
+        loglik <- sum(weights[Y0] * loglik0[Y0]) + sum(weights[Y1] *
             log(1 - exp(loglik0[Y1])))
         loglik
     }
     countNegBin <- function(parms) {
         mu <- as.vector(exp(X %*% parms[1:kx] + offsetx))[Y1]
         theta <- exp(parms[kx + 1])
-        loglik0 <- suppressWarnings(dnbinom(0, size = theta, 
+        loglik0 <- suppressWarnings(dnbinom(0, size = theta,
             mu = mu, log = TRUE))
-        loglik1 <- suppressWarnings(dnbinom(Y[Y1], size = theta, 
+        loglik1 <- suppressWarnings(dnbinom(Y[Y1], size = theta,
             mu = mu, log = TRUE))
-        loglik <- sum(weights[Y1] * loglik1) - sum(weights[Y1] * 
+        loglik <- sum(weights[Y1] * loglik1) - sum(weights[Y1] *
             log(1 - exp(loglik0)))
         loglik
     }
@@ -7023,111 +7110,111 @@ hurdle2 = function (formula, data, subset, na.action, weights, offset,
     countGeom <- function(parms) countNegBin(c(parms, 0))
     zeroBinom <- function(parms) {
         mu <- as.vector(linkinv(Z %*% parms + offsetz))
-        loglik <- sum(weights[Y0] * log(1 - mu[Y0])) + sum(weights[Y1] * 
+        loglik <- sum(weights[Y0] * log(1 - mu[Y0])) + sum(weights[Y1] *
             log(mu[Y1]))
         loglik
     }
     countGradPoisson <- function(parms) {
         eta <- as.vector(X %*% parms + offsetx)[Y1]
         mu <- exp(eta)
-        colSums(((Y[Y1] - mu) - exp(ppois(0, lambda = mu, log.p = TRUE) - 
-            ppois(0, lambda = mu, lower.tail = FALSE, log.p = TRUE) + 
+        colSums(((Y[Y1] - mu) - exp(ppois(0, lambda = mu, log.p = TRUE) -
+            ppois(0, lambda = mu, lower.tail = FALSE, log.p = TRUE) +
             eta)) * weights[Y1] * X[Y1, , drop = FALSE])
     }
     countGradGeom <- function(parms) {
         eta <- as.vector(X %*% parms + offsetx)[Y1]
         mu <- exp(eta)
-        colSums(((Y[Y1] - mu * (Y[Y1] + 1)/(mu + 1)) - exp(pnbinom(0, 
-            mu = mu, size = 1, log.p = TRUE) - pnbinom(0, mu = mu, 
-            size = 1, lower.tail = FALSE, log.p = TRUE) - log(mu + 
+        colSums(((Y[Y1] - mu * (Y[Y1] + 1)/(mu + 1)) - exp(pnbinom(0,
+            mu = mu, size = 1, log.p = TRUE) - pnbinom(0, mu = mu,
+            size = 1, lower.tail = FALSE, log.p = TRUE) - log(mu +
             1) + eta)) * weights[Y1] * X[Y1, , drop = FALSE])
     }
     countGradNegBin <- function(parms) {
         eta <- as.vector(X %*% parms[1:kx] + offsetx)[Y1]
         mu <- exp(eta)
         theta <- exp(parms[kx + 1])
-        logratio <- pnbinom(0, mu = mu, size = theta, log.p = TRUE) - 
-            pnbinom(0, mu = mu, size = theta, lower.tail = FALSE, 
+        logratio <- pnbinom(0, mu = mu, size = theta, log.p = TRUE) -
+            pnbinom(0, mu = mu, size = theta, lower.tail = FALSE,
                 log.p = TRUE)
-        rval <- colSums(((Y[Y1] - mu * (Y[Y1] + theta)/(mu + 
-            theta)) - exp(logratio + log(theta) - log(mu + theta) + 
+        rval <- colSums(((Y[Y1] - mu * (Y[Y1] + theta)/(mu +
+            theta)) - exp(logratio + log(theta) - log(mu + theta) +
             eta)) * weights[Y1] * X[Y1, , drop = FALSE])
-        rval2 <- sum((digamma(Y[Y1] + theta) - digamma(theta) + 
-            log(theta) - log(mu + theta) + 1 - (Y[Y1] + theta)/(mu + 
-            theta) + exp(logratio) * (log(theta) - log(mu + theta) + 
+        rval2 <- sum((digamma(Y[Y1] + theta) - digamma(theta) +
+            log(theta) - log(mu + theta) + 1 - (Y[Y1] + theta)/(mu +
+            theta) + exp(logratio) * (log(theta) - log(mu + theta) +
             1 - theta/(mu + theta))) * weights[Y1]) * theta
         c(rval, rval2)
     }
     zeroGradPoisson <- function(parms) {
         eta <- as.vector(Z %*% parms + offsetz)
         mu <- exp(eta)
-        colSums(ifelse(Y0, -mu, exp(ppois(0, lambda = mu, log.p = TRUE) - 
-            ppois(0, lambda = mu, lower.tail = FALSE, log.p = TRUE) + 
+        colSums(ifelse(Y0, -mu, exp(ppois(0, lambda = mu, log.p = TRUE) -
+            ppois(0, lambda = mu, lower.tail = FALSE, log.p = TRUE) +
             eta)) * weights * Z)
     }
     zeroGradGeom <- function(parms) {
         eta <- as.vector(Z %*% parms + offsetz)
         mu <- exp(eta)
-        colSums(ifelse(Y0, -mu/(mu + 1), exp(pnbinom(0, mu = mu, 
-            size = 1, log.p = TRUE) - pnbinom(0, mu = mu, size = 1, 
-            lower.tail = FALSE, log.p = TRUE) - log(mu + 1) + 
+        colSums(ifelse(Y0, -mu/(mu + 1), exp(pnbinom(0, mu = mu,
+            size = 1, log.p = TRUE) - pnbinom(0, mu = mu, size = 1,
+            lower.tail = FALSE, log.p = TRUE) - log(mu + 1) +
             eta)) * weights * Z)
     }
     zeroGradNegBin <- function(parms) {
         eta <- as.vector(Z %*% parms[1:kz] + offsetz)
         mu <- exp(eta)
         theta <- exp(parms[kz + 1])
-        logratio <- pnbinom(0, mu = mu, size = theta, log.p = TRUE) - 
-            pnbinom(0, mu = mu, size = theta, lower.tail = FALSE, 
+        logratio <- pnbinom(0, mu = mu, size = theta, log.p = TRUE) -
+            pnbinom(0, mu = mu, size = theta, lower.tail = FALSE,
                 log.p = TRUE)
-        rval <- colSums(ifelse(Y0, -mu * theta/(mu + theta), 
-            exp(logratio + log(theta) - log(mu + theta) + eta)) * 
+        rval <- colSums(ifelse(Y0, -mu * theta/(mu + theta),
+            exp(logratio + log(theta) - log(mu + theta) + eta)) *
             weights * Z)
-        rval2 <- sum(ifelse(Y0, log(theta) - log(mu + theta) + 
-            1 - theta/(mu + theta), -exp(logratio) * (log(theta) - 
-            log(mu + theta) + 1 - theta/(mu + theta))) * weights * 
+        rval2 <- sum(ifelse(Y0, log(theta) - log(mu + theta) +
+            1 - theta/(mu + theta), -exp(logratio) * (log(theta) -
+            log(mu + theta) + 1 - theta/(mu + theta))) * weights *
             theta)
         c(rval, rval2)
     }
     zeroGradBinom <- function(parms) {
         eta <- as.vector(Z %*% parms + offsetz)
         mu <- linkinv(eta)
-        colSums(ifelse(Y0, -1/(1 - mu), 1/mu) * linkobj$mu.eta(eta) * 
+        colSums(ifelse(Y0, -1/(1 - mu), 1/mu) * linkobj$mu.eta(eta) *
             weights * Z)
     }
     dist <- match.arg(dist)
     zero.dist <- match.arg(zero.dist)
-    countDist <- switch(dist, poisson = countPoisson, geometric = countGeom, 
+    countDist <- switch(dist, poisson = countPoisson, geometric = countGeom,
         negbin = countNegBin)
-    zeroDist <- switch(zero.dist, poisson = zeroPoisson, geometric = zeroGeom, 
+    zeroDist <- switch(zero.dist, poisson = zeroPoisson, geometric = zeroGeom,
         negbin = zeroNegBin, binomial = zeroBinom)
-    countGrad <- switch(dist, poisson = countGradPoisson, geometric = countGradGeom, 
+    countGrad <- switch(dist, poisson = countGradPoisson, geometric = countGradGeom,
         negbin = countGradNegBin)
-    zeroGrad <- switch(zero.dist, poisson = zeroGradPoisson, 
+    zeroGrad <- switch(zero.dist, poisson = zeroGradPoisson,
         geometric = zeroGradGeom, negbin = zeroGradNegBin, binomial = zeroGradBinom)
-    loglikfun <- function(parms) countDist(parms[1:(kx + (dist == 
-        "negbin"))]) + zeroDist(parms[(kx + (dist == "negbin") + 
+    loglikfun <- function(parms) countDist(parms[1:(kx + (dist ==
+        "negbin"))]) + zeroDist(parms[(kx + (dist == "negbin") +
         1):(kx + kz + (dist == "negbin") + (zero.dist == "negbin"))])
-    gradfun <- function(parms) c(countGrad(parms[1:(kx + (dist == 
-        "negbin"))]), zeroGrad(parms[(kx + (dist == "negbin") + 
+    gradfun <- function(parms) c(countGrad(parms[1:(kx + (dist ==
+        "negbin"))]), zeroGrad(parms[(kx + (dist == "negbin") +
         1):(kx + kz + (dist == "negbin") + (zero.dist == "negbin"))]))
     linkstr <- match.arg(link)
     linkobj <- make.link(linkstr)
     linkinv <- linkobj$linkinv
-    if (control$trace) 
-        cat("Hurdle Count Model\n", paste("count model:", dist, 
-            "with log link\n"), paste("zero hurdle model:", zero.dist, 
-            "with", ifelse(zero.dist == "binomial", linkstr, 
+    if (control$trace)
+        cat("Hurdle Count Model\n", paste("count model:", dist,
+            "with log link\n"), paste("zero hurdle model:", zero.dist,
+            "with", ifelse(zero.dist == "binomial", linkstr,
                 "log"), "link\n"), sep = "")
     cl <- match.call()
-    if (missing(data)) 
+    if (missing(data))
         data <- environment(formula)
     mf <- match.call(expand.dots = FALSE)
-    m <- match(c("formula", "data", "subset", "na.action", "weights", 
+    m <- match(c("formula", "data", "subset", "na.action", "weights",
         "offset"), names(mf), 0)
     mf <- mf[c(1, m)]
     mf$drop.unused.levels <- TRUE
-    if (length(formula[[3]]) > 1 && identical(formula[[3]][[1]], 
+    if (length(formula[[3]]) > 1 && identical(formula[[3]][[1]],
         as.name("|"))) {
         ff <- formula
         formula[[3]][1] <- call("+")
@@ -7144,7 +7231,7 @@ hurdle2 = function (formula, data, subset, na.action, weights, offset,
         ffz[[2]] <- NULL
     }
     if (inherits(try(terms(ffz), silent = TRUE), "try-error")) {
-        ffz <- eval(parse(text = sprintf(paste("%s -", deparse(ffc[[2]])), 
+        ffz <- eval(parse(text = sprintf(paste("%s -", deparse(ffc[[2]])),
             deparse(ffz))))
     }
     mf[[1]] <- as.name("model.frame")
@@ -7156,18 +7243,18 @@ hurdle2 = function (formula, data, subset, na.action, weights, offset,
     mtZ <- terms(update(mtZ, ~.), data = data)
     Z <- model.matrix(mtZ, mf)
     Y <- model.response(mf, "numeric")
-    if (length(Y) < 1) 
+    if (length(Y) < 1)
         stop("empty model")
-    if (all(Y > 0)) 
+    if (all(Y > 0))
         stop("invalid dependent variable, minimum count is not zero")
-    if (!isTRUE(all.equal(as.vector(Y), as.integer(round(Y + 
-        0.001))))) 
+    if (!isTRUE(all.equal(as.vector(Y), as.integer(round(Y +
+        0.001)))))
         stop("invalid dependent variable, non-integer values")
     Y <- as.integer(round(Y + 0.001))
-    if (any(Y < 0)) 
+    if (any(Y < 0))
         stop("invalid dependent variable, negative counts")
-    if (zero.dist == "negbin" & isTRUE(all.equal(as.vector(Z), 
-        rep.int(Z[1], length(Z))))) 
+    if (zero.dist == "negbin" & isTRUE(all.equal(as.vector(Z),
+        rep.int(Z[1], length(Z)))))
         stop("negative binomial zero hurdle model is not identified with only an intercept")
     if (control$trace) {
         cat("dependent variable:\n")
@@ -7181,22 +7268,22 @@ hurdle2 = function (formula, data, subset, na.action, weights, offset,
     Y0 <- Y <= 0
     Y1 <- Y > 0
     weights <- model.weights(mf)
-    if (is.null(weights)) 
+    if (is.null(weights))
         weights <- 1
-    if (length(weights) == 1) 
+    if (length(weights) == 1)
         weights <- rep.int(weights, n)
     weights <- as.vector(weights)
     names(weights) <- rownames(mf)
     offsetx <- model_offset_2(mf, terms = mtX, offset = TRUE)
-    if (is.null(offsetx)) 
+    if (is.null(offsetx))
         offsetx <- 0
-    if (length(offsetx) == 1) 
+    if (length(offsetx) == 1)
         offsetx <- rep.int(offsetx, n)
     offsetx <- as.vector(offsetx)
     offsetz <- model_offset_2(mf, terms = mtZ, offset = FALSE)
-    if (is.null(offsetz)) 
+    if (is.null(offsetz))
         offsetz <- 0
-    if (length(offsetz) == 1) 
+    if (length(offsetz) == 1)
         offsetz <- rep.int(offsetz, n)
     offsetz <- as.vector(offsetz)
     start <- control$start
@@ -7221,40 +7308,40 @@ hurdle2 = function (formula, data, subset, na.action, weights, offset,
             warning("invalid starting values, wrong number of zero-inflation model coefficients")
         }
         if (dist == "negbin" | zero.dist == "negbin") {
-            if (!("theta" %in% names(start))) 
+            if (!("theta" %in% names(start)))
                 start$theta <- c(1, 1)
-            start <- list(count = start$count, zero = start$zero, 
+            start <- list(count = start$count, zero = start$zero,
                 theta = rep(start$theta, length.out = 2))
-            if (is.null(names(start$theta))) 
+            if (is.null(names(start$theta)))
                 names(start$theta) <- c("count", "zero")
-            if (dist != "negbin") 
+            if (dist != "negbin")
                 start$theta <- start$theta["zero"]
-            if (zero.dist != "negbin") 
+            if (zero.dist != "negbin")
                 start$theta <- start$theta["count"]
         }
         else {
             start <- list(count = start$count, zero = start$zero)
         }
-        if (!valid) 
+        if (!valid)
             start <- NULL
     }
     if (is.null(start)) {
-        if (control$trace) 
+        if (control$trace)
             cat("generating starting values...")
-        model_count <- glm.fit(X, Y, family = poisson(), weights = weights, 
+        model_count <- glm.fit(X, Y, family = poisson(), weights = weights,
             offset = offsetx)
-        model_zero <- switch(zero.dist, poisson = glm.fit(Z, 
-            Y, family = poisson(), weights = weights, offset = offsetz), 
-            negbin = glm.fit(Z, Y, family = poisson(), weights = weights, 
-                offset = offsetz), geometric = suppressWarnings(glm.fit(Z, 
-                factor(Y > 0), family = binomial(), weights = weights, 
-                offset = offsetz)), binomial = suppressWarnings(glm.fit(Z, 
-                factor(Y > 0), family = binomial(link = linkstr), 
+        model_zero <- switch(zero.dist, poisson = glm.fit(Z,
+            Y, family = poisson(), weights = weights, offset = offsetz),
+            negbin = glm.fit(Z, Y, family = poisson(), weights = weights,
+                offset = offsetz), geometric = suppressWarnings(glm.fit(Z,
+                factor(Y > 0), family = binomial(), weights = weights,
+                offset = offsetz)), binomial = suppressWarnings(glm.fit(Z,
+                factor(Y > 0), family = binomial(link = linkstr),
                 weights = weights, offset = offsetz)))
         start <- list(count = model_count$coefficients, zero = model_zero$coefficients)
-        start$theta <- c(count = if (dist == "negbin") 1 else NULL, 
+        start$theta <- c(count = if (dist == "negbin") 1 else NULL,
             zero = if (zero.dist == "negbin") 1 else NULL)
-        if (control$trace) 
+        if (control$trace)
             cat("done\n")
     }
     method <- control$method
@@ -7263,63 +7350,63 @@ hurdle2 = function (formula, data, subset, na.action, weights, offset,
     ocontrol <- control
     control$method <- control$hessian <- control$separate <- control$start <- NULL
     if (separate) {
-        if (control$trace) 
+        if (control$trace)
             cat("calling optim() for count component estimation:\n")
-        fit_count <- optim(fn = countDist, gr = countGrad, par = c(start$count, 
-            if (dist == "negbin") log(start$theta["count"]) else NULL), 
+        fit_count <- optim(fn = countDist, gr = countGrad, par = c(start$count,
+            if (dist == "negbin") log(start$theta["count"]) else NULL),
             method = method, hessian = hessian, control = control)
-        if (control$trace) 
+        if (control$trace)
             cat("calling optim() for zero hurdle component estimation:\n")
-        fit_zero <- optim(fn = zeroDist, gr = zeroGrad, par = c(start$zero, 
-            if (zero.dist == "negbin") log(start$theta["zero"]) else NULL), 
+        fit_zero <- optim(fn = zeroDist, gr = zeroGrad, par = c(start$zero,
+            if (zero.dist == "negbin") log(start$theta["zero"]) else NULL),
             method = method, hessian = hessian, control = control)
-        if (control$trace) 
+        if (control$trace)
             cat("done\n")
         fit <- list(count = fit_count, zero = fit_zero)
         coefc <- fit_count$par[1:kx]
         coefz <- fit_zero$par[1:kz]
-        theta <- c(count = if (dist == "negbin") as.vector(exp(fit_count$par[kx + 
-            1])) else NULL, zero = if (zero.dist == "negbin") as.vector(exp(fit_zero$par[kz + 
+        theta <- c(count = if (dist == "negbin") as.vector(exp(fit_count$par[kx +
+            1])) else NULL, zero = if (zero.dist == "negbin") as.vector(exp(fit_zero$par[kz +
             1])) else NULL)
         vc_count <- -MASS::ginv((as.matrix(fit_count$hessian)), tol = 0)
         vc_zero <- -MASS::ginv((as.matrix(fit_zero$hessian)), tol = 0)
         SE.logtheta <- list()
         if (dist == "negbin") {
-            SE.logtheta$count <- as.vector(sqrt(diag(vc_count)[kx + 
+            SE.logtheta$count <- as.vector(sqrt(diag(vc_count)[kx +
                 1]))
             vc_count <- vc_count[-(kx + 1), -(kx + 1), drop = FALSE]
         }
         if (zero.dist == "negbin") {
-            SE.logtheta$zero <- as.vector(sqrt(diag(vc_zero)[kz + 
+            SE.logtheta$zero <- as.vector(sqrt(diag(vc_zero)[kz +
                 1]))
             vc_zero <- vc_zero[-(kz + 1), -(kz + 1), drop = FALSE]
         }
-        vc <- rbind(cbind(vc_count, matrix(0, kx, kz)), cbind(matrix(0, 
+        vc <- rbind(cbind(vc_count, matrix(0, kx, kz)), cbind(matrix(0,
             kz, kx), vc_zero))
         SE.logtheta <- unlist(SE.logtheta)
     }
     else {
-        if (control$trace) 
+        if (control$trace)
             cat("calling optim() for joint count and zero hurlde estimation:\n")
-        fit <- optim(fn = loglikfun, gr = gradfun, par = c(start$count, 
-            if (dist == "negbin") log(start$theta["count"]) else NULL, 
-            start$zero, if (zero.dist == "negbin") log(start$theta["zero"]) else NULL), 
+        fit <- optim(fn = loglikfun, gr = gradfun, par = c(start$count,
+            if (dist == "negbin") log(start$theta["count"]) else NULL,
+            start$zero, if (zero.dist == "negbin") log(start$theta["zero"]) else NULL),
             method = method, hessian = hessian, control = control)
-        if (fit$convergence > 0) 
+        if (fit$convergence > 0)
             warning("optimization failed to converge")
-        if (control$trace) 
+        if (control$trace)
             cat("done\n")
         coefc <- fit$par[1:kx]
-        coefz <- fit$par[(kx + (dist == "negbin") + 1):(kx + 
+        coefz <- fit$par[(kx + (dist == "negbin") + 1):(kx +
             kz + (dist == "negbin"))]
         vc <- -MASS::ginv((as.matrix(fit$hessian)), tol = 0)
-        np <- c(if (dist == "negbin") kx + 1 else NULL, if (zero.dist == 
+        np <- c(if (dist == "negbin") kx + 1 else NULL, if (zero.dist ==
             "negbin") kx + kz + 1 + (dist == "negbin") else NULL)
         if (length(np) > 0) {
             theta <- as.vector(exp(fit$par[np]))
             SE.logtheta <- as.vector(sqrt(diag(vc)[np]))
-            names(theta) <- names(SE.logtheta) <- c(if (dist == 
-                "negbin") "count" else NULL, if (zero.dist == 
+            names(theta) <- names(SE.logtheta) <- c(if (dist ==
+                "negbin") "count" else NULL, if (zero.dist ==
                 "negbin") "zero" else NULL)
             vc <- vc[-np, -np, drop = FALSE]
         }
@@ -7330,48 +7417,48 @@ hurdle2 = function (formula, data, subset, na.action, weights, offset,
     }
     names(coefc) <- names(start$count) <- colnames(X)
     names(coefz) <- names(start$zero) <- colnames(Z)
-    colnames(vc) <- rownames(vc) <- c(paste("count", colnames(X), 
+    colnames(vc) <- rownames(vc) <- c(paste("count", colnames(X),
         sep = "_"), paste("zero", colnames(Z), sep = "_"))
-    phi <- if (zero.dist == "binomial") 
+    phi <- if (zero.dist == "binomial")
         linkinv(Z %*% coefz + offsetz)[, 1]
     else exp(Z %*% coefz + offsetz)[, 1]
-    p0_zero <- switch(zero.dist, binomial = log(phi), poisson = ppois(0, 
-        lambda = phi, lower.tail = FALSE, log.p = TRUE), negbin = pnbinom(0, 
-        size = theta["zero"], mu = phi, lower.tail = FALSE, log.p = TRUE), 
-        geometric = pnbinom(0, size = 1, mu = phi, lower.tail = FALSE, 
+    p0_zero <- switch(zero.dist, binomial = log(phi), poisson = ppois(0,
+        lambda = phi, lower.tail = FALSE, log.p = TRUE), negbin = pnbinom(0,
+        size = theta["zero"], mu = phi, lower.tail = FALSE, log.p = TRUE),
+        geometric = pnbinom(0, size = 1, mu = phi, lower.tail = FALSE,
             log.p = TRUE))
     mu <- exp(X %*% coefc + offsetx)[, 1]
-    p0_count <- switch(dist, poisson = ppois(0, lambda = mu, 
-        lower.tail = FALSE, log.p = TRUE), negbin = pnbinom(0, 
-        size = theta["count"], mu = mu, lower.tail = FALSE, log.p = TRUE), 
-        geometric = pnbinom(0, size = 1, mu = mu, lower.tail = FALSE, 
+    p0_count <- switch(dist, poisson = ppois(0, lambda = mu,
+        lower.tail = FALSE, log.p = TRUE), negbin = pnbinom(0,
+        size = theta["count"], mu = mu, lower.tail = FALSE, log.p = TRUE),
+        geometric = pnbinom(0, size = 1, mu = mu, lower.tail = FALSE,
             log.p = TRUE))
     Yhat <- exp((p0_zero - p0_count) + log(mu))
     res <- sqrt(weights) * (Y - Yhat)
     nobs <- sum(weights > 0)
-    rval <- list(coefficients = list(count = coefc, zero = coefz), 
-        residuals = res, fitted.values = Yhat, optim = fit, method = method, 
-        control = control, start = start, weights = if (identical(as.vector(weights), 
-            rep.int(1L, n))) NULL else weights, offset = list(count = if (identical(offsetx, 
-            rep.int(0, n))) NULL else offsetx, zero = if (identical(offsetz, 
-            rep.int(0, n))) NULL else offsetz), n = nobs, df.null = nobs - 
-            2, df.residual = nobs - (kx + kz + (dist == "negbin") + 
-            (zero.dist == "negbin")), terms = list(count = mtX, 
-            zero = mtZ, full = mt), theta = theta, SE.logtheta = SE.logtheta, 
-        loglik = if (separate) fit_count$value + fit_zero$value else fit$value, 
-        vcov = vc, dist = list(count = dist, zero = zero.dist), 
-        link = if (zero.dist == "binomial") linkstr else NULL, 
-        linkinv = if (zero.dist == "binomial") linkinv else NULL, 
-        separate = separate, converged = if (separate) fit_count$convergence < 
-            1 & fit_zero$convergence < 1 else fit$convergence < 
-            1, call = cl, formula = ff, levels = .getXlevels(mt, 
-            mf), contrasts = list(count = attr(X, "contrasts"), 
+    rval <- list(coefficients = list(count = coefc, zero = coefz),
+        residuals = res, fitted.values = Yhat, optim = fit, method = method,
+        control = control, start = start, weights = if (identical(as.vector(weights),
+            rep.int(1L, n))) NULL else weights, offset = list(count = if (identical(offsetx,
+            rep.int(0, n))) NULL else offsetx, zero = if (identical(offsetz,
+            rep.int(0, n))) NULL else offsetz), n = nobs, df.null = nobs -
+            2, df.residual = nobs - (kx + kz + (dist == "negbin") +
+            (zero.dist == "negbin")), terms = list(count = mtX,
+            zero = mtZ, full = mt), theta = theta, SE.logtheta = SE.logtheta,
+        loglik = if (separate) fit_count$value + fit_zero$value else fit$value,
+        vcov = vc, dist = list(count = dist, zero = zero.dist),
+        link = if (zero.dist == "binomial") linkstr else NULL,
+        linkinv = if (zero.dist == "binomial") linkinv else NULL,
+        separate = separate, converged = if (separate) fit_count$convergence <
+            1 & fit_zero$convergence < 1 else fit$convergence <
+            1, call = cl, formula = ff, levels = .getXlevels(mt,
+            mf), contrasts = list(count = attr(X, "contrasts"),
             zero = attr(Z, "contrasts")))
-    if (model) 
+    if (model)
         rval$model <- mf
-    if (y) 
+    if (y)
         rval$y <- Y
-    if (x) 
+    if (x)
         rval$x <- list(count = X, zero = Z)
     class(rval) <- "hurdle"
     return(rval)
@@ -7449,7 +7536,7 @@ df2gr = function(df,
 ##############################
 ##############################
 
-find_tn = function (dtm, model_var = "tn_mod", topics = seq(10, 40, by = 10), max_tn = NA, metrics = "Griffiths2004", 
+find_tn = function (dtm, model_var = "tn_mod", topics = seq(10, 40, by = 10), max_tn = NA, metrics = "Griffiths2004",
                     method = "Gibbs", control = list(), mc.cores = 1L, verbose = FALSE, model_type = c("LDA", "CTM")) {
     model_type = toupper(model_type)
     if (identical(model_type, "LDA")) {
@@ -7463,7 +7550,7 @@ find_tn = function (dtm, model_var = "tn_mod", topics = seq(10, 40, by = 10), ma
         topic_model_fun = topicmodels::LDA
     }
     if (length(topics[topics < 2]) != 0) {
-        if (verbose) 
+        if (verbose)
             cat("warning: topics count can't to be less than 2, incorrect values was removed.\n")
         topics <- topics[topics >= 2]
     }
@@ -7474,12 +7561,12 @@ find_tn = function (dtm, model_var = "tn_mod", topics = seq(10, 40, by = 10), ma
     }
     if ("Griffiths2004" %in% metrics) {
         if (method == "VEM") {
-            if (verbose) 
+            if (verbose)
                 cat("'Griffiths2004' is incompatible with 'VEM' method, excluded.\n")
             metrics <- setdiff(metrics, "Griffiths2004")
         }
         else {
-            if (!"keep" %in% names(control)) 
+            if (!"keep" %in% names(control))
                 control <- c(control, keep = 50)
         }
     }
@@ -7487,7 +7574,7 @@ find_tn = function (dtm, model_var = "tn_mod", topics = seq(10, 40, by = 10), ma
         cat("fit models...")
     cl <- parallel::makeCluster(mc.cores)
     parallel::setDefaultCluster(cl)
-    parallel::clusterExport(varlist = c("dtm", "method", "control"), 
+    parallel::clusterExport(varlist = c("dtm", "method", "control"),
         envir = environment())
     models <- parallel::parLapply(X = topics, fun = function(x) {
         ## topicmodels::LDA(dtm, k = x, method = method, control = control)
@@ -7498,22 +7585,22 @@ find_tn = function (dtm, model_var = "tn_mod", topics = seq(10, 40, by = 10), ma
     globasn(models, model_var)
     if (verbose)
         cat(" done.\n")
-    if (verbose) 
+    if (verbose)
         cat("calculate metrics:\n")
     result <- data.frame(topics)
     for (m in metrics) {
-        if (verbose) 
+        if (verbose)
             cat(sprintf("  %s...", m))
-        if (!m %in% c("Griffiths2004", "CaoJuan2009", "Arun2010", 
+        if (!m %in% c("Griffiths2004", "CaoJuan2009", "Arun2010",
             "Deveaud2014")) {
             cat(" unknown!\n")
         }
         else {
-            result[m] <- switch(m, Griffiths2004 = ldatuning:::Griffiths2004(models, 
-                control), CaoJuan2009 = ldatuning:::CaoJuan2009(models), 
-                Arun2010 = ldatuning:::Arun2010(models, dtm), Deveaud2014 = ldatuning:::Deveaud2014(models), 
+            result[m] <- switch(m, Griffiths2004 = ldatuning:::Griffiths2004(models,
+                control), CaoJuan2009 = ldatuning:::CaoJuan2009(models),
+                Arun2010 = ldatuning:::Arun2010(models, dtm), Deveaud2014 = ldatuning:::Deveaud2014(models),
                 NaN)
-            if (verbose) 
+            if (verbose)
                 cat(" done.\n")
         }
     }
@@ -7540,18 +7627,18 @@ tn_metrics = function(models, metrics = c("Griffiths2004", "CaoJuan2009", "Arun2
     }
     result = data.frame(topics)
     for (m in metrics) {
-        if (verbose) 
+        if (verbose)
             cat(sprintf("  %s...", m))
-        if (!m %in% c("Griffiths2004", "CaoJuan2009", "Arun2010", 
+        if (!m %in% c("Griffiths2004", "CaoJuan2009", "Arun2010",
                       "Deveaud2014")) {
             cat(" unknown!\n")
         }
         else {
-            result[m] <- switch(m, Griffiths2004 = ldatuning:::Griffiths2004(models, 
-                                                                             control), CaoJuan2009 = ldatuning:::CaoJuan2009(models), 
-                                Arun2010 = ldatuning:::Arun2010(models, dtm), Deveaud2014 = ldatuning:::Deveaud2014(models), 
+            result[m] <- switch(m, Griffiths2004 = ldatuning:::Griffiths2004(models,
+                                                                             control), CaoJuan2009 = ldatuning:::CaoJuan2009(models),
+                                Arun2010 = ldatuning:::Arun2010(models, dtm), Deveaud2014 = ldatuning:::Deveaud2014(models),
                                 NaN)
-            if (verbose) 
+            if (verbose)
                 cat(" done.\n")
         }
     }
@@ -7561,7 +7648,7 @@ tn_metrics = function(models, metrics = c("Griffiths2004", "CaoJuan2009", "Arun2
 extract_tm = function(t_model, dtm) {
     topics = dcast(as.data.table(tidy(t_model)), topic ~ term, value.var = 'beta')
     mappings = dcast(as.data.table(tidy(t_model, matrix = "gamma")), document ~ topic, value.var = 'gamma')
-    rownames(mappings) = mappings$document    
+    rownames(mappings) = mappings$document
     aug = augment(t_model, data = dtm)
     aug = as.data.table(aug)
     this_aug = aug[!is.na(.topic)][, list(direct_count = sum(count)), by = .(document, topic = paste0("topic_", as.character(.topic)))]
@@ -7646,7 +7733,7 @@ jab.results2 = function(jab.path, mc.cores = 1){
     ## if (!inherits(jab.job, "Job")){
     ##     stop("The input is not a Flow Job")
     ## }
-    ## summarize the input: segment, junction 2&3    
+    ## summarize the input: segment, junction 2&3
     ## op = outputs(jab.job)
     ostat = rbindlist(mclapply(
         jab.path,
@@ -7735,7 +7822,7 @@ jab.results = function(jab.job, mc.cores = 1){
                    i.pl = Ploidy,
                    pair)]
     istat$slack = ip[[sl.col]]
-    ## summarize the input: segment, junction 2&3    
+    ## summarize the input: segment, junction 2&3
     op = outputs(jab.job)
     ostat = rbindlist(mclapply(
         id,
@@ -7755,7 +7842,7 @@ jab.results = function(jab.job, mc.cores = 1){
                 p.seg = NULL
             }
             this.o = data.table(
-                pair = nm, 
+                pair = nm,
                 o.pu = jab$purity, o.pl = jab$ploidy,
                 i.jt1 = sum(values(all.j)$tier==1),
                 i.jt2 = sum(values(all.j)$tier==2),
@@ -7819,7 +7906,7 @@ grl2bedpe = function(grl) {
     df = mutate_at(df, vars(matches("start(1|2)")), ~(. - 1))
     df = mutate(df, name = "dummy", score = 0)
     select(df, chr1, start1, end1, chr2, start2, end2, name, score, strand1, strand2, everything())
-        
+
 
 }
 
@@ -7887,7 +7974,7 @@ bedr.findoverlaps = function(query, subject, method = "intersect", params = "-wb
     uix.id1 = "query.id"
     uix.id2 = "subject.id"
 
-    
+
 
     mcols(query)[[uix.id1]] = seq_along(query)
     mcols(subject)[[uix.id2]] = seq_along(subject)
@@ -8036,10 +8123,10 @@ rand.string <- function(n=1, length=12)
     }
 
 
-bedr2 = function (engine = "bedtools", params = NULL, input = list(), 
-    method = NULL, tmpDir = NULL, deleteTmpDir = TRUE, outputDir = NULL, 
-    outputFile = NULL, check.chr = TRUE, check.zero.based = TRUE, 
-    check.valid = TRUE, check.sort = TRUE, check.merge = TRUE, 
+bedr2 = function (engine = "bedtools", params = NULL, input = list(),
+    method = NULL, tmpDir = NULL, deleteTmpDir = TRUE, outputDir = NULL,
+    outputFile = NULL, check.chr = TRUE, check.zero.based = TRUE,
+    check.valid = TRUE, check.sort = TRUE, check.merge = TRUE,
     verbose = TRUE) {
     require(data.table)
     i.lengths = unlist(lapply(input, length))
@@ -8056,7 +8143,7 @@ bedr2 = function (engine = "bedtools", params = NULL, input = list(),
     if (any(i.lengths) == 0) {
         return(NULL)
     }
-    if (is.null(params)) 
+    if (is.null(params))
         params <- ""
     if (!check.binary(engine, verbose = FALSE)) {
         catv(paste0("ERROR: missing binary/executable ", engine))
@@ -8069,16 +8156,16 @@ bedr2 = function (engine = "bedtools", params = NULL, input = list(),
         check.sort <- FALSE
     }
     if (engine == "bedops") {
-        input.files <- process.input(input, tmpDir = tmpDir, 
-            include.names = FALSE, check.zero.based = check.zero.based, 
-            check.chr = check.chr, check.valid = check.valid, 
-            check.sort = check.sort, check.merge = check.merge, 
+        input.files <- process.input(input, tmpDir = tmpDir,
+            include.names = FALSE, check.zero.based = check.zero.based,
+            check.chr = check.chr, check.valid = check.valid,
+            check.sort = check.sort, check.merge = check.merge,
             verbose = verbose)
     }
     else {
-        input.files <- process.input(input, tmpDir = tmpDir, 
-            check.zero.based = check.zero.based, check.chr = check.chr, 
-            check.valid = check.valid, check.sort = check.sort, 
+        input.files <- process.input(input, tmpDir = tmpDir,
+            check.zero.based = check.zero.based, check.chr = check.chr,
+            check.valid = check.valid, check.sort = check.sort,
             check.merge = check.merge, verbose = verbose)
     }
     intern <- ifelse(grepl("help", params), FALSE, TRUE)
@@ -8094,35 +8181,35 @@ bedr2 = function (engine = "bedtools", params = NULL, input = list(),
             method <- paste0("--", method)
         }
     }
-    command <- paste(engine, method, attr(input.files, "commandString"), 
+    command <- paste(engine, method, attr(input.files, "commandString"),
         params, sep = " ")
     catv(paste0("   ", command, "\n"))
     if (is.null(outputFile)) {
-        output <- try(system(command, wait = TRUE, intern = intern, 
+        output <- try(system(command, wait = TRUE, intern = intern,
             ignore.stdout = FALSE, ignore.stderr = FALSE))
     }
     else {
-        if (is.null(outputDir)) 
+        if (is.null(outputDir))
             outputDir <- getwd()
-        if (grepl("/", outputFile)) 
+        if (grepl("/", outputFile))
             outputDir <- NULL
-        command <- paste(command, ">", paste(outputDir, "/", 
+        command <- paste(command, ">", paste(outputDir, "/",
             outputFile, sep = ""))
         intern <- FALSE
-        output <- try(system(command, wait = TRUE, intern = intern, 
+        output <- try(system(command, wait = TRUE, intern = intern,
             ignore.stdout = FALSE, ignore.stderr = FALSE))
-        output <- data.table::setDF(fread(paste(outputDir, "/", outputFile, 
+        output <- data.table::setDF(fread(paste(outputDir, "/", outputFile,
             sep = ""), header = FALSE))
     }
-    if ((method != "intersect" && length(output) == 0) || (!is.null(attr(output, 
-        "status")) && attr(output, "status") == 1) || (length(output) == 
+    if ((method != "intersect" && length(output) == 0) || (!is.null(attr(output,
+        "status")) && attr(output, "status") == 1) || (length(output) ==
         1 && output == 127)) {
         for (i in 1:length(input)) {
             if (attr(input.files[[i]], "is.file")) {
                 catv(paste("head of file", names(input)[i], "...\n"))
                 system(paste("head ", input.files[[i]]))
             }
-            else if (!is.null(attr(output, "status")) && attr(output, 
+            else if (!is.null(attr(output, "status")) && attr(output,
                 "status") == 139) {
                 catv("   This could be a memory problem.  \nDecrease the size of the data or get more memory!\n")
             }
@@ -8149,7 +8236,7 @@ bedr2 = function (engine = "bedtools", params = NULL, input = list(),
     else {
         ncol.output <- 0
     }
-    if (ncol.output >= 3 && method %in% c("jaccard", "reldist") && 
+    if (ncol.output >= 3 && method %in% c("jaccard", "reldist") &&
         !grepl("detail", params)) {
         colnames(output) <- output[1, ]
         output <- output[-1, ]
@@ -8163,8 +8250,8 @@ bedr2 = function (engine = "bedtools", params = NULL, input = list(),
         }
         old.scipen <- getOption("scipen")
         options(scipen = 999)
-        new.index <- paste(output[, chr.column], ":", as.integer(output[, 
-            chr.column + 1]), "-", as.integer(output[, chr.column + 
+        new.index <- paste(output[, chr.column], ":", as.integer(output[,
+            chr.column + 1]), "-", as.integer(output[, chr.column +
             2]), sep = "")
         options(scipen = old.scipen)
     }
@@ -8177,32 +8264,32 @@ bedr2 = function (engine = "bedtools", params = NULL, input = list(),
     if (ncol.output == 3 && attr(input.files[[1]], "is.index")) {
         output <- new.index
     }
-    else if (ncol.output > 3 && attr(input.files[[1]], "is.index") && 
+    else if (ncol.output > 3 && attr(input.files[[1]], "is.index") &&
         !method %in% c("jaccard", "reldist")) {
-        output <- data.frame(index = new.index, output[, -c(chr.column:(chr.column + 
+        output <- data.frame(index = new.index, output[, -c(chr.column:(chr.column +
             2)), drop = FALSE], stringsAsFactors = FALSE)
     }
     else if (ncol.output > 0) {
         if (length(new.index) == length(unique(new.index))) {
             rownames(output) <- new.index
         }
-        if (!attr(input.files[[1]], "is.file") && ncol.output == 
+        if (!attr(input.files[[1]], "is.file") && ncol.output ==
             ncol(data.frame(input[[1]]))) {
             if (engine == "bedtools" && method == "groupby") {
-                group.columns <- as.numeric(unlist(strsplit(gsub(" ", 
+                group.columns <- as.numeric(unlist(strsplit(gsub(" ",
                   "", gsub(".*-g(.*?)-.*", "\\1", params)), ",")))
-                group.colnames <- c(colnames(input[[1]])[group.columns], 
+                group.colnames <- c(colnames(input[[1]])[group.columns],
                   colnames(input[[1]])[-group.columns])
                 colnames(output) <- group.colnames
             }
-            else if (engine == "bedtools" && !any(method %in% 
+            else if (engine == "bedtools" && !any(method %in%
                 c("jaccard", "reldist"))) {
                 colnames(output) <- colnames(input[[1]])
             }
         }
-        if (engine == "bedtools" && method == "intersect" && 
+        if (engine == "bedtools" && method == "intersect" &&
             !grepl("-c", params)) {
-            if (!attr(input.files[[1]], "is.file") & !attr(input.files[[1]], 
+            if (!attr(input.files[[1]], "is.file") & !attr(input.files[[1]],
                 "is.index")) {
                 a.colnames <- c(colnames(input[[1]]))
                 colnames(output)[1:length(a.colnames)] <- a.colnames
@@ -8210,13 +8297,13 @@ bedr2 = function (engine = "bedtools", params = NULL, input = list(),
             else {
                 colnames(output)[1:3] <- c("chr", "start", "end")
             }
-            if (!attr(input.files[[2]], "is.file") & !attr(input.files[[2]], 
+            if (!attr(input.files[[2]], "is.file") & !attr(input.files[[2]],
                 "is.index")) {
                 b.colnames <- c(colnames(input[[2]]))
                 b.colnames <- gsub("chr", "chr.b", b.colnames)
                 b.colnames <- gsub("start", "start.b", b.colnames)
                 b.colnames <- gsub("end", "end.b", b.colnames)
-                colnames(output)[(length(a.colnames) + 1):(length(a.colnames) + 
+                colnames(output)[(length(a.colnames) + 1):(length(a.colnames) +
                   length(b.colnames))] <- b.colnames
             }
             else {
@@ -8228,7 +8315,7 @@ bedr2 = function (engine = "bedtools", params = NULL, input = list(),
     input.files <- Filter(function(x) {
         grepl("Rtmp", x)
     }, input.files)
-    if (length(input.files) != 0 && all(input.files != "" && 
+    if (length(input.files) != 0 && all(input.files != "" &&
         deleteTmpDir == TRUE)) {
         file.remove(unlist(input.files))
     }
@@ -8240,15 +8327,15 @@ attributes(bedr2) <- attributes(tmpfun)  # don't know if this is really needed
 assignInNamespace("bedr", bedr2, ns="bedr")
 
 
-create.tmp.bed.file2 = function (x, name = "bedr", tmpDir = NULL) 
+create.tmp.bed.file2 = function (x, name = "bedr", tmpDir = NULL)
 {
     old.scipen <- getOption("scipen")
     options(scipen = 999)
     tmpDir <- ifelse(is.null(tmpDir), tempdir(), tmpDir)
-    file.x <- tempfile(pattern = paste(name, "_", sep = ""), 
+    file.x <- tempfile(pattern = paste(name, "_", sep = ""),
         tmpdir = tmpDir, fileext = ".bed")
     colnames(x)[1] <- paste("#", colnames(x)[1], sep = "")
-    data.table::fwrite(x, file.x, quote = FALSE, row.names = FALSE, 
+    data.table::fwrite(x, file.x, quote = FALSE, row.names = FALSE,
         sep = "\t", col.names = FALSE)
     options(scipen = old.scipen)
     attr(file.x, "is.index") <- attr(x, "is.index")
@@ -8263,7 +8350,7 @@ assignInNamespace("create.tmp.bed.file", create.tmp.bed.file2, ns="bedr")
 
 
 
-naturalfactor_mod = function (x, levels, reverse = FALSE, ordered = TRUE, ...) 
+naturalfactor_mod = function (x, levels, reverse = FALSE, ordered = TRUE, ...)
 {
     text <- as.character(x)
     if (missing(levels)) {
