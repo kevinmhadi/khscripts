@@ -1294,11 +1294,22 @@ as.df = function(obj) {
 ## }
 
 setMethod("within", signature(data = "GRanges"), function(data, expr) {
+    top_prenv1 = function (x, where = parent.frame()) 
+    {
+        sym <- substitute(x, where)
+        if (!is.name(sym)) {
+            stop("'x' did not substitute to a symbol")
+        }
+        if (!is.environment(where)) {
+            stop("'where' must be an environment")
+        }
+        .Call2("top_prenv", sym, where, PACKAGE = "S4Vectors")
+    }
     e <- list2env(as.list(as(data, "DataFrame")))
     e$X = NULL
-    e$granges <- granges(data)
-    S4Vectors:::safeEval(substitute(expr, parent.frame()), e, S4Vectors:::top_prenv(expr))
-    reserved <- c("seqnames", "start", "end", "width", "strand", "granges")
+    e$data <- granges(data)
+    S4Vectors:::safeEval(substitute(expr, parent.frame()), e, top_prenv1(expr))
+    reserved <- c("seqnames", "start", "end", "width", "strand", "data")
     l <- mget(setdiff(ls(e), reserved), e)
     l <- l[!sapply(l, is.null)]
     nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
@@ -1307,8 +1318,8 @@ setMethod("within", signature(data = "GRanges"), function(data, expr) {
         for (nm in del)
             mcols(data)[[nm]] = NULL
     }
-    if (!identical(granges(data), e$granges)) {
-        granges(data) <- e$granges
+    if (!identical(granges(data), e$data)) {
+        granges(data) <- e$data
     }
     data
 })
@@ -1316,10 +1327,10 @@ setMethod("within", signature(data = "GRanges"), function(data, expr) {
 setMethod("within", signature(data = "GRangesList"), function(data, expr) {
     e <- list2env(as.list(as(data, "DataFrame")))
     e$X = NULL
-    e$grangeslist <- gr.noval(data)
+    e$data <- gr.noval(data)
     S4Vectors:::safeEval(substitute(expr, parent.frame()), e, S4Vectors:::top_prenv(expr))
     ## reserved <- c("ranges", "start", "end", "width", "space")
-    reserved <- c("seqnames", "start", "end", "width", "strand", "granges", "grangeslist")
+    reserved <- c("seqnames", "start", "end", "width", "strand", "data")
     l <- mget(setdiff(ls(e), reserved), e)
     l <- l[!sapply(l, is.null)]
     nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
@@ -1328,7 +1339,7 @@ setMethod("within", signature(data = "GRangesList"), function(data, expr) {
         for (nm in del)
             mcols(data)[[nm]] = NULL
     }
-    if (!identical(gr.noval(data), e$grangeslist)) {
+    if (!identical(gr.noval(data), e$data)) {
         stop("change in the grangeslist detected")
         ## granges(data) <- e$granges
     } ## else {
@@ -6115,17 +6126,38 @@ binom.conf = function(n, tot, alpha = 0.025) {
 }
 
 
+## getdat = function() { ## to be used within "with()" expr
+##     pf = parent.frame(3)
+##     if (identical(environmentName(pf), "R_GlobalEnv"))
+##         return(invisible(NULL))
+##     if ("data" %in% names(pf))
+##         data = get("data", pf)
+##     else
+##         data = get("envir", pf)
+##     if (is.environment(data))
+##         data = data$data
+##     data
+##     ## with(, {
+##     ##     data = get("data", parent.frame(2))
+##     ## })
+## }
 getdat = function() { ## to be used within "with()" expr
     pf = parent.frame(3)
+    if (identical(environmentName(pf), "R_GlobalEnv"))
+        return(invisible(NULL))
     if ("data" %in% names(pf))
         data = get("data", pf)
     else
         data = get("envir", pf)
+    if (is.environment(data))
+        data = get("data", data)
+        ## data = data$data
     data
     ## with(, {
     ##     data = get("data", parent.frame(2))
     ## })
 }
+gd = getdat
 
 
 withv = function(x, expr) {
@@ -6328,6 +6360,12 @@ table3 = function(...) {
 errnot = function(...) {
     return(tryCatch(..., error = function(e) NULL))
 }
+
+
+ne = function(...) {
+    return(tryCatch(..., error = function(e) NULL))
+}
+
 
 
 #' silent expression

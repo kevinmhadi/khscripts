@@ -1,0 +1,16 @@
+
+annotate.tiles.grl = function(tiles, grl, pad, nm) {
+    bind.cols = name.fc(process.grl.fish(tiles, grl, pad = 2.5e4), nm)
+    mcols(tiles) = cbind(mcols(tiles), bind.cols)
+    tiles
+}
+
+annotate.tiles.gr = function(tiles) {
+    tiles$maxwid = log(gr.eval(tiles, pge, max(width) + 1, fill = 0) + 1)
+    tiles$rept = (tiles %$% rept[, 'timing'])$timing %>% round
+    tiles$super = tiles %O% super %>% pmax(0.01) %>% pmin(0.99)
+    tiles$fragile = (tiles %^% fragile) %>% sign
+    tiles$attract = pinch.frac(tiles %O% (reduce(at.tracts + 1e2) - 1e2))
+    tiles
+}
+
