@@ -6128,7 +6128,7 @@ getdat = function() { ## to be used within "with()" expr
 }
 
 
-withv = function(data, expr) {
+withv = function(x, expr) {
     eval(substitute(expr), enclos = parent.frame())
 }
 
