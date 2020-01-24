@@ -1547,7 +1547,8 @@ gr_calc_cov = function(gr, PAD = 50, start.base = -1e6, end.base = -5e3, win = G
     grcov %&% win
 }
 
-gr_calc_cov = function(gr, PAD = 50, start.base = -1e6, end.base = -5e3, win = GRanges("Anchor", IRanges(-5e3, 5e3)), FUN = "mean") {
+gr_calc_cov = function(gr, PAD = 50, start.base = -1e6, end.base = -5e3, win = 1e4, FUN = "mean") {
+    win = GRanges("Anchor", IRanges(-abs(win), abs(win)))
     library(plyranges)
     grcov = gUtils::gr.sum(gr + PAD)
     ## grcov2 = gr.tile(grcov, 1)
@@ -6127,7 +6128,9 @@ getdat = function() { ## to be used within "with()" expr
 }
 
 
-
+withv = function(data, expr) {
+    eval(substitute(expr), enclos = parent.frame())
+}
 
 with2 = function(data, expr, ...) {
     data = data
