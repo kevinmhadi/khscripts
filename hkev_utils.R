@@ -1534,34 +1534,36 @@ parse.grl2 = function(str) {
 }
 
 
-gr_calc_cov = function(gr, PAD = 50, start.base = -1e6, end.base = -5e3, win = GRanges("Anchor", IRanges(-5e3, 5e3)), FUN = "mean") {
-    library(plyranges)
-    grcov = gUtils::gr.sum(gr + PAD)
-    ## grcov2 = gr.tile(grcov, 1)
-    grcov2 = gr.tile(GRanges("Anchor", IRanges(-1e6, 1e6)) + PAD, 1)
-    ## grcov2 = gr.tile(GRanges("Anchor", IRanges(start(head(grcov, 1)), end(tail(grcov, 1)))), 1)
-    if (!is.empty(grcov)) {
-        ## grcov2$score = gr.eval(grcov2, grcov, score, 0)
-        grcov2 = plyranges::join_overlap_inner(grcov2, grcov)
-    } else {
-        grcov2$score = 0
-    }
-    baseline = with(grcov2, {
-        ## this_subset = data.table::between(start, (abs(start.base) + PAD) * sign(start.base), ((abs(end.base) + PAD) * sign(end.base)) - 1)
-        this_subset = data.table::between(start, start.base - PAD, end.base + PAD - 1)
-        get(FUN)(score[this_subset])
-        ## sum(score[this_subset] * width[this_subset]) / sum(width[this_subset])
-    })
-    ## baseline = gr2dt(grcov2)[data.table::between(start, (abs(start.base) + PAD) * sign(start.base), ((abs(end.base) + PAD) * sign(end.base)) - 1)][, sum(score * width) / sum(width)]
-    grcov2$rel = (grcov2$score) / (baseline + 1e-12)
-    grcov = grcov2
-    grcov %&% win
-}
+## gr_calc_cov = function(gr, PAD = 50, start.base = -1e6, end.base = -5e3, win = GRanges("Anchor", IRanges(-5e3, 5e3)), FUN = "mean") {
+##     library(plyranges)
+##     grcov = gUtils::gr.sum(gr + PAD)
+##     ## grcov2 = gr.tile(grcov, 1)
+##     grcov2 = gr.tile(GRanges("Anchor", IRanges(-1e6, 1e6)) + PAD, 1)
+##     ## grcov2 = gr.tile(GRanges("Anchor", IRanges(start(head(grcov, 1)), end(tail(grcov, 1)))), 1)
+##     if (!is.empty(grcov)) {
+##         ## grcov2$score = gr.eval(grcov2, grcov, score, 0)
+##         grcov2 = plyranges::join_overlap_inner(grcov2, grcov)
+##     } else {
+##         grcov2$score = 0
+##     }
+##     baseline = with(grcov2, {
+##         ## this_subset = data.table::between(start, (abs(start.base) + PAD) * sign(start.base), ((abs(end.base) + PAD) * sign(end.base)) - 1)
+##         this_subset = data.table::between(start, start.base - PAD, end.base + PAD - 1)
+##         get(FUN)(score[this_subset])
+##         ## sum(score[this_subset] * width[this_subset]) / sum(width[this_subset])
+##     })
+##     ## baseline = gr2dt(grcov2)[data.table::between(start, (abs(start.base) + PAD) * sign(start.base), ((abs(end.base) + PAD) * sign(end.base)) - 1)][, sum(score * width) / sum(width)]
+##     grcov2$rel = (grcov2$score) / (baseline + 1e-12)
+##     grcov = grcov2
+##     grcov %&% win
+## }
 
-gr_calc_cov = function(gr, PAD = 50, start.base = -1e6, end.base = -5e3, win = 1e4, FUN = "mean") {
+gr_calc_cov = function(gr, PAD = 50, field = NULL, start.base = -1e6, end.base = -5e3, win = 1e4, FUN = "mean") {
     win = GRanges("Anchor", IRanges(-abs(win), abs(win)))
     library(plyranges)
-    grcov = gUtils::gr.sum(gr + PAD)
+    grcov = gUtils::gr.sum(gr + PAD, field = field)
+    if (!is.null(field))
+         grcov = grcov %>% select(score = !!field)
     ## grcov2 = gr.tile(grcov, 1)
     grcov2 = gr.tile(GRanges("Anchor", IRanges(-1e6, 1e6)) + PAD, 1)
     ## grcov2 = gr.tile(GRanges("Anchor", IRanges(start(head(grcov, 1)), end(tail(grcov, 1)))), 1)
