@@ -4062,14 +4062,14 @@ ggplot_mybar = function(y, col = NA, group = NA, fill_by = NA, facet1 = NULL, fa
 }
 
 
-gg.hist = function(dat.x, as.frac = FALSE, bins = 50, trans = "identity", print = TRUE, xlim = NULL, ylim = NULL, xlab = "", x_breaks = 20, y_breaks = 10) {
+gg.hist = function(dat.x, as.frac = FALSE, bins = 50, center = NULL, boundary = NULL, trans = "identity", print = TRUE, xlim = NULL, ylim = NULL, xlab = "", x_breaks = 20, y_breaks = 10, expand = waiver(), ...) {
     gg = ggplot(mapping = aes(x = dat.x))
     if (isTRUE(as.frac))
-        gg = gg + geom_histogram(aes(y = ..count.. / sum(..count..)), bins = bins)
+        gg = gg + geom_histogram(aes(y = ..count.. / sum(..count..)), bins = bins, ...)
     else
-        gg = gg + geom_histogram(bins = bins)
+        gg = gg + geom_histogram(stat = stat_bin(bins = bins), ...)
     gg = gg + scale_x_continuous(trans = trans, limits = xlim, breaks = scales::pretty_breaks(n = x_breaks)) +
-        scale_y_continuous(breaks = pretty_breaks(n = y_breaks), limits = ylim)
+        scale_y_continuous(breaks = pretty_breaks(n = y_breaks), limits = ylim, expand = expand)
     if (!is.null(xlab) && any(!is.na(xlab)) && nzchar(xlab))
         gg = gg + xlab(xlab)
     if (print)
@@ -6111,6 +6111,19 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ################################################## general R utilities
 ##################################################
 ##################################################
+
+
+
+rleid0 = function(x) {
+    lst = split(x, x)
+    iter.fun = function(x) {
+        length(x)
+    }
+    if (exists("elementNROWS"))
+        return(rep(seq_along(lst), elementNROWS(lst)))
+    else
+        return(rep(seq_along(lst), unlist(lapply(lst, length))))
+}
 
 
 make_heatmap = function(x, trans.fun) {
