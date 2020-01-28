@@ -6191,6 +6191,9 @@ getdat = function() { ## to be used within "with()" expr
         return(invisible(NULL))
     if ("data" %in% names(pf))
         data = get("data", pf)
+    else if ("envir" %in% names(parent.frame(2)) &&
+             inherits(get("envir", parent.frame(2)), "data.table")) ## recent addition
+        data = get("envir", parent.frame(2))
     else
         data = get("envir", pf)
     if (is.environment(data))
