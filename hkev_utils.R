@@ -4062,18 +4062,60 @@ ggplot_mybar = function(y, col = NA, group = NA, fill_by = NA, facet1 = NULL, fa
 }
 
 
-gbar.error = function(frac, conf.low, conf.high, group, wes = "Royal1", other.palette = NULL, print = TRUE, fill = NULL, stat = "identity", position = position_dodge(width = 0.9)) {
+gg.hist = function(dat.x, as.frac = FALSE, bins = 50, trans = "identity", print = TRUE, xlim = NULL, ylim = NULL, xlab = "", x_breaks = 20, y_breaks = 10) {
+    gg = ggplot(mapping = aes(x = dat.x))
+    if (isTRUE(as.frac))
+        gg = gg + geom_histogram(aes(y = ..count.. / sum(..count..)), bins = bins)
+    else
+        gg = gg + geom_histogram(bins = bins)
+    gg = gg + scale_x_continuous(trans = trans, limits = xlim, breaks = scales::pretty_breaks(n = x_breaks)) +
+        scale_y_continuous(breaks = pretty_breaks(n = y_breaks), limits = ylim)
+    if (!is.null(xlab) && any(!is.na(xlab)) && nzchar(xlab))
+        gg = gg + xlab(xlab)
+    if (print)
+        print(gg)
+    else
+        gg
+}
+
+
+
+gbar.error = function(frac, conf.low, conf.high, group, wes = "Royal1", other.palette = NULL, print = TRUE, fill = NULL, stat = "identity", facet1 = NULL, facet2 = NULL, position = position_dodge(width = 0.9), transpose = FALSE, facet.scales = "fixed") {
     dat = data.table(frac = frac, conf.low = conf.low, conf.high = conf.high, group = group)
+    if (is.null(facet1)) {
+        facet1 = facet2
+        facet2 = NULL
+    }
+    if (!is.null(facet1)) 
+        if (!is.factor(facet1)) 
+            facet1 = factor(facet1, unique(facet1))
+    if (!is.null(facet2)) 
+        if (!is.factor(facet2)) 
+            facet2 = factor(facet2, unique(facet2))
+    suppressWarnings(dat[, `:=`(facet1, facet1)])
+    suppressWarnings(dat[, `:=`(facet2, facet2)])
     if (is.null(fill)) fill.arg = group else fill.arg = fill
     dat[, fill.arg := fill.arg]
     gg = ggplot(dat, aes(x = group, fill = fill.arg, y = frac)) +
         geom_bar(stat = stat, position = position)
-    if (!is.na(conf.low) & !is.na(conf.high))
+    if (any(!is.na(conf.low)) & any(!is.na(conf.high)))
         gg = gg + geom_errorbar(aes(ymin = conf.low, ymax = conf.high), size = 0.1, width = 0.3, position = position_dodge(width = rel(0.9)))
     if (!is.null(wes))
         gg = gg + scale_fill_manual(values = wesanderson::wes_palette(wes))
     if (!is.null(other.palette))
         gg = gg + scale_fill_manual(values = other.palette)
+    if (!is.null(dat$facet1)) {
+        if (!is.null(dat$facet2)) {
+            if (transpose) 
+                gg = gg + facet_grid(facet2 ~ facet1, scales = facet.scales)
+            else gg = gg + facet_grid(facet1 ~ facet2, scales = facet.scales)
+        }
+        else {
+            if (transpose) 
+                gg = gg + facet_grid(. ~ facet1, scales = facet.scales)
+            else gg = gg + facet_grid(facet1 ~ ., scales = facet.scales)
+        }
+    }
     if (print) print(gg) else gg
 }
 
