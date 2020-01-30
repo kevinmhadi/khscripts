@@ -7275,6 +7275,41 @@ attributes(new.subgraph) = attributes(oldsubgraph)
 gGraph$public_methods$subgraph = new.subgraph
 
 
+
+
+newqqp = function (plotly = TRUE, columns = NULL, annotations = NULL, 
+    key = NULL, ...) 
+{
+    if (is.null(self$res)) 
+        stop("FishHook object not yet scored, so no qq_plot available")
+    res = self$all
+    columns = columns[columns %in% names(res)]
+    annotation_columns = lapply(columns, function(x) as.character(unlist(res[, 
+        x, with = FALSE])))
+    names(annotation_columns) = columns
+    if (is.null(annotations) & is.null(columns)) {
+        names = res$name
+        annotations = data.table(coord = gr.string(private$phypotheses, 
+            pretty = TRUE), gr2dt(res)[, .(fdr, count, count.pred = signif(count.pred, 
+            3), effectsize = signif(effectsize, 3), count.density = signif(count.density, 
+            3), count.pred.density = signif(count.pred.density, 
+            3))])
+        if (ncol(values(private$phypotheses)) > 0) 
+            annotations = cbind(as.data.table(values(private$phypotheses)), 
+                annotations)
+    }
+    return(qqp(res$p, annotations = c(annotations, annotation_columns), 
+        bottomrighttext = paste0("alpha =", round(self$model$theta, 
+            2)), gradient = list(Count = res$count), titleText = "", 
+        plotly = plotly, key = key, ...))
+}
+oldqqp = FishHook$public_methods$qqp
+environment(newqqp) = environment(oldqqp)
+attributes(newqqp) = attributes(oldqqp)
+FishHook$public_methods$qqp = newqqp
+
+
+
 newmafcount = function(tum.bam, norm.bam = NULL, maf, chunk.size = 100, verbose = TRUE, mc.cores = 1, ...)
 {
 

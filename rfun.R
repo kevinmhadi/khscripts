@@ -9064,3 +9064,128 @@ assignInNamespace("plot.gTrack", mod.plot.gTrack, ns="gTrack")
 plot.gTrack = mod.plot.gTrack
 
 
+
+newindel = function (df, ref.genome = DEFAULT_GENOME, get.other.indel.allele = F, 
+    verbose = F) 
+{
+    df_colnames <- c("chrom", "pos", "ref", "alt")
+    if (!(identical(colnames(df)[1:4], df_colnames))) {
+        warning("colnames(df)[1:4] != c('chrom','pos','ref','alt'). Assuming first 4 columns are these columns")
+        colnames(df)[1:4] <- df_colnames
+    }
+    if (verbose) {
+        message("Removing rows with multiple ALT sequences...")
+    }
+    df <- df[!grepl(",", df$alt), ]
+    if (verbose) {
+        message("Converting chrom name style to style in ref.genome...")
+    }
+    seqlevelsStyle(df$chrom) <- seqlevelsStyle(eval(parse(text = ref.genome)))
+    if (verbose) {
+        message("Determining indel type...")
+    }
+    df$ref_len <- nchar(df$ref)
+    df$alt_len <- nchar(df$alt)
+    df <- df[!(df$ref_len == 1 & df$alt_len == 1), ]
+    if (nrow(df) == 0) {
+        warning("No variants remained after subsetting for indels. Returning NA")
+        return(NA)
+    }
+    df$indel_type <- with(df, {
+        unlist(Map(function(ref_len, alt_len) {
+            if (ref_len >= 2 & alt_len >= 2) {
+                if (ref_len == alt_len) {
+                  "mnv_neutral"
+                }
+                else if (ref_len > alt_len) {
+                  "mnv_del"
+                }
+                else if (ref_len < alt_len) {
+                  "mnv_ins"
+                }
+            }
+            else if (ref_len > alt_len) {
+                "del"
+            }
+            else if (ref_len < alt_len) {
+                "ins"
+            }
+        }, ref_len, alt_len, USE.NAMES = F))
+    })
+    if (get.other.indel.allele == T) {
+        if (verbose) {
+            message("Retrieving other indel allele...")
+        }
+        df_split <- lapply(list(del_type = c("del", "mnv_del"), 
+            ins_type = c("ins", "mnv_ins"), mnv_neutral = "mnv_neutral"), 
+            function(i) {
+                df[df$indel_type %in% i, ]
+            })
+        if (nrow(df_split$del_type) != 0) {
+            df_split$del_type$alt <- with(df_split$del_type, 
+                {
+                  getSeq(x = eval(parse(text = ref.genome)), 
+                    names = chrom, start = pos - 1, end = pos - 
+                      1, as.character = T)
+                })
+            df_split$del_type$ref <- with(df_split$del_type, 
+                {
+                  paste0(alt, ref)
+                })
+            df_split$del_type$pos <- df_split$del_type$pos - 
+                1
+        }
+        if (nrow(df_split$ins_type) != 0) {
+            df_split$ins_type$ref <- with(df_split$ins_type, 
+                {
+                  getSeq(x = eval(parse(text = ref.genome)), 
+                    names = chrom, start = pos - 1, end = pos - 
+                      1, as.character = T)
+                })
+            df_split$ins_type$alt <- with(df_split$ins_type, 
+                {
+                  paste0(ref, alt)
+                })
+            df_split$ins_type$pos <- df_split$ins_type$pos - 
+                1
+        }
+        df <- do.call(rbind, df_split)
+        rownames(df) <- NULL
+        df$ref_len <- nchar(df$ref)
+        df$alt_len <- nchar(df$alt)
+    }
+    if (verbose) {
+        message("Determining indel length and sequence...")
+    }
+    df$indel_len <- abs(df$alt_len - df$ref_len)
+    df$indel_seq <- with(df, {
+        unlist(Map(function(ref, alt, indel_type, indel_len) {
+            indel_start_pos <- 2
+            if (indel_type %in% c("del", "mnv_del")) {
+                substring(ref, indel_start_pos, indel_start_pos + 
+                  indel_len - 1)
+            }
+            else if (indel_type %in% c("ins", "mnv_ins")) {
+                substring(alt, indel_start_pos, indel_start_pos + 
+                  indel_len - 1)
+            }
+            else {
+                NA
+            }
+        }, ref, alt, indel_type, indel_len, USE.NAMES = F))
+    })
+    if (verbose) {
+        message("Returning indel characteristics...")
+    }
+    out <- df[df$indel_type %in% c("ins", "del"), ]
+    out <- out[, c("chrom", "pos", "ref", "alt", "indel_len", 
+        "indel_type", "indel_seq")]
+    return(out)
+}
+
+
+oldindel <- get("getContextsIndel", envir = asNamespace("mutSigExtractor"))
+environment(newindel) <- environment(oldindel)
+attributes(newindel) <- attributes(oldindel)  # don't know if this is really needed
+assignInNamespace("getContextsIndel", newindel, ns="mutSigExtractor")
+getContextsIndel = newindel
