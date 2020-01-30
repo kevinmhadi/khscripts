@@ -1316,6 +1316,31 @@ as.df = function(obj) {
 ##     data
 ## })
 
+gr.within = function(data, expr)  {
+    pf = parent.frame()
+    data2 = as(data, "DataFrame")
+    data2$X = NULL
+    data2$data <- granges(data)
+    data2$start = start(data2$data)
+    data2$end = end(data2$data)
+    data2$strand = as.character(strand(data2$data))
+    data2$width = as.integer(width(data2$data))
+    e = evalq(environment(), data2, pf)
+    eval(substitute(expr, pf), e)
+    reserved <- c("seqnames", "start", "end", "width", "strand", 
+                  "data")
+    l <- mget(setdiff(ls(e), reserved), e)
+    l <- l[!sapply(l, is.null)]
+    nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
+    mcols(data) = l
+    if (nD) {
+        for (nm in del) mcols(data)[[nm]] = NULL
+    }
+    if (!identical(granges(data), e$data)) {
+        granges(data) <- e$data
+    }
+    data
+}
 
 setMethod("within", signature(data = "GRanges"), function(data, expr) {
     top_prenv1 = function (x, where = parent.frame()) 
