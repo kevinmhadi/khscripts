@@ -1660,12 +1660,13 @@ parse.grl2 = function(str) {
 ##     grcov %&% win
 ## }
 
-gr_calc_cov = function(gr, PAD = 50, field = NULL, start.base = -1e6, end.base = -5e3, win = 1e4, FUN = "mean") {
+gr_calc_cov = function(gr, PAD = 50, field = NULL, start.base = -1e6, end.base = -5e3, win = 1e4, FUN = "mean", baseline = NULL) {
     win = GRanges("Anchor", IRanges(-abs(win), abs(win)))
     library(plyranges)
     grcov = gUtils::gr.sum(gr + PAD, field = field)
     if (!is.null(field))
-         grcov = grcov %>% select(score = !!field)
+        grcov = grcov %>% select(score = !!field)
+    ## mcols(grcov)[["score"]] = pmax(0, mcols(grcov)[["score"]], 0)
     ## grcov2 = gr.tile(grcov, 1)
     grcov2 = gr.tile(GRanges("Anchor", IRanges(-1e6, 1e6)) + PAD, 1)
     ## grcov2 = gr.tile(GRanges("Anchor", IRanges(start(head(grcov, 1)), end(tail(grcov, 1)))), 1)
@@ -1677,17 +1678,20 @@ gr_calc_cov = function(gr, PAD = 50, field = NULL, start.base = -1e6, end.base =
     } else {
         grcov2$score = 0
     }
-    baseline = with(grcov2, {
-        ## this_subset = data.table::between(start, (abs(start.base) + PAD) * sign(start.base), ((abs(end.base) + PAD) * sign(end.base)) - 1)
-        this_subset = data.table::between(start, start.base - PAD, end.base + PAD - 1)
-        get(FUN)(score[this_subset])
-        ## sum(score[this_subset] * width[this_subset]) / sum(width[this_subset])
-    })
+    if (is.null(baseline)) {
+        baseline = with(grcov2, {
+            ## this_subset = data.table::between(start, (abs(start.base) + PAD) * sign(start.base), ((abs(end.base) + PAD) * sign(end.base)) - 1)
+            this_subset = data.table::between(start, start.base - PAD, end.base + PAD - 1)
+            get(FUN)(score[this_subset])
+            ## sum(score[this_subset] * width[this_subset]) / sum(width[this_subset])
+        })
+    }
     ## baseline = gr2dt(grcov2)[data.table::between(start, (abs(start.base) + PAD) * sign(start.base), ((abs(end.base) + PAD) * sign(end.base)) - 1)][, sum(score * width) / sum(width)]
     score = grcov2$score
-    rel = score / (baseline + 1e-12)
+    rel = pmax(score, 0) / (baseline + 1e-12)
     ## grcov2$rel = (grcov2$score) / (baseline + 1e-12)
     grcov2$score = rel
+    grcov2$baseline = baseline
     grcov2 %&% win
 }
 
