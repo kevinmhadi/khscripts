@@ -1379,6 +1379,42 @@ setMethod("within", signature(data = "GRanges"), function(data, expr) {
 })
 
 
+setMethod("within", signature(data = "IRanges"), function(data, expr) {
+    top_prenv1 = function (x, where = parent.frame()) 
+    {
+        sym <- substitute(x, where)
+        if (!is.name(sym)) {
+            stop("'x' did not substitute to a symbol")
+        }
+        if (!is.environment(where)) {
+            stop("'where' must be an environment")
+        }
+        .Call2("top_prenv", sym, where, PACKAGE = "S4Vectors")
+    }
+    e <- list2env(as.list(as(data, "DataFrame")))
+    e$X = NULL
+    e$data <- ranges(data)
+    e$start = start(e$data)
+    e$end = end(e$data)
+    e$width = as.integer(width(e$data))
+    S4Vectors:::safeEval(substitute(expr, parent.frame()), e, top_prenv1(expr))
+    reserved <- c("start", "end", "width", "data")
+    l <- mget(setdiff(ls(e), reserved), e)
+    l <- l[!sapply(l, is.null)]
+    nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
+    mcols(data) = l
+    if (nD) {
+        for (nm in del)
+            mcols(data)[[nm]] = NULL
+    }
+    if (!identical(ranges(data), e$data)) {
+        ranges(data) <- e$data
+    }
+    data
+})
+
+
+
 ## setMethod("within", signature(data = "GRangesList"), function(data, expr) {
 ##     pf = parent.frame()
 ##     data2 = as(data, "DataFrame")
@@ -5850,33 +5886,33 @@ parsesnpeff3 = function(vcf, id = NULL, coding_alt_only = TRUE) {
 }
 
 
-parsesnpeff4 = function(vcf, id = NULL, coding_alt_only = TRUE, geno = NULL) {
-    out.name = paste0("tmp_", rand.string(), ".vcf")
+parsesnpeff4 = function(vcf, id = NULL, coding_alt_only = TRUE, geno = NULL, gr = NULL) {
+    out.name = paste0("tmp_", rand.string(), ".vcf.gz")
     tmp.path = paste0(tempdir(), "/", out.name)
     try2({
         onepline = "/gpfs/commons/groups/imielinski_lab/git/mskilab/flows/modules/SnpEff/source/snpEff/scripts/vcfEffOnePerLine.pl"
         if (coding_alt_only) {
             filt = "java -Xmx20m -Xms20m -XX:ParallelGCThreads=1 -jar /gpfs/commons/groups/imielinski_lab/git/mskilab/flows/modules/SnpEff/source/snpEff/SnpSift.jar filter \"( ANN =~ 'missense|splice|stop_gained|frame' )\""
-            cmd = sprintf("cat %s | %s | %s > %s", vcf, onepline, filt, tmp.path)
+            cmd = sprintf("cat %s | %s | %s | bgzip -c > %s", vcf, onepline, filt, tmp.path)
         } else {
             filt = ""
-            cmd = sprintf("cat %s | %s > %s", vcf, onepline, tmp.path)
+            cmd = sprintf("cat %s | %s | bgzip -c > %s", vcf, onepline, tmp.path)
         }
         system(cmd)
-        out = grok_vcf(tmp.path, long = TRUE, geno = geno)
+        out = grok_vcf(tmp.path, long = TRUE, geno = geno, gr = gr)
     })
     unlink(tmp.path)
     this.env = environment()
     return(this.env$out)
 }
 
-grok_vcf = function(x, label = NA, keep.modifier = TRUE, long = FALSE, oneliner = FALSE, verbose = FALSE, geno = NULL, tmp.dir = tempdir())
+grok_vcf = function(x, label = NA, keep.modifier = TRUE, long = FALSE, oneliner = FALSE, verbose = FALSE, geno = NULL, tmp.dir = tempdir(), gr = NULL)
 {
   fn = c('allele', 'annotation', 'impact', 'gene', 'gene_id', 'feature_type', 'feature_id', 'transcript_type', 'rank', 'variant.c', 'variant.p', 'cdna_pos', 'cds_pos', 'protein_pos', 'distance')
 
   if (is.character(x))
     {
-        out = suppressWarnings(read_vcf(x, tmp.dir = tmp.dir, geno = geno))
+        out = suppressWarnings(read_vcf(x, tmp.dir = tmp.dir, geno = geno, gr = gr))
         if (length(out) == 0) {
             return(out)
         }
@@ -5956,8 +5992,12 @@ read_vcf = function(fn, gr = NULL, hg = 'hg19', geno = NULL, swap.header = NULL,
 
     if (!is.null(gr)){
 
+        if (!identical(file_ext(fn), "gz")) {
+            system(sprintf('bgzip -c %s > %s.gz', fn, fn))
+        }
+
         tmp.slice.fn = paste(tmp.dir, '/vcf_tmp', gsub('0\\.', '', as.character(runif(1))), '.vcf', sep = '')
-        cmd = sprintf('bcftools view %s %s > %s', fn,  paste(gr.string(gr.stripstrand(gr)), collapse = ' '), tmp.slice.fn)
+        cmd = sprintf('bcftools view %s %s > %s', bcfindex(fn),  paste(gr.string(gr.stripstrand(gr)), collapse = ' '), tmp.slice.fn)
 
         if (verbose){
             cat('Running', cmd, '\n')
@@ -6133,6 +6173,7 @@ bcfindex = function(vcf, force = TRUE) {
     if (!file.exists(paste0(vcf, ".tbi")) & !file.exists(paste0(vcf, ".csi"))) {
         system(sprintf("bcftools index --tbi %s", vcf))
     }
+    vcf
 }
 
 vcf.subset = function(vcf, gr) {
