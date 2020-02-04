@@ -6762,6 +6762,9 @@ dig_dir = function(x, pattern = NULL, full.names = TRUE, mc.cores = 1, unlist = 
     ## unlist(lst.empty2na(mclapply(dirname(x), function(y) {
     ##     dir(y, pattern = pattern, full.names = T)
     ## }, mc.cores = mc.cores)))
+    if (is.null(pattern)) {
+        pattern = list(NULL)
+    }
     if (unlist == TRUE) {
         unlist(lst.empty2na(mcMap(function(m.x, m.pattern) {
             dir(path = m.x, pattern = m.pattern, full.names = full.names)
