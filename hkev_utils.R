@@ -4074,6 +4074,51 @@ plot_tsne_grid = function(dat, dat_group, col = NA, param_grid = NULL, mc.cores 
 ##
 ##
 ##
+
+gg.sline = function(x, y, group = "x", smethod = "lm", dens_type = c("point", "hex"), facet1 = NULL, facet2 = NULL, transpose = FALSE, facet_scales = "fixed", formula = y ~ x, print = FALSE) {
+    if (is.null(facet1)) {
+        facet1 = facet2
+        facet2 = NULL
+    }
+    if (!is.null(facet1)) 
+        if (!is.factor(facet1)) 
+            facet1 = factor(facet1, unique(facet1))
+    if (!is.null(facet2)) 
+        if (!is.factor(facet2)) 
+            facet2 = factor(facet2, unique(facet2))
+    dat = data.table(x, y, group, facet1 = facet1, facet2 = facet2)
+    gg = ggplot(dat, mapping = aes(x = x, y = y, group = group))
+    if (identical(dens_type, c("point", "hex"))) {
+        message("selecting geom_point() as default")
+        dens_type = "point"
+    }
+    if (identical(dens_type, "hex"))
+        gg = gg + geom_hex()
+    else if (identical(dens_type, "point"))
+        gg = gg + geom_point(size = 0.1)
+    gg = gg + 
+        ## geom_smooth(method = lm, se = TRUE) +
+        geom_smooth(method = smethod, size = 1, formula = formula)
+    ## xlim(0, 1.5e5)
+    if (!is.null(dat$facet1)) {
+        if (!is.null(dat$facet2)) {
+            if (transpose) 
+                g = g + facet_grid(facet2 ~ facet1, scales = facet_scales)
+            else g = g + facet_grid(facet1 ~ facet2, scales = facet_scales)
+        }
+        else {
+            if (transpose) 
+                g = g + facet_grid(. ~ facet1, scales = facet_scales)
+            else g = g + facet_grid(facet1 ~ ., scales = facet_scales)
+        }
+    }
+    if (print)
+        print(gg)
+    else
+        gg
+}
+
+
 gg_mytheme = function(gg,
                       base_size = 16,
                       legend.position = "none",
@@ -6259,6 +6304,15 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
+zscore = function(x) {
+    (x - mean(x)) / sd(x)
+}
+
+normv = function(x) {
+    (x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T))
+}
+
+
 dynget = function (x, ifnotfound = stop(gettextf("%s not found", sQuote(x)), 
     domain = NA), minframe = 1L, inherits = FALSE) 
 {
@@ -6756,6 +6810,8 @@ save.r = function(file, note = NULL, verbose = FALSE, compress = FALSE, ...) {
     }
 }
 
+extract = `[`
+extract2 = `[[`
 
 
 dig_dir = function(x, pattern = NULL, full.names = TRUE, mc.cores = 1, unlist = TRUE) {
