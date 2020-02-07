@@ -893,16 +893,18 @@ gt.plot = function(gtrack, win, filename ="plot.png", title = "", h = 10, w = 10
 }
 
 
-plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "jabba_rds", cov.field.name = "cbs_cov_rds", cov.y.field = "ratio", title = "", doplot = TRUE, ...) {
-    gg = gG(jabba = pairs[[field.name]])
-    if (isTRUE(use.jab.cov))
-        cov = readRDS(inputs(readRDS(pairs[[field.name]] %>% dig_dir("Job.rds$")))$CovFile)
-    else
-        cov = readRDS(pairs[[cov.field.name]])
-    gcov = gTrack(cov, cov.y.field, circles = TRUE, lwd.border = 0.0001)
+plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "jabba_rds", cov.field.name = "cbs_cov_rds", cov.y.field = "ratio", title = "", doplot = TRUE, gt, ...) {
+    if (missing(gt)) {
+        gg = gG(jabba = pairs[[field.name]])
+        if (isTRUE(use.jab.cov))
+            cov = readRDS(inputs(readRDS(pairs[[field.name]] %>% dig_dir("Job.rds$")))$CovFile)
+        else
+            cov = readRDS(pairs[[cov.field.name]])
+        gcov = gTrack(cov, cov.y.field, circles = TRUE, lwd.border = 0.0001)
+        gt = c(gcov, gg$gtrack())
+    }
     if (missing(win))
-        win = si2gr(gg) %>% keepStandardChromosomes(pruning.mode = "coarse") %>% gr.sort
-    gt = c(gcov, gg$gtrack())
+        win = si2gr(hg_seqlengths()) %>% keepStandardChromosomes(pruning.mode = "coarse") %>% gr.sort
     if (isTRUE(doplot)) {
         if (missing(filename))
             ppng(plot(gt, win = win, ...), res = 200, title = title)
@@ -918,7 +920,7 @@ pairs.plot.jabba = function(pairs, dirpath = "~/public_html/jabba_output", jabba
     iter.fun = function(x, tbl) {
         ent = tbl[get(jabba.field) == x]
         ttl = ent[[id.field]]
-        plot.jabba(ent, use.jab.cov = TRUE, filename = paste0(dirpath, "/", ent[[id.field]], ".png"), cov.y.field = cov.y.field, y.quantile = 0.01, title = ttl)
+        plot.jabba(ent, use.jab.cov = TRUE, field.name = jabba.field, filename = paste0(dirpath, "/", ent[[id.field]], ".png"), cov.y.field = cov.y.field, y.quantile = 0.01, title = ttl)
     }
     mclapply(paths, iter.fun, tbl = pairs, mc.cores = mc.cores)
     NULL
@@ -1172,11 +1174,14 @@ sv_filter = function(sv, filt_sv, pad = 500)
 #' @return NULL Assigns the value in obj to the global environment
 globasn = function(obj, var = NULL, return_obj = TRUE, envir = .GlobalEnv, verbose = TRUE)
 {
+    var = as.list(match.call())$var
     if (is.null(var)) {
         globx = as.character(substitute(obj))
     } else {
-        if (!is.character(var)) {
-            stop("var must be specified as character")
+        if (is.name(var))
+            var = as.character(var)
+        else if (!is.character(var)) {
+            stop("var must be coercible to a character")
         }
         if (inherits(var, "character")) {
             ## if (var != as.character(substitute(var))) {
@@ -4075,7 +4080,30 @@ plot_tsne_grid = function(dat, dat_group, col = NA, param_grid = NULL, mc.cores 
 ##
 ##
 
-gg.sline = function(x, y, group = "x", smethod = "lm", dens_type = c("point", "hex"), facet1 = NULL, facet2 = NULL, transpose = FALSE, facet_scales = "fixed", formula = y ~ x, print = FALSE) {
+## for anchorlift
+gg.anc = function(dat, group = FALSE, print = TRUE, y1 = NA, lwd.border = 1, wes = TRUE, palette = "Royal1") {
+    dat = within(dat, {start = start / 1e3})
+    ngroup = length(unique(dat$group))
+    if (wes)
+        colvals = brewer.master(ngroup, palette = palette, wes = TRUE)
+    else
+        colvals = brewer.master(ngroup, palette = palette, wes = FALSE)
+    if (!is.null(dat$group) && isTRUE(group))
+        gg = ggplot(dat, aes(x = start, y = score, group = group, colour = group))
+    else
+        gg = ggplot(dat, aes(x = start, y = score, colour = "black"))
+    size = lwd.border
+    gg = gg + geom_line(size = size) +
+        ylab("Relative Enrichment") +
+        scale_x_continuous(breaks = scales::pretty_breaks(10), limits = c(min(dat$start), max(dat$start))) +
+        scale_y_continuous(limits = c(0, y1)) +
+        scale_colour_manual(values = colvals)
+        ggtitle(title)
+    if (print) print(gg) else gg
+}
+
+
+gg.sline = function(x, y, group = "x", smethod = "lm", dens_type = c("point", "hex"), facet1 = NULL, facet2 = NULL, transpose = FALSE, facet_scales = "fixed", formula = y ~ x, print = FALSE, hex_par = list(bins = 50)) {
     if (is.null(facet1)) {
         facet1 = facet2
         facet2 = NULL
@@ -4093,7 +4121,7 @@ gg.sline = function(x, y, group = "x", smethod = "lm", dens_type = c("point", "h
         dens_type = "point"
     }
     if (identical(dens_type, "hex"))
-        gg = gg + geom_hex()
+        gg = gg + geom_hex(bins = hex_par$bin)
     else if (identical(dens_type, "point"))
         gg = gg + geom_point(size = 0.1)
     gg = gg + 
@@ -5574,7 +5602,7 @@ ppdf = ppdfmod
 ##
 wwhich = function(x, return_all = TRUE) {
     vec = which(x)
-    if (assertive::is_empty(vec)) {
+    if (length(vec) > 0) {
         if (return_all == TRUE) {
             vec = seq_along(x)
         } else {
@@ -6304,6 +6332,34 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
+`%inn%` = function(x, table) {
+    vec = match(x, table, nomatch = 0L) > 0L
+    vec[is.na(x)] = NA
+    vec
+}
+
+
+dcast.count = function(tbl, lh, rh = NULL, ...) {
+    if (is.null(rh))
+        rh = "dummy"
+    dcast.wrap(within(tbl, {dummy = "count"}), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = length, fill = 0, ...)
+}
+
+
+dcast.wrap = function(x, lh, rh, dcast.fun, ...) {
+    if (missing(dcast.fun)) {
+        if (inherits(x, "data.table"))
+            dcast.fun = dcast.data.table
+        else
+            dcast.fun = dcast
+    }
+    if (!isTRUE(is.function(dcast.fun)))
+        stop("provided dcast argument is not a function")
+    dcast_form = formula(paste(paste(lh, collapse = "+"), paste(rh, collapse = "+"), sep = "~"))
+    return(dcast.fun(x, formula = dcast_form, ...))
+}
+
+
 zscore = function(x) {
     (x - mean(x)) / sd(x)
 }
@@ -6812,6 +6868,7 @@ save.r = function(file, note = NULL, verbose = FALSE, compress = FALSE, ...) {
 
 extract = `[`
 extract2 = `[[`
+dlr = `$`
 
 
 dig_dir = function(x, pattern = NULL, full.names = TRUE, mc.cores = 1, unlist = TRUE) {

@@ -1,10 +1,12 @@
 if (!exists("priv_lib")) {
     ## priv_lib = "/gpfs/commons/groups/imielinski_lab/lib/R-3.4.1_alt"
-    priv_lib = "/gpfs/commons/groups/imielinski_lab/lib/R-3.5.1_KH"
+    ## priv_lib = "/gpfs/commons/groups/imielinski_lab/lib/R-3.5.1_KH"
+    priv_lib = "/gpfs/commons/groups/imielinski_lab/lib/R-3.6.1_KH"
 }
 if (!exists("lab_lib")) {
     ## lab_lib = "/gpfs/commons/groups/imielinski_lab/lib/R-3.4.1"  
-    lab_lib = "/gpfs/commons/groups/imielinski_lab/lib/R-3.5.1"
+    ## lab_lib = "/gpfs/commons/groups/imielinski_lab/lib/R-3.5.1"
+    lab_lib = "/gpfs/commons/groups/imielinski_lab/lib/R-3.6.1"
 }
 
 Sys.setenv(DEFAULT_BSGENOME = "/gpfs/commons/groups/imielinski_lab/DB/GATK/human_g1k_v37_decoy.chrom.sizes")
@@ -48,7 +50,7 @@ suppressWarnings(expr = {
             library(skitools)
             library(skidb)
             library(rtracklayer)
-            library(gTrack)
+            ## library(gTrack)
             library(JaBbA)
             library(skidb)
             library(skitools)
