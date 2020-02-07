@@ -1306,7 +1306,7 @@ as.df = function(obj) {
 ##     data2$data <- granges(data)
 ##     e = evalq(environment(), data2, pf)
 ##     eval(substitute(expr, pf), e)
-##     reserved <- c("seqnames", "start", "end", "width", "strand", 
+##     reserved <- c("seqnames", "start", "end", "width", "strand",
 ##                   "data")
 ##     l <- mget(setdiff(ls(e), reserved), e)
 ##     l <- l[!sapply(l, is.null)]
@@ -1332,7 +1332,7 @@ gr.within = function(data, expr)  {
     data2$width = as.integer(width(data2$data))
     e = evalq(environment(), data2, pf)
     eval(substitute(expr, pf), e)
-    reserved <- c("seqnames", "start", "end", "width", "strand", 
+    reserved <- c("seqnames", "start", "end", "width", "strand",
                   "data")
     l <- mget(setdiff(ls(e), reserved), e)
     l <- l[!sapply(l, is.null)]
@@ -1348,7 +1348,7 @@ gr.within = function(data, expr)  {
 }
 
 setMethod("within", signature(data = "GRanges"), function(data, expr) {
-    top_prenv1 = function (x, where = parent.frame()) 
+    top_prenv1 = function (x, where = parent.frame())
     {
         sym <- substitute(x, where)
         if (!is.name(sym)) {
@@ -1385,7 +1385,7 @@ setMethod("within", signature(data = "GRanges"), function(data, expr) {
 
 
 setMethod("within", signature(data = "IRanges"), function(data, expr) {
-    top_prenv1 = function (x, where = parent.frame()) 
+    top_prenv1 = function (x, where = parent.frame())
     {
         sym <- substitute(x, where)
         if (!is.name(sym)) {
@@ -1438,7 +1438,7 @@ setMethod("within", signature(data = "IRanges"), function(data, expr) {
 ##     }
 ##     if (!identical(gr.noval(data), e$data)) {
 ##         stop("change in the grangeslist detected")
-##     } 
+##     }
 ##     data
 ## })
 
@@ -1461,7 +1461,7 @@ setMethod("within", signature(data = "IRanges"), function(data, expr) {
 ##     }
 ##     if (!identical(gr.noval(data), e$data)) {
 ##         stop("change in the grangeslist detected")
-##     } 
+##     }
 ##     data
 ## })
 
@@ -4108,11 +4108,11 @@ gg.sline = function(x, y, group = "x", smethod = "lm", dens_type = c("point", "h
         facet1 = facet2
         facet2 = NULL
     }
-    if (!is.null(facet1)) 
-        if (!is.factor(facet1)) 
+    if (!is.null(facet1))
+        if (!is.factor(facet1))
             facet1 = factor(facet1, unique(facet1))
-    if (!is.null(facet2)) 
-        if (!is.factor(facet2)) 
+    if (!is.null(facet2))
+        if (!is.factor(facet2))
             facet2 = factor(facet2, unique(facet2))
     dat = data.table(x, y, group, facet1 = facet1, facet2 = facet2)
     gg = ggplot(dat, mapping = aes(x = x, y = y, group = group))
@@ -4124,18 +4124,18 @@ gg.sline = function(x, y, group = "x", smethod = "lm", dens_type = c("point", "h
         gg = gg + geom_hex(bins = hex_par$bin)
     else if (identical(dens_type, "point"))
         gg = gg + geom_point(size = 0.1)
-    gg = gg + 
+    gg = gg +
         ## geom_smooth(method = lm, se = TRUE) +
         geom_smooth(method = smethod, size = 1, formula = formula)
     ## xlim(0, 1.5e5)
     if (!is.null(dat$facet1)) {
         if (!is.null(dat$facet2)) {
-            if (transpose) 
+            if (transpose)
                 g = g + facet_grid(facet2 ~ facet1, scales = facet_scales)
             else g = g + facet_grid(facet1 ~ facet2, scales = facet_scales)
         }
         else {
-            if (transpose) 
+            if (transpose)
                 g = g + facet_grid(. ~ facet1, scales = facet_scales)
             else g = g + facet_grid(facet1 ~ ., scales = facet_scales)
         }
@@ -4301,11 +4301,11 @@ gbar.error = function(frac, conf.low, conf.high, group, wes = "Royal1", other.pa
         facet1 = facet2
         facet2 = NULL
     }
-    if (!is.null(facet1)) 
-        if (!is.factor(facet1)) 
+    if (!is.null(facet1))
+        if (!is.factor(facet1))
             facet1 = factor(facet1, unique(facet1))
-    if (!is.null(facet2)) 
-        if (!is.factor(facet2)) 
+    if (!is.null(facet2))
+        if (!is.factor(facet2))
             facet2 = factor(facet2, unique(facet2))
     suppressWarnings(dat[, `:=`(facet1, facet1)])
     suppressWarnings(dat[, `:=`(facet2, facet2)])
@@ -4321,12 +4321,12 @@ gbar.error = function(frac, conf.low, conf.high, group, wes = "Royal1", other.pa
         gg = gg + scale_fill_manual(values = other.palette)
     if (!is.null(dat$facet1)) {
         if (!is.null(dat$facet2)) {
-            if (transpose) 
+            if (transpose)
                 gg = gg + facet_grid(facet2 ~ facet1, scales = facet.scales)
             else gg = gg + facet_grid(facet1 ~ facet2, scales = facet.scales)
         }
         else {
-            if (transpose) 
+            if (transpose)
                 gg = gg + facet_grid(. ~ facet1, scales = facet.scales)
             else gg = gg + facet_grid(facet1 ~ ., scales = facet.scales)
         }
@@ -6369,20 +6369,26 @@ normv = function(x) {
 }
 
 
-dynget = function (x, ifnotfound = stop(gettextf("%s not found", sQuote(x)), 
-    domain = NA), minframe = 1L, inherits = FALSE) 
+dynget = function (x, ifnotfound = stop(gettextf("%s not found", sQuote(x)),
+    domain = NA), minframe = 1L, inherits = FALSE)
 {
+    tmp_x = as.list(match.call())$x
+    if (is.name(tmp_x))
+        x = as.character(tmp_x)
+    else if (!is.character(tmp_x))
+        stop("x must be a character or a name of a variable")
     n <- sys.nframe()
     myObj <- structure(list(.b = as.raw(7)), foo = 47L)
     while (n > minframe) {
         n <- n - 1L
         env <- sys.frame(n)
         r <- get0(x, envir = env, inherits = inherits, ifnotfound = myObj)
-        if (!identical(r, myObj)) 
+        if (!identical(r, myObj))
             return(r)
     }
     ifnotfound
 }
+dg = dynget
 
 
 rleid0 = function(x) {
