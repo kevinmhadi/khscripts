@@ -6236,11 +6236,10 @@ vcf_counts = function(vcfs, mc.cores = 1, mc.preschedule = TRUE) {
     })
 }
 
-
 bcfindex = function(vcf, force = TRUE) {
     if (!force) {
-        if (!grepl(".vcf.gz$|.vcf$", vcf)) {
-            stop("check if you have a valid vcf file")
+        if (!grepl(".[bv]cf(.gz)?$", vcf)) {
+            stop("check if you have a valid bcf/vcf file")
         }
     }
     if (!file.exists(paste0(vcf, ".tbi")) & !file.exists(paste0(vcf, ".csi"))) {
@@ -8356,7 +8355,8 @@ gr2bed = function(gr) {
 grl2bedpe = function(grl) {
     df = as.data.frame(S4Vectors::zipdown(grl))
     df = select(df, -matches("(first|second)\\.width"), -one_of("names"))
-    df = rename_at(df, vars(matches("(\\.X)")), ~gsub("(\\.X)?", "", .))
+    ## df = rename_at(df, vars(matches("(\\.X)")), ~gsub("(\\.X)?", "", .))
+    colnames(df) = withv(colnames(df), gsub("(\\.X)?", "", x))
     df = df[,!duplicated(colnames(df))]
     df = df %>% rename_at(vars(matches("(first|second)\\.seqnames")), ~gsub("seqnames", "chr", .)) %>%
         rename_at(vars(matches("^first\\.(chr$|start$|end$|strand$)")), ~gsub("(first\\.)(.*)", "\\21", .)) %>%
@@ -8364,9 +8364,16 @@ grl2bedpe = function(grl) {
     df = mutate_at(df, vars(matches("start(1|2)")), ~(. - 1))
     df = mutate(df, name = "dummy", score = 0)
     select(df, chr1, start1, end1, chr2, start2, end2, name, score, strand1, strand2, everything())
-
-
 }
+
+
+bedpe2grl = function(bdpe) {
+    pivot_longer(bdpe, cols = c("chrom1", "start1", "end1", "strand1", "chrom2", "start2", "end2", "strand2"), names_to = c(".value", "id"), names_pattern = "([A-Za-z]+)([12]$)")%>%
+        dt2gr %>%
+        split(.$name) %>%
+        gr.fix(hg_seqlengths())
+}
+
 
 
 ## bedr.findoverlaps = function(gr1, gr2, method = "intersect", params = "-wb", return_0_based = FALSE) {
