@@ -4163,7 +4163,8 @@ gg_mytheme = function(gg,
                       x_angle = 90,
                       x_axis_hjust = 0.5,
                       x_axis_vjust = 0.5,
-                      y_axis_hjust = 0.5) {
+                      y_axis_hjust = 0.5,
+                      print = FALSE) {
     ## gg = gg + theme_bw(base_size = base_size) + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), plot.background = element_blank(), axis.line = element_line(colour = "black"), axis.text.x  = element_text(angle = 90, vjust = .5), legend.position = legend.position)
     gg = gg +
         theme_bw(base_size = base_size) +
@@ -4177,8 +4178,10 @@ gg_mytheme = function(gg,
               plot.title = element_text(size = rel(title_cex)),
               axis.title.x = element_text(size = rel(xlab_cex)),
               axis.title.y = element_text(size = rel(ylab_cex)))
-    return(gg)
+    if (isTRUE(print)) return(print(gg)) else return(gg)
 }
+
+pg_mytheme = function(..., print = TRUE) gg_mytheme(..., print = TRUE)
 
 
 gg_axes = function(gg, ylim = NULL, xlim = NULL) {
@@ -6373,7 +6376,7 @@ normv = function(x) {
 
 
 dynget = function (x, ifnotfound = stop(gettextf("%s not found", sQuote(x)),
-    domain = NA), minframe = 1L, inherits = FALSE)
+    domain = NA), minframe = 0L, inherits = FALSE) ## modification of base::dynGet()
 {
     tmp_x = as.list(match.call())$x
     if (is.name(tmp_x))
