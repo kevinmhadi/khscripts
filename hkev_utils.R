@@ -3538,13 +3538,17 @@ idj = function(x, these.ids) {
 }
 
 
-reset.job = function(x, ..., rootdir = x@rootdir, jb.mem = x@runinfo$mem, jb.cores = x@runinfo$cores, update_cores = 1) {
+reset.job = function(x, ..., i = NULL, rootdir = x@rootdir, jb.mem = x@runinfo$mem, jb.cores = x@runinfo$cores, update_cores = 1) {
     args = list(...)
     new.ent = copy(entities(x))
-    for (i in seq_along(args))
+    if (!is.null(i)) {
+        jb.mem = replace(x@runinfo$mem, i, jb.mem)
+        jb.cores = replace(x@runinfo$cores, i, jb.cores)
+    }
+    for (j in seq_along(args))
     {
-        if (!names(args)[i] %in% names(new.ent)) stop("adding additional column to entities... this function is just for resetting with new arguments")
-        data.table::set(new.ent, j = names(args)[i], value = args[[i]])
+        if (!names(args)[j] %in% names(new.ent)) stop("adding additional column to entities... this function is just for resetting with new arguments")
+        data.table::set(new.ent, i = i, j = names(args)[j], value = args[[j]])
     }
     Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, cores = jb.cores, update_cores = update_cores)
 }
