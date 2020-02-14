@@ -3538,7 +3538,7 @@ idj = function(x, these.ids) {
 }
 
 
-reset.job = function(x, ..., i = NULL, rootdir = x@rootdir, jb.mem = x@runinfo$mem, jb.cores = x@runinfo$cores, update_cores = 1) {
+reset.job = function(x, ..., i = NULL, rootdir = x@rootdir, jb.mem = x@runinfo$mem, jb.cores = x@runinfo$cores, jb.time, "24", update_cores = 1) {
     args = list(...)
     new.ent = copy(entities(x))
     if (!is.null(i)) {
@@ -3550,7 +3550,12 @@ reset.job = function(x, ..., i = NULL, rootdir = x@rootdir, jb.mem = x@runinfo$m
         if (!names(args)[j] %in% names(new.ent)) stop("adding additional column to entities... this function is just for resetting with new arguments")
         data.table::set(new.ent, i = i, j = names(args)[j], value = args[[j]])
     }
-    Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, cores = jb.cores, update_cores = update_cores)
+    these.forms = formals(body(findMethods("initialize")$Job@.Data)[[2]][[3]])
+    if ("time" %in% names(these.forms))
+        jb = Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, time = jb.time, cores = jb.cores, update_cores = update_cores)
+    else
+        jb = Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, cores = jb.cores, update_cores = update_cores)
+    return(jb)
 }
 
 
