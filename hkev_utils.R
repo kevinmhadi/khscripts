@@ -915,12 +915,12 @@ plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "ja
 }
 
 
-pairs.plot.jabba = function(pairs, dirpath = "~/public_html/jabba_output", jabba.field = "jabba_rds", cov.y.field = "foreground", id.field = "pair", mc.cores = 1) {
+pairs.plot.jabba = function(pairs, dirpath = "~/public_html/jabba_output", ftitle.field = "pair", jabba.field = "jabba_rds", cov.y.field = "foreground", id.field = "pair", mc.cores = 1, cov.field.name = "cbs_cov_rds", use.jab.cov = TRUE) {
     paths = subset2(pairs[[jabba.field]], file.exists(x))
     iter.fun = function(x, tbl) {
         ent = tbl[get(jabba.field) == x]
         ttl = ent[[id.field]]
-        plot.jabba(ent, use.jab.cov = TRUE, field.name = jabba.field, filename = paste0(dirpath, "/", ent[[id.field]], ".png"), cov.y.field = cov.y.field, y.quantile = 0.01, title = ttl)
+        plot.jabba(ent, use.jab.cov = use.jab.cov, field.name = jabba.field, filename = paste0(dirpath, "/", ent[[ftitle.field]], ".png"), cov.y.field = cov.y.field, cov.field.name = cov.field.name, y.quantile = 0.01, title = ttl)
     }
     mclapply(paths, iter.fun, tbl = pairs, mc.cores = mc.cores)
     NULL
@@ -3545,16 +3545,24 @@ reset.job = function(x, ..., i = NULL, rootdir = x@rootdir, jb.mem = x@runinfo$m
         jb.mem = replace(x@runinfo$mem, i, jb.mem)
         jb.cores = replace(x@runinfo$cores, i, jb.cores)
     }
+    if (!all(names(args) %in% names(new.ent)))
+        stop("adding additional column to entities... this function is just for resetting with new arguments")
     for (j in seq_along(args))
     {
-        if (!names(args)[j] %in% names(new.ent)) stop("adding additional column to entities... this function is just for resetting with new arguments")
         data.table::set(new.ent, i = i, j = names(args)[j], value = args[[j]])
     }
     these.forms = formals(body(findMethods("initialize")$Job@.Data)[[2]][[3]])
-    if ("time" %in% names(these.forms))
-        jb = Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, time = jb.time, cores = jb.cores, update_cores = update_cores)
-    else
-        jb = Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, cores = jb.cores, update_cores = update_cores)
+    if ("time" %in% names(these.forms)) {
+        if ("update_cores" %in% names(these.forms))
+            jb = Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, time = jb.time, cores = jb.cores, update_cores = update_cores)
+        else
+            jb = Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, time = jb.time, cores = jb.cores)            
+    } else {
+        if ("update_cores" %in% names(these.forms))
+            jb = Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, cores = jb.cores, update_cores = update_cores)
+        else
+            jb = Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, cores = jb.cores)
+    }
     return(jb)
 }
 
