@@ -6782,15 +6782,19 @@ realpath = function(x) {
 }
 
 lst.empty = function(x) {
-    S4Vectors::elementNROWS(x) == 0
+    lengths(x) == 0
+    ## S4Vectors::elementNROWS(x) == 0
 }
 
 lst.empty2zero = function(x) {
-    x[S4Vectors::elementNROWS(x) == 0] = 0
+    x[lengths(x) == 0] = 0
+    ## x[S4Vectors::elementNROWS(x) == 0] = 0
+    x
 }
 
 lst.empty2na = function(x) {
-    x[S4Vectors::elementNROWS(x) == 0] = NA
+    x[lengths(x) == 0] = NA
+    ## x[S4Vectors::elementNROWS(x) == 0] = NA
     ## x[x == "character(0)"] = NA
     ## x[x == "numeric(0)"] = NA
     ## x[x == "logical(0)"] = NA
@@ -6799,22 +6803,15 @@ lst.empty2na = function(x) {
 }
 
 lst.empty2null = function(x) {
-    x[S4Vectors::elementNROWS(x) == 0] = NULL
+    x[lengths(x) == 0] NULL
+    ## x[S4Vectors::elementNROWS(x) == 0] = NULL
     ## x[x == "character(0)"] = NULL
     ## x[x == "numeric(0)"] = NULL
     ## x[x == "logical(0)"] = NULL
     ## x[x == "integer(0)"] = NULL
     x
 }
-
-lst.empty2null = function(x) {
-    x[S4Vectors::elementNROWS(x) == 0] = NULL
-    ## x[x == "character(0)"] = NULL
-    ## x[x == "numeric(0)"] = NULL
-    ## x[x == "logical(0)"] = NULL
-    ## x[x == "integer(0)"] = NULL
-    x
-}
+    
 
 lst.null2na = function(x) {
     x[x == "NULL"] = NA
