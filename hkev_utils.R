@@ -6803,7 +6803,7 @@ lst.empty2na = function(x) {
 }
 
 lst.empty2null = function(x) {
-    x[lengths(x) == 0] NULL
+    x[lengths(x) == 0] = NULL
     ## x[S4Vectors::elementNROWS(x) == 0] = NULL
     ## x[x == "character(0)"] = NULL
     ## x[x == "numeric(0)"] = NULL
@@ -6839,8 +6839,21 @@ lst.zerochar2empty = function(x) {
     x[x == "character(0)"] = list("")
 }
 
-make_chunks = function(vec, max_per_chunk = 100) {
-    ind = parallel::splitIndices(length(vec), ceiling(length(vec) / max_per_chunk))
+make_chunks = function(vec, n = 100, max_per_chunk = TRUE, num_chunk = !max_per_chunk) {
+    lst.call = as.list(match.call())
+    if (!is.null(lst.call$num_chunk) && is.null(lst.call$max_per_chunk)) {
+        max_per_chunk = !eval(lst.call$num_chunk)
+    }
+    if ((isTRUE(max_per_chunk) & isTRUE(num_chunk)) ||
+        (isFALSE(max_per_chunk) & isFALSE(num_chunk)) ||
+        (!is.logical(max_per_chunk) & !is.logical(num_chunk)))
+        stop("select either max_per_chunk OR num_chunk to be TRUE")
+    if (max_per_chunk)
+        splitter = ceiling(length(vec)) / n
+    if (num_chunk)
+        splitter = n
+    ## ind = parallel::splitIndices(length(vec), ceiling(length(vec) / max_per_chunk))
+    ind = parallel::splitIndices(length(vec), splitter)
     split(vec, rep(seq_along(ind), times = base::lengths(ind)))
 }
 
