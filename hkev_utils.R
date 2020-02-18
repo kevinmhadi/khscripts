@@ -6351,6 +6351,28 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
+
+rg_sub = function(pattern, text, ...) {
+    rg = regexpr(pattern, text, ...)
+    out = substr(text, rg, rg + attributes(rg)$match.length - 1)
+    return(replace2(out, !nzchar(x), NA_character_) %>% trimws)
+}
+
+grg_sub = function(pattern, text, colsep = " ", ...) {
+    grg = gregexpr(pattern, text, ...)
+    rg = unlist(grg)
+    m.len = unlist(lapply(grg, attr, "match.length"))
+    lens = lengths(grg)
+    dt = data.table(text = rep(text, times = lens),
+                    ix = rep(seq_along(text), times = lens),
+                    iix = unlist(lapply(lens, seq_len)),
+                    dummy = "out_str")
+    dt[, out_str := substr(text, rg, rg + m.len - 1)]
+    out = dcast.wrap(dt, lh = "ix", rh = "dummy", value.var = "out_str", fun.aggregate = function(x) paste(x, collapse = colsep))[[2]]
+    return(replace2(out, !nzchar(x), NA_character_) %>% trimws)
+}
+
+
 `%inn%` = function(x, table) {
     vec = match(x, table, nomatch = 0L) > 0L
     vec[is.na(x)] = NA
@@ -6401,7 +6423,7 @@ dynget = function (x, ifnotfound = stop(gettextf("%s not found", sQuote(x)),
     while (n > minframe) {
         n <- n - 1L
         env <- sys.frame(n)
-        r <- get0(x, envir = env, inherits = inherits, ifnotfound = myObj)
+        r <- tryCatch(get0(x, envir = env, inherits = inherits, ifnotfound = myObj), error = function(e) return(myObj))
         if (!identical(r, myObj))
             return(r)
     }
@@ -6526,6 +6548,9 @@ with2 = function(data, expr, ...) {
 }
 
 file.info2 = function(fn, col = NULL, include.all = FALSE) {
+    lst.call = as.list(match.call())
+    if (is.null(eval(lst.call$col)) & grepl("/", as.character(substitute(fn))))
+        col = "path"
     if (is.null(col)) col = as.character(substitute(fn))
     fif = file.info(unique(subset2(fn, file.exists(x)))) %>% rownames_to_column(col) %>% as.data.table
     if (include.all) {
@@ -6819,7 +6844,21 @@ lst.null2na = function(x) {
 }
 
 lst.emptychar2null = function(x) {
-    x[x == ""] = list(NULL)
+    x[!nzchar(x)] = NULL
+    x
+}
+
+
+lst.emptychar2na = function(x) {
+    ## ix = which(x == "")
+    ## if (length(ix))
+    x[!nzchar(x)] = NA_character_
+    x
+}
+
+lst.zerochar2empty = function(x) {
+    x[x == "character(0)"] = list("")
+    x
 }
 
 
@@ -6835,9 +6874,6 @@ stack.dt = function(lst, ind = "ind", values = "values", ind.as.character = TRUE
     data.table::setnames(dt, c("ind", "values"), c(ind, values))
 }
 
-lst.zerochar2empty = function(x) {
-    x[x == "character(0)"] = list("")
-}
 
 make_chunks = function(vec, n = 100, max_per_chunk = TRUE, num_chunk = !max_per_chunk) {
     lst.call = as.list(match.call())

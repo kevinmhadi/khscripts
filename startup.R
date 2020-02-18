@@ -101,6 +101,7 @@ between = data.table::between
 setnames = data.table::setnames
 select = dplyr::select
 update = Flow::update
+cache = Flow::cache
 set = data.table::set
 set_names = rlang::set_names
 matches = dplyr::matches
