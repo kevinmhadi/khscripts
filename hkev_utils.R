@@ -6353,10 +6353,10 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 
 lens = function(x, use.names = TRUE) {
     dlst = lapply(x, dim)
-    out = lengths(x)
+    out = lengths(x, use.names = use.names)
     ix = which(!dlst == "NULL")
     if (length(ix))
-        out[ix] = vapply(x[ix], nrow, 1L)
+        out[ix] = vapply(x[ix], nrow, 1L, USE.NAMES=use.names)
     out
 }
 
@@ -6396,6 +6396,34 @@ dcast.count = function(tbl, lh, rh = NULL, countcol = "count", ...) {
     dcast.wrap(within(tbl, {dummy = this.env$countcol}), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = length, fill = 0, ...)
 }
 
+dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, ...) {
+    lst.call = as.list(match.call())
+    if ("wt" %in% names(lst.call))
+        if (is.character(wt) && wt %in% colnames(tbl)) {
+            expr = expression(within(tbl, {dummy = 1 * dg(wt, FALSE)}))
+        } else if (is.numeric(wt)) {
+            expr = expression(within(tbl, {wt = NULL; dummy = 1 * dg(wt)}))
+        } else {
+            stop("wt argument must be either a numeric vector, a name of a column, or a column that exists in the table")
+        }
+    else if (is.null(wt) || isFALSE(wt) || is.na(wt) || length(wt) == 0)
+        expr = expression(within(tbl, {dummy = 1}))
+    else if (!"wt" %in% names(lst.call)) {
+        if ("wt" %in% colnames(tbl)) {
+            message("column named \"wt\" found, will weight counts using values in this field")
+        }
+        expr = expression(within(tbl, {dummy = 1 * dg(wt)}))    
+    }
+    this.env = environment()
+    if (is.null(rh))
+        rh = "dummy"
+    out = dcast.wrap(eval(expr), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = sum, fill = 0, ...)
+    if ("1" %in% colnames(out))
+        setnames(out, "1", countcol)
+    return(out)
+}
+
+
 
 dcast.wrap = function(x, lh, rh, dcast.fun, ...) {
     if (missing(dcast.fun)) {
@@ -6420,13 +6448,14 @@ normv = function(x) {
 }
 
 
-dynget = function (x, ifnotfound = stop(gettextf("%s not found", sQuote(x)),
+dynget = function (x, px = TRUE, ifnotfound = stop(gettextf("%s not found", sQuote(x)),
     domain = NA), minframe = 0L, inherits = FALSE) ## modification of base::dynGet()
 {
     tmp_x = as.list(match.call())$x
-    if (is.name(tmp_x))
-        x = as.character(tmp_x)
-    else if (!is.character(tmp_x))
+    if (is.name(tmp_x)) {
+        if (isTRUE(px))
+            x = as.character(tmp_x)
+    } else if (!is.character(tmp_x))
         stop("x must be a character or a name of a variable")
     n <- sys.nframe()
     myObj <- structure(list(.b = as.raw(7)), foo = 47L)
@@ -6443,15 +6472,43 @@ dg = dynget
 
 
 rleid0 = function(x) {
-    lst = split(x, x)
-    iter.fun = function(x) {
-        length(x)
-    }
-    if (exists("elementNROWS"))
-        return(rep(seq_along(lst), elementNROWS(lst)))
-    else
-        return(rep(seq_along(lst), unlist(lapply(lst, length))))
+    browser()
+    x = setNames(paste(as.character(x)), seq_along(x))
+    lst = split(x, interaction(x))
+    ord = as.integer(names(unlist(unname(lst))))
+    return(rep(seq_along(lst), times = lengths(lst))[order(ord)])
 }
+
+
+rleseq = function(vec, clump = FALSE, recurs = FALSE) {
+    vec = setNames(paste(as.character(vec)), seq_along(vec))
+    rlev = rle(paste(as.character(vec)))
+    if (!isTRUE(clump)) {
+        if (isTRUE(recurs)) {
+            return(unlist(unname(lapply(rlev$lengths, seq_len))))
+        } else {
+            return(
+                list(
+                    idx = rep(seq_along(rlev$lengths), times = rlev$lengths),
+                    seq = unlist(unname(lapply(rlev$lengths, seq_len)))))
+        }
+    } else {
+        vec = setNames(paste(as.character(vec)), seq_along(vec))
+        lst = split(vec, factor(vec, levels = unique(vec)))
+        ord = as.integer(names(unlist(unname(lst))))
+        idx = rep(seq_along(lst), times = lengths(lst))
+        return(list(
+            idx = idx[order(ord)],
+            seq = rleseq(idx, clump = FALSE, recurs = TRUE)[order(ord)]))
+    }   
+}
+
+
+rleid2 = function(vec) {
+    ix = rle(paste(as.character(vec)))$lengths
+    rep(seq_along(ix), times = ix)
+}
+
 
 
 make_heatmap = function(x, trans.fun) {
@@ -6573,9 +6630,24 @@ file.info2 = function(fn, col = NULL, include.all = FALSE) {
 
 
 subset2 = function(x, sub.expr, ...) {
-    if (!missing(sub.expr))
+    if (!missing(sub.expr)) {
         this.sub = eval(as.list(match.call())$sub.expr)
-    else if (missing(sub.expr)) {
+        if (is.numeric(this.sub)) {
+            if (any(this.sub %% 1))
+                stop("subset must be integer")
+            if (!is.null(dim(x))) {
+                if (!all(this.sub %in% seq_len(nrow(x))))
+                    stop("subset must be indexed within rows of x")
+                else
+                    this.sub = replace(logical(nrow(x)), this.sub, TRUE)
+            } else {
+                if (!all(this.sub %in% seq_along(x)))
+                    stop("subset must be indexed within x")
+                else
+                    this.sub = replace(logical(length(x)), this.sub, TRUE)
+            }
+        }
+    } else if (missing(sub.expr)) {
         if (!is.null(dim(x)))
             ## this.sub = seq_len(nrow(x))
             this.sub = logical(nrow(x)) | TRUE
