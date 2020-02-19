@@ -6351,6 +6351,15 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
+lens = function(x, use.names = TRUE) {
+    dlst = lapply(x, dim)
+    out = lengths(x)
+    ix = which(!dlst == "NULL")
+    if (length(ix))
+        out[ix] = vapply(x[ix], nrow, 1L)
+    out
+}
+
 
 rg_sub = function(pattern, text, ...) {
     rg = regexpr(pattern, text, ...)
@@ -6380,10 +6389,11 @@ grg_sub = function(pattern, text, colsep = " ", ...) {
 }
 
 
-dcast.count = function(tbl, lh, rh = NULL, ...) {
+dcast.count = function(tbl, lh, rh = NULL, countcol = "count", ...) {
+    this.env = environment()
     if (is.null(rh))
         rh = "dummy"
-    dcast.wrap(within(tbl, {dummy = "count"}), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = length, fill = 0, ...)
+    dcast.wrap(within(tbl, {dummy = this.env$countcol}), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = length, fill = 0, ...)
 }
 
 
