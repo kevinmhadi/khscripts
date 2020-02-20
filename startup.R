@@ -9,6 +9,17 @@ forceload = function() {
     }
 }
 
+relib = function(lib = 'Flow', force = TRUE, unload = TRUE)
+{    
+    if (sprintf("package:%s", lib) %in% search())
+    {
+        expr = sprintf("detach(package:%s, force = force, unload = unload)", lib)
+        eval(parse(text = expr))
+    }
+    txt = sprintf("library(%s)", lib)
+    eval(parse(text = txt))
+}
+
 
 if (!exists("priv_lib")) {
     ## priv_lib = "/gpfs/commons/groups/imielinski_lab/lib/R-3.4.1_alt"
@@ -120,4 +131,4 @@ matches = dplyr::matches
 n = dplyr::n
 
 
-forceload()
+## forceload()
