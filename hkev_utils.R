@@ -6397,8 +6397,14 @@ dcast.count = function(tbl, lh, rh = NULL, countcol = "count", ...) {
     dcast.wrap(within(tbl, {dummy = this.env$countcol}), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = length, fill = 0, ...)
 }
 
-dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, ...) {
+dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggregate = "sum", ...) {
     lst.call = as.list(match.call())
+    if (is.name(lst.call$fun.aggregate))
+        fun.aggregate = get(as.character(lst.call$fun.aggregate))
+    else if (is.character(lst.call$fun.aggregate))
+        fun.aggregate = get(lst.call$fun.aggregate)
+    else if (is.call(lst.call$fun.aggregate))
+        fun.aggregate
     if ("wt" %in% names(lst.call))
         if (is.character(wt) && wt %in% colnames(tbl)) {
             expr = expression(within(tbl, {dummy = 1 * dg(wt, FALSE)}))
@@ -6418,7 +6424,7 @@ dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, ...) {
     this.env = environment()
     if (is.null(rh))
         rh = "dummy"
-    out = dcast.wrap(eval(expr), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = sum, fill = 0, ...)
+    out = dcast.wrap(eval(expr), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = fun.aggregate, fill = 0, ...)
     if ("1" %in% colnames(out))
         setnames(out, "1", countcol)
     return(out)
@@ -6481,8 +6487,8 @@ rleid0 = function(x) {
 }
 
 
-rleseq = function(vec, clump = FALSE, recurs = FALSE) {
-    vec = setNames(paste(as.character(vec)), seq_along(vec))
+rleseq = function(..., clump = FALSE, recurs = FALSE) {
+    vec = setNames(paste(as.character(...)), seq_along(vec))
     rlev = rle(paste(as.character(vec)))
     if (!isTRUE(clump)) {
         if (isTRUE(recurs)) {
