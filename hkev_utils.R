@@ -6401,10 +6401,10 @@ dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggr
     lst.call = as.list(match.call())
     if (is.name(lst.call$fun.aggregate))
         fun.aggregate = get(as.character(lst.call$fun.aggregate))
-    else if (is.character(lst.call$fun.aggregate))
-        fun.aggregate = get(lst.call$fun.aggregate)
     else if (is.call(lst.call$fun.aggregate))
         fun.aggregate
+    else if (is.character(fun.aggregate))
+        fun.aggregate = get(fun.aggregate)
     if ("wt" %in% names(lst.call))
         if (is.character(wt) && wt %in% colnames(tbl)) {
             expr = expression(within(tbl, {dummy = 1 * dg(wt, FALSE)}))
