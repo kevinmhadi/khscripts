@@ -1,3 +1,15 @@
+forceload = function() {
+    pkgs = gsub("package:", "", grep('package:', search(), value = TRUE))
+    for (pkg in pkgs) {
+        tryCatch( {
+            message("force loading ", pkg)
+            invisible(eval(as.list((asNamespace(pkg)))))
+            invisible(eval(eapply(asNamespace(pkg), base::force, all.names = TRUE)))
+        }, error = function(e) message("could not force load ", pkg))
+    }
+}
+
+
 if (!exists("priv_lib")) {
     ## priv_lib = "/gpfs/commons/groups/imielinski_lab/lib/R-3.4.1_alt"
     ## priv_lib = "/gpfs/commons/groups/imielinski_lab/lib/R-3.5.1_KH"
@@ -106,3 +118,6 @@ set = data.table::set
 set_names = rlang::set_names
 matches = dplyr::matches
 n = dplyr::n
+
+
+forceload()
