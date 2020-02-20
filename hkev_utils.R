@@ -6398,6 +6398,7 @@ dcast.count = function(tbl, lh, rh = NULL, countcol = "count", ...) {
 }
 
 dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggregate = "sum", ...) {
+    tbl$dummy = NULL
     lst.call = as.list(match.call())
     if (is.name(lst.call$fun.aggregate))
         fun.aggregate = get(as.character(lst.call$fun.aggregate))
@@ -6407,19 +6408,19 @@ dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggr
         fun.aggregate = get(fun.aggregate)
     if ("wt" %in% names(lst.call))
         if (is.character(wt) && wt %in% colnames(tbl)) {
-            expr = expression(within(tbl, {dummy = 1 * dg(wt, FALSE)}))
+            expr = expression(within(tbl, {dummy = NULL; dummy = 1 * dg(wt, FALSE)}))
         } else if (is.numeric(wt)) {
-            expr = expression(within(tbl, {wt = NULL; dummy = 1 * dg(wt)}))
+            expr = expression(within(tbl, {dummy = NULL; wt = NULL; dummy = 1 * dg(wt)}))
         } else {
             stop("wt argument must be either a numeric vector, a name of a column, or a column that exists in the table")
         }
     else if (is.null(wt) || isFALSE(wt) || is.na(wt) || length(wt) == 0)
-        expr = expression(within(tbl, {dummy = 1}))
+        expr = expression(within(tbl, {dummy = NULL; dummy = 1}))
     else if (!"wt" %in% names(lst.call)) {
         if ("wt" %in% colnames(tbl)) {
             message("column named \"wt\" found, will weight counts using values in this field")
         }
-        expr = expression(within(tbl, {dummy = 1 * dg(wt)}))    
+        expr = expression(within(tbl, {dummy = NULL; dummy = 1 * dg(wt)}))    
     }
     this.env = environment()
     if (is.null(rh))
