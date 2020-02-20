@@ -6660,8 +6660,38 @@ subset2 = function(x, sub.expr, ...) {
 }
 
 replace2 = function(x, repl.expr, values) {
-    this.repl = eval(as.list(match.call())$repl.expr)
-    replace(x, this.repl, values = values)
+    lst.call = as.list(match.call())
+    if ("list"  == as.character(lst.call$repl.expr)[1]) {
+        exprs = as.list(lst.call$repl.expr)[-1]
+        length(values)
+        if (!length(exprs) == length(values) && !length(values) == 1)
+            stop("list of expressions must be the same length as values")
+        for (i in seq_along(exprs)) {
+            if (length(values) > 1)
+                x[eval(exprs[[i]])] = values[[i]]
+            else
+                x[eval(exprs[[i]])] = values
+        }
+        return(x)
+    } else {
+        this.repl = eval(lst.call$repl.expr)
+        if (inherits(this.repl, "list")) {
+            if (!length(this.repl) == length(values) && !length(values) == 1)
+                stop("list provided must be the same length as values")
+            else {
+                for (i in seq_along(this.repl)) {
+                    if (length(values) > 1)
+                        x[eval(this.repl[[i]])] = values[[i]]
+                    else
+                        x[eval(this.repl[[i]])] = values
+                }
+                return(x)
+            }
+        } else {
+            this.repl = eval(lst.call$repl.expr)
+            return(replace(x, this.repl, values = values))
+        }
+    }
 }
 
 rematch = function (vmatch_out)  {
