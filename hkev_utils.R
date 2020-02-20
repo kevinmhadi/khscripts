@@ -6351,17 +6351,6 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
-relib = function(lib = 'Flow', force = TRUE, unload = TRUE)
-{    
-    if (sprintf("package:%s", lib) %in% search())
-    {
-        expr = sprintf("detach(package:%s, force = force, unload = unload)", lib)
-        eval(parse(text = expr))
-    }
-    txt = sprintf("library(%s)", lib)
-    eval(parse(text = txt))
-}
-
 
 lens = function(x, use.names = TRUE) {
     dlst = lapply(x, dim)
