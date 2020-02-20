@@ -6623,7 +6623,7 @@ with2 = function(data, expr, ...) {
 
 file.info2 = function(fn, col = NULL, include.all = FALSE) {
     lst.call = as.list(match.call())
-    if (is.null(eval(lst.call$col)) & grepl("/", as.character(substitute(fn))))
+    if (!"col" %in% names(lst.call) & grepl("/", base::toString(substitute(fn))))
         col = "path"
     if (is.null(col)) col = as.character(substitute(fn))
     fif = file.info(unique(subset2(fn, file.exists(x)))) %>% rownames_to_column(col) %>% as.data.table
