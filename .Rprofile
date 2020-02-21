@@ -1,5 +1,6 @@
 forceload = function(envir = globalenv()) {
     pkgs = gsub("package:", "", grep('package:', search(), value = TRUE))
+    pkgs = c(pkgs, names(sessionInfo()$loadedOnly))
     for (pkg in pkgs) {
         tryCatch( {
             message("force loading ", pkg)
