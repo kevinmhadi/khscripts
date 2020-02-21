@@ -32,3 +32,7 @@ relib2 = function(lib = 'Flow', force = TRUE, unload = TRUE)
     txt = sprintf("library(%s)", lib)
     eval(parse(text = txt))
 }
+
+
+force2 = function(x)
+    tryCatch(x, error = function(e) NULL)
