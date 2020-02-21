@@ -6457,13 +6457,16 @@ normv = function(x) {
 
 
 dynget = function (x, px = TRUE, ifnotfound = stop(gettextf("%s not found", sQuote(x)),
-    domain = NA), minframe = 0L, inherits = FALSE) ## modification of base::dynGet()
+                                                   domain = NA), minframe = 0L, inherits = FALSE) ## modification of base::dynGet()
 {
     tmp_x = as.list(match.call())$x
     if (is.name(tmp_x)) {
         if (isTRUE(px))
             x = as.character(tmp_x)
-    } else if (!is.character(tmp_x))
+        else
+            x = eval(tmp_x, parent.frame())
+    }
+    if (!is.character(x))
         stop("x must be a character or a name of a variable")
     n <- sys.nframe()
     myObj <- structure(list(.b = as.raw(7)), foo = 47L)
@@ -6591,8 +6594,8 @@ binom.conf = function(n, tot, alpha = 0.025) {
 ##     ##     data = get("data", parent.frame(2))
 ##     ## })
 ## }
-getdat = function() { ## to be used within "with()" expr
-    pf = parent.frame(3)
+getdat = function(n = 0L) { ## to be used within "with()" expr
+    pf = parent.frame(3 + n)
     if (identical(environmentName(pf), "R_GlobalEnv"))
         return(invisible(NULL))
     if ("data" %in% names(pf))
@@ -6611,6 +6614,11 @@ getdat = function() { ## to be used within "with()" expr
     ## })
 }
 gd = getdat
+
+getdat2 = function(nm = "data") { ## to be used within "with()" expr
+    this.environment = environment()
+    return(dg(nm, F))
+}
 
 
 withv = function(x, expr) {
@@ -6738,7 +6746,7 @@ ave2 = function(x, ..., FUN = mean) {
         x[] <- FUN(x)
     else {
         g <- interaction(...)
-        x = lapply(split(x, g), FUN)
+        x = unlist(lapply(split(x, g), FUN))
     }
     x
 }
