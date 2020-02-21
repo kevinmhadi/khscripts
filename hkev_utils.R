@@ -6619,6 +6619,7 @@ getdat2 = function(nm = "data") { ## to be used within "with()" expr
     this.environment = environment()
     return(dg(nm, F))
 }
+g2 = getdat2
 
 
 withv = function(x, expr) {
