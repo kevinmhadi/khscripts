@@ -21,7 +21,7 @@ forcefun = function(envir = globalenv()) {
 
 
 
-.relib = function(lib = 'Flow', force = TRUE, unload = TRUE)
+relib2 = function(lib = 'Flow', force = TRUE, unload = TRUE)
 {    
     if (sprintf("package:%s", lib) %in% search())
     {
