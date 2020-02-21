@@ -36,3 +36,19 @@ relib2 = function(lib = 'Flow', force = TRUE, unload = TRUE)
 
 force2 = function(x)
     tryCatch(x, error = function(e) NULL)
+
+
+forceall = function(invisible = TRUE, nframe) {
+    if (missing(nframe)) {
+        nframe = 1L
+        envir = parent.frame(nframe)
+    }
+    if (invisible)  {
+    invisible(eval(as.list(envir), envir = envir))
+    invisible(eval(eapply(envir, force, all.names = TRUE), envir = envir))
+    } else {
+        eval(as.list(envir), envir = envir)
+        eval(eapply(envir, force, all.names = TRUE), envir = envir)
+    }
+}
+    
