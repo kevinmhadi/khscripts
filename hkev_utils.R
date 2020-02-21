@@ -6352,10 +6352,11 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 
 process_tbl = function(tbl, field = "jabba_rds", id.field = "pair", read.fun, remove_ext = c(".gz", ".zip"), mc.cores = 1) {
-    invisible(eapply(environment(), force, all.names = TRUE))
+    forceall()
+    ## invisible(eapply(environment(), force, all.names = TRUE))
     tbl = tbl[file.exists(get(field))]
     lst = with(tbl, {
-        mclapply(mc.cores = mc.cores, subset2(tbl[[field]], file.exists(x)), function(x, field = field, id.field = id.field, read.fun = read.fun, ...) {
+        mclapply(mc.cores = mc.cores, subset2(dg(field,F), file.exists(x)), function(x, field = field, id.field = id.field, read.fun = read.fun, ...) {
             id.field = dg(id.field)
             field = dg(field)
             remove_ext = dg(remove_ext)
