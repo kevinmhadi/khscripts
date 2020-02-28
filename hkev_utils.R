@@ -6619,20 +6619,33 @@ binom.conf = function(n, tot, alpha = 0.025) {
 ##     ##     data = get("data", parent.frame(2))
 ##     ## })
 ## }
+
+
+
 getdat = function(n = 0L) { ## to be used within "with()" expr
+    tmpfun = function() {
+        current.n = sys.nframe()
+        myObj <- structure(list(.b = as.raw(7)), foo = 47L)
+        while (current.n >= 0) {
+            out = tryCatch(mget("envir", sys.frame(current.n), mode = "list", ifnotfound = myObj), error = function(e) myObj)
+            if (inherits(out[[1]], "data.table"))
+                return(out[[1]])
+            current.n = current.n - 1
+        }
+    }
     pf = parent.frame(3 + n)
     if (identical(environmentName(pf), "R_GlobalEnv"))
         return(invisible(NULL))
     if ("data" %in% names(pf))
         data = get("data", pf)
     else if ("envir" %in% names(parent.frame(2)) &&
-             inherits(get("envir", parent.frame(2)), "data.table")) ## recent addition
-        data = get("envir", parent.frame(2))
+             inherits(tmpfun(), "data.table")) ## recent addition
+        data = tmpfun()
     else
         data = get("envir", pf)
     if (is.environment(data))
         data = get("data", data)
-        ## data = data$data
+    ## data = data$data
     data
     ## with(, {
     ##     data = get("data", parent.frame(2))

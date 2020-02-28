@@ -10,12 +10,12 @@ forceload = function(envir = globalenv()) {
     }
 }
 
-forcefun = function(envir = globalenv()) {
+forcefun = function(envir = globalenv(), evalenvir = globalenv()) {
     funnames = as.character(lsf.str(envir = envir))
     for (fun in funnames) {
         tryCatch( {
             message("force loading ", fun)
-            eval(force(get(fun, envir = envir)), envir = envir)
+            eval(force(get(fun, envir = envir)), envir = evalenvir)
         }, error = function(e) message("could not force load ", fun))
     }
 }
@@ -38,17 +38,12 @@ force2 = function(x)
     tryCatch(x, error = function(e) NULL)
 
 
-forceall = function(invisible = TRUE, nframe) {
-    if (missing(nframe)) {
-        nframe = 1L
-        envir = parent.frame(nframe)
-    }
+forceall = function(invisible = TRUE, envir = parent.frame(), evalenvir = parent.frame()) {
     if (invisible)  {
-    invisible(eval(as.list(envir), envir = envir))
-    invisible(eval(eapply(envir, force, all.names = TRUE), envir = envir))
+        invisible(eval(as.list(envir), envir = evalenvir))
+        invisible(eval(eapply(envir, force, all.names = TRUE), envir = evalenvir))
     } else {
-        eval(as.list(envir), envir = envir)
-        eval(eapply(envir, force, all.names = TRUE), envir = envir)
+        print(eval(as.list(envir), envir = evalenvir))
+        print(eval(eapply(envir, force, all.names = TRUE), envir = evalenvir))
     }
-}
-    
+}    

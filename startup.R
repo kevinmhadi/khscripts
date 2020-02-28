@@ -75,6 +75,7 @@ suppressWarnings(expr = {
             library(ggpubr)
             library(plyranges)
             library(mltools)
+            library(tidyselect)
 #############################
             ## library(stringi)
             ## source('/gpfs/commons/home/khadi/DThelp.R')
