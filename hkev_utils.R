@@ -6517,25 +6517,31 @@ rleid0 = function(x) {
 
 
 rleseq = function(..., clump = FALSE, recurs = FALSE) {
-    vec = setNames(paste(as.character(...)), seq_along(vec))
+    lns = lengths(as.list(...))
+    if (!all(lns == lns[1]))
+        warning("not all vectors provided have same length")
+    vec = setNames(paste(as.character(...)), seq_along(max(lns, na.rm = T)))
     rlev = rle(paste(as.character(vec)))
     if (!isTRUE(clump)) {
         if (isTRUE(recurs)) {
             return(unlist(unname(lapply(rlev$lengths, seq_len))))
         } else {
-            return(
-                list(
+            out = list(
                     idx = rep(seq_along(rlev$lengths), times = rlev$lengths),
-                    seq = unlist(unname(lapply(rlev$lengths, seq_len)))))
+                seq = unlist(unname(lapply(rlev$lengths, seq_len))))
+            out$lns = ave(out[[1]], out[[1]], FUN = length)
+            return(out)                
         }
     } else {
         vec = setNames(paste(as.character(vec)), seq_along(vec))
         lst = split(vec, factor(vec, levels = unique(vec)))
         ord = as.integer(names(unlist(unname(lst))))
         idx = rep(seq_along(lst), times = lengths(lst))
-        return(list(
+        out = list(
             idx = idx[order(ord)],
-            seq = rleseq(idx, clump = FALSE, recurs = TRUE)[order(ord)]))
+            seq = rleseq(idx, clump = FALSE, recurs = TRUE)[order(ord)])
+        out$lns = ave(out[[1]], out[[1]], FUN = length)
+        return(out)
     }   
 }
 
@@ -6561,7 +6567,7 @@ make_heatmap = function(x, trans.fun) {
     trans.fun(x) %>% {ppng(heatmap.2(., dendrogram = "none", colsep = 1:ncol(.), rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), na.color = alpha('grey', 0.8), Rowv = FALSE, Colv = FALSE, scale = "none", trace = "none",
                     ## breaks = tmp_lst$breaks,
                     ## col = tmp_lst$col
-                         ), oma.scale = 2, oma.val = c(2,0,0,4), height = 6, width = 6)}
+                         ), oma.scale = 2, oma.val = c(2,0,0,4), height = 8, width = 8)}
 }
 
 
