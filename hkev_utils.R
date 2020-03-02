@@ -6423,7 +6423,7 @@ dcast.count = function(tbl, lh, rh = NULL, countcol = "count", ...) {
 }
 
 dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggregate = "sum", ...) {
-    tbl$dummy = NULL
+    suppressWarnings({tbl$dummy = NULL})
     lst.call = as.list(match.call())
     if (is.name(lst.call$fun.aggregate))
         fun.aggregate = get(as.character(lst.call$fun.aggregate))
@@ -6479,6 +6479,16 @@ zscore = function(x) {
 normv = function(x) {
     (x - min(x, na.rm = T)) / (max(x, na.rm = T) - min(x, na.rm = T))
 }
+
+
+normv_sep = function(x) {
+    if (any(x < 0, na.rm = T))
+        x[which(x < 0)] = -normv(-(x[which(x < 0)])) - 0.05
+    if (any(x >= 0, na.rm = T))
+        x[which(x >= 0)] = normv((x[which(x >= 0)])) + 0.05
+    return(normv(x))
+}
+
 
 
 dynget = function (x, px = TRUE, ifnotfound = stop(gettextf("%s not found", sQuote(x)),
@@ -6553,7 +6563,16 @@ rleid2 = function(vec) {
 
 
 
-make_heatmap = function(x, trans.fun) {
+
+wespanel = function(n) {
+    gplots::colorpanel(n, wes_palettes$Zissou1[1], wes_palettes$Zissou[3], wes_palettes$Zissou[5])
+}
+
+make_heatmap = function(x, trans.fun, breaks = 1e3, ...) {
+    h = 8; w = 8
+    lst = list(...)
+    for (i in seq_along(lst))
+        assign(names(lst[i]), lst[[i]])
     if (inherits(x, "data.frame"))
         x = matrify(x)
     if (!inherits(x, "matrix"))
@@ -6564,10 +6583,10 @@ make_heatmap = function(x, trans.fun) {
         trans.fun = get(trans.fun)
     else if (!is.function(trans.fun))
         stop("trans.fun must be a function or the name of a function, if provided")
-    trans.fun(x) %>% {ppng(heatmap.2(., dendrogram = "none", colsep = 1:ncol(.), rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), na.color = alpha('grey', 0.8), Rowv = FALSE, Colv = FALSE, scale = "none", trace = "none",
+    trans.fun(x) %>% {ppng(heatmap.2(., dendrogram = "none", colsep = 1:ncol(.), breaks = breaks + 1, col = alpha(bluered(breaks), 0.8), rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), na.color = alpha('grey', 0.8), Rowv = FALSE, Colv = FALSE, scale = "none", trace = "none",
                     ## breaks = tmp_lst$breaks,
                     ## col = tmp_lst$col
-                         ), oma.scale = 2, oma.val = c(2,0,0,4), height = 8, width = 8)}
+                         ), height = h, width = h)}
 }
 
 
