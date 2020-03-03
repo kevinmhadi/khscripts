@@ -6351,6 +6351,8 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
+allpunct = "[]/*&^%$#@?=-{}<>;:\\|+~`()]"
+
 process_tbl = function(tbl, field = "jabba_rds", id.field = "pair", read.fun, remove_ext = c(".gz", ".zip"), mc.cores = 1) {
     forceall()
     ## invisible(eapply(environment(), force, all.names = TRUE))
@@ -6568,9 +6570,9 @@ wespanel = function(n) {
     gplots::colorpanel(n, wes_palettes$Zissou1[1], wes_palettes$Zissou[3], wes_palettes$Zissou[5])
 }
 
-make_heatmap = function(x, trans.fun, breaks = 1e3, ...) {
+make_heatmap = function(x, trans.fun, breaks = 1e3, pfun = "ppng", ...) {
     h = 8; w = 8
-    lst = list(...)
+    lst = list(...)    
     for (i in seq_along(lst))
         assign(names(lst[i]), lst[[i]])
     if (inherits(x, "data.frame"))
@@ -6583,7 +6585,7 @@ make_heatmap = function(x, trans.fun, breaks = 1e3, ...) {
         trans.fun = get(trans.fun)
     else if (!is.function(trans.fun))
         stop("trans.fun must be a function or the name of a function, if provided")
-    trans.fun(x) %>% {ppng(heatmap.2(., dendrogram = "none", colsep = 1:ncol(.), breaks = breaks + 1, col = alpha(bluered(breaks), 0.8), rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), na.color = alpha('grey', 0.8), Rowv = FALSE, Colv = FALSE, scale = "none", trace = "none",
+    trans.fun(x) %>% {dg(pfun,F)(heatmap.2(., dendrogram = "none", colsep = 1:ncol(.), breaks = breaks + 1, col = alpha(bluered(breaks), 0.8), rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), na.color = alpha('grey', 0.8), Rowv = FALSE, Colv = FALSE, scale = "none", trace = "none",
                     ## breaks = tmp_lst$breaks,
                     ## col = tmp_lst$col
                          ), height = h, width = h)}
