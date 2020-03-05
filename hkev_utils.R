@@ -1238,6 +1238,29 @@ as.df = function(obj) {
 ######################
 
 
+
+gr.spreduce = function(gr,  ..., pad = 0, sep = " ") {
+  lst = as.list(match.call())[-1]
+  ix = which(names(lst) != "gr")
+  tmpix = with(gr, do.call(paste, c(lst[ix], list(sep = sep))))
+  tmpix = factor(tmpix, levels = unique(tmpix))
+  grl = gr %>% split(tmpix)
+  dt = as.data.table(reduce(grl + pad))
+  nmix = which(unlist(lapply(lst[ix], function(x) is.name(x) & !is.call(x))))
+  nm = lapply(lst[ix], toString)
+  rmix = which(unlist(nm) %in% colnames(dt))
+  nm[rmix] = list(character(0))
+  if (length(rmix))
+    nmix = nmix[-rmix]
+  ## nm[lengths(nm) == 0] = list(character(0))
+  ## nm[-nmix] = character(0)
+  nm[-nmix] = list(character(0))
+  ## nmix = which(!nm == "NULL")
+  dt = dt[, cbind(.SD, setnames(as.data.table(tstrsplit(group_name, split = sep)), nmix, unlist(nm)))][, group_name := NULL]
+  return(dt2gr(dt))
+}
+
+
 ## s4_gr_within = function(data, expr) {
 ##     e <- list2env(as.list(as(data, "DataFrame")))
 ##     e$X = NULL
@@ -1372,7 +1395,7 @@ setMethod("within", signature(data = "GRanges"), function(data, expr) {
     l <- mget(setdiff(ls(e), reserved), e)
     l <- l[!sapply(l, is.null)]
     nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
-    mcols(data) = l
+    mcols(data) = as(l, "DataFrame")
     if (nD) {
         for (nm in del)
             mcols(data)[[nm]] = NULL
@@ -1407,7 +1430,7 @@ setMethod("within", signature(data = "IRanges"), function(data, expr) {
     l <- mget(setdiff(ls(e), reserved), e)
     l <- l[!sapply(l, is.null)]
     nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
-    mcols(data) = l
+    mcols(data) = as(l, "DataFrame")
     if (nD) {
         for (nm in del)
             mcols(data)[[nm]] = NULL
@@ -4331,8 +4354,8 @@ gbar.error = function(frac, conf.low, conf.high, group, wes = "Royal1", other.pa
     suppressWarnings(dat[, `:=`(facet2, facet2)])
     if (is.null(fill)) fill.arg = group else fill.arg = fill
     dat[, fill.arg := fill.arg]
-    gg = ggplot(dat, aes(x = group, fill = fill.arg, y = frac)) +
-        geom_bar(stat = stat, position = position)
+    gg = ggplot(dat, aes(x = group, fill = fill.arg, y = frac))
+    gg = gg + geom_bar(stat = stat, position = position)
     if (any(!is.na(conf.low)) & any(!is.na(conf.high)))
         gg = gg + geom_errorbar(aes(ymin = conf.low, ymax = conf.high), size = 0.1, width = 0.3, position = position_dodge(width = rel(0.9)))
     if (!is.null(wes))
@@ -6351,7 +6374,8 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
-allpunct = "[]/*&^%$#@?=-{}<>;:\\|+~`()]"
+## allpunct = "[]/*&^%$#@?=-{}<>;:\\|+~`()]"
+allpunct = '[]/*&^%$#@?=-{}<>;:\\|+~`()\"\']'
 
 process_tbl = function(tbl, field = "jabba_rds", id.field = "pair", read.fun, remove_ext = c(".gz", ".zip"), mc.cores = 1) {
     forceall()
@@ -6567,11 +6591,18 @@ rleid2 = function(vec) {
 
 
 wespanel = function(n) {
-    gplots::colorpanel(n, wes_palettes$Zissou1[1], wes_palettes$Zissou[3], wes_palettes$Zissou[5])
+ gplots::colorpanel(n, wes_palettes$Zissou1[1], "white", wes_palettes$Zissou[5])
 }
 
-make_heatmap = function(x, trans.fun, breaks = 1e3, pfun = "ppng", ...) {
-    h = 8; w = 8
+make_heatmap = function(x, trans.fun, breaks = 1e3, grid = TRUE, pfun = "ppng", ...) {
+    h = 8; w = 8; col = alpha(bluered(breaks), 0.8)
+    Colv = FALSE; Rowv = FALSE; dendrogram = "none"; distfun = dist
+    hclustfun = hclust
+    ## rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), colsep = 1:ncol(.),
+    if (grid)
+        gridlst = alist(rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), colsep = 1:ncol(.))
+    else
+        gridlst = NULL
     lst = list(...)    
     for (i in seq_along(lst))
         assign(names(lst[i]), lst[[i]])
@@ -6585,10 +6616,11 @@ make_heatmap = function(x, trans.fun, breaks = 1e3, pfun = "ppng", ...) {
         trans.fun = get(trans.fun)
     else if (!is.function(trans.fun))
         stop("trans.fun must be a function or the name of a function, if provided")
-    trans.fun(x) %>% {dg(pfun,F)(heatmap.2(., dendrogram = "none", colsep = 1:ncol(.), breaks = breaks + 1, col = alpha(bluered(breaks), 0.8), rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), na.color = alpha('grey', 0.8), Rowv = FALSE, Colv = FALSE, scale = "none", trace = "none",
-                    ## breaks = tmp_lst$breaks,
-                    ## col = tmp_lst$col
-                         ), height = h, width = h)}
+    trans.fun(x) %>% {dg(pfun, F)(do.call(heatmap.2, c(alist(., dendrogram = dendrogram,
+                            breaks = breaks + 1, col = col,
+                            na.color = alpha('grey', 1),
+                            Rowv = Rowv, Colv = Colv, scale = "none",
+                            trace = "none", distfun = distfun, hclustfun = hclustfun), gridlst)), height = h, width = h)}
 }
 
 

@@ -915,12 +915,12 @@ plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "ja
 }
 
 
-pairs.plot.jabba = function(pairs, dirpath = "~/public_html/jabba_output", jabba.field = "jabba_rds", cov.y.field = "foreground", id.field = "pair", mc.cores = 1) {
+pairs.plot.jabba = function(pairs, dirpath = "~/public_html/jabba_output", ftitle.field = "pair", jabba.field = "jabba_rds", cov.y.field = "foreground", id.field = "pair", mc.cores = 1, cov.field.name = "cbs_cov_rds", use.jab.cov = TRUE) {
     paths = subset2(pairs[[jabba.field]], file.exists(x))
     iter.fun = function(x, tbl) {
         ent = tbl[get(jabba.field) == x]
         ttl = ent[[id.field]]
-        plot.jabba(ent, use.jab.cov = TRUE, field.name = jabba.field, filename = paste0(dirpath, "/", ent[[id.field]], ".png"), cov.y.field = cov.y.field, y.quantile = 0.01, title = ttl)
+        plot.jabba(ent, use.jab.cov = use.jab.cov, field.name = jabba.field, filename = paste0(dirpath, "/", ent[[ftitle.field]], ".png"), cov.y.field = cov.y.field, cov.field.name = cov.field.name, y.quantile = 0.01, title = ttl)
     }
     mclapply(paths, iter.fun, tbl = pairs, mc.cores = mc.cores)
     NULL
@@ -3538,19 +3538,32 @@ idj = function(x, these.ids) {
 }
 
 
-reset.job = function(x, ..., i = NULL, rootdir = x@rootdir, jb.mem = x@runinfo$mem, jb.cores = x@runinfo$cores, update_cores = 1) {
+reset.job = function(x, ..., i = NULL, rootdir = x@rootdir, jb.mem = x@runinfo$mem, jb.cores = x@runinfo$cores, jb.time =  "24", update_cores = 1) {
     args = list(...)
     new.ent = copy(entities(x))
     if (!is.null(i)) {
         jb.mem = replace(x@runinfo$mem, i, jb.mem)
         jb.cores = replace(x@runinfo$cores, i, jb.cores)
     }
+    if (!all(names(args) %in% names(new.ent)))
+        stop("adding additional column to entities... this function is just for resetting with new arguments")
     for (j in seq_along(args))
     {
-        if (!names(args)[j] %in% names(new.ent)) stop("adding additional column to entities... this function is just for resetting with new arguments")
         data.table::set(new.ent, i = i, j = names(args)[j], value = args[[j]])
     }
-    Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, cores = jb.cores, update_cores = update_cores)
+    these.forms = formals(body(findMethods("initialize")$Job@.Data)[[2]][[3]])
+    if ("time" %in% names(these.forms)) {
+        if ("update_cores" %in% names(these.forms))
+            jb = Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, time = jb.time, cores = jb.cores, update_cores = update_cores)
+        else
+            jb = Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, time = jb.time, cores = jb.cores)            
+    } else {
+        if ("update_cores" %in% names(these.forms))
+            jb = Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, cores = jb.cores, update_cores = update_cores)
+        else
+            jb = Job(x@task, new.ent, rootdir = rootdir, mem = jb.mem, cores = jb.cores)
+    }
+    return(jb)
 }
 
 
@@ -6338,6 +6351,66 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
+## allpunct = "[]/*&^%$#@?=-{}<>;:\\|+~`()]"
+allpunct = '[]/*&^%$#@?=-{}<>;:\\|+~`()\"\']'
+
+process_tbl = function(tbl, field = "jabba_rds", id.field = "pair", read.fun, remove_ext = c(".gz", ".zip"), mc.cores = 1) {
+    forceall()
+    ## invisible(eapply(environment(), force, all.names = TRUE))
+    tbl = tbl[file.exists(get(field))]
+    lst = with(tbl, {
+        mclapply(mc.cores = mc.cores, subset2(dg(field,F), file.exists(x)), function(x, field = field, id.field = id.field, read.fun = read.fun, ...) {
+            id.field = dg(id.field)
+            field = dg(field)
+            remove_ext = dg(remove_ext)
+            if (missing(read.fun)) {
+                remove_expr = paste(paste0(remove_ext, "$"), collapse = "|")
+                fext = file_ext(gsub(remove_expr, "", x))
+                read.fun = switch(fext, "vcf" = read_vcf, "rds" = readRDS, "txt" = fread,
+                                  "csv" = fread, "tab" = fread)
+                ##if expression isn't missing, eval expression
+            }
+            out = read.fun(x, ...)
+            if (inherits(out, c("data.frame", "GRanges", "list")))
+                out$pair = g2()[get(field) == x]$pair
+            return(out)
+        })})
+    names(lst) = tbl[[id.field]]
+    return(lst)
+}
+
+
+lens = function(x, use.names = TRUE) {
+    dlst = lapply(x, dim)
+    out = lengths(x, use.names = use.names)
+    ix = which(!dlst == "NULL")
+    if (length(ix))
+        out[ix] = vapply(x[ix], nrow, 1L, USE.NAMES=use.names)
+    out
+}
+
+
+rg_sub = function(pattern, text, ...) {
+    rg = regexpr(pattern, text, ...)
+    out = substr(text, rg, rg + attributes(rg)$match.length - 1)
+    return(replace2(out, !nzchar(x), NA_character_) %>% trimws)
+}
+
+grg_sub = function(pattern, text, colsep = " ", ...) {
+    grg = gregexpr(pattern, text, ...)
+    rg = unlist(grg)
+    m.len = unlist(lapply(grg, attr, "match.length"))
+    lens = lengths(grg)
+    dt = data.table(text = rep(text, times = lens),
+                    ix = rep(seq_along(text), times = lens),
+                    iix = unlist(lapply(lens, seq_len)),
+                    dummy = "out_str")
+    dt[, out_str := substr(text, rg, rg + m.len - 1)]
+    out = dcast.wrap(dt, lh = "ix", rh = "dummy", value.var = "out_str", fun.aggregate = function(x) paste(x, collapse = colsep))[[2]]
+    return(replace2(out, !nzchar(x), NA_character_) %>% trimws)
+}
+
+
 `%inn%` = function(x, table) {
     vec = match(x, table, nomatch = 0L) > 0L
     vec[is.na(x)] = NA
@@ -6345,11 +6418,47 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 }
 
 
-dcast.count = function(tbl, lh, rh = NULL, ...) {
+dcast.count = function(tbl, lh, rh = NULL, countcol = "count", ...) {
+    this.env = environment()
     if (is.null(rh))
         rh = "dummy"
-    dcast.wrap(within(tbl, {dummy = "count"}), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = length, fill = 0, ...)
+    dcast.wrap(within(tbl, {dummy = this.env$countcol}), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = length, fill = 0, ...)
 }
+
+dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggregate = "sum", ...) {
+    suppressWarnings({tbl$dummy = NULL})
+    lst.call = as.list(match.call())
+    if (is.name(lst.call$fun.aggregate))
+        fun.aggregate = get(as.character(lst.call$fun.aggregate))
+    else if (is.call(lst.call$fun.aggregate))
+        fun.aggregate
+    else if (is.character(fun.aggregate))
+        fun.aggregate = get(fun.aggregate)
+    if ("wt" %in% names(lst.call))
+        if (is.character(wt) && wt %in% colnames(tbl)) {
+            expr = expression(within(tbl, {dummy = NULL; dummy = 1 * dg(wt, FALSE)}))
+        } else if (is.numeric(wt)) {
+            expr = expression(within(tbl, {dummy = NULL; wt = NULL; dummy = 1 * dg(wt)}))
+        } else {
+            stop("wt argument must be either a numeric vector, a name of a column, or a column that exists in the table")
+        }
+    else if (is.null(wt) || isFALSE(wt) || is.na(wt) || length(wt) == 0)
+        expr = expression(within(tbl, {dummy = NULL; dummy = 1}))
+    else if (!"wt" %in% names(lst.call)) {
+        if ("wt" %in% colnames(tbl)) {
+            message("column named \"wt\" found, will weight counts using values in this field")
+        }
+        expr = expression(within(tbl, {dummy = NULL; dummy = 1 * dg(wt)}))    
+    }
+    this.env = environment()
+    if (is.null(rh))
+        rh = "dummy"
+    out = dcast.wrap(eval(expr), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = fun.aggregate, fill = 0, ...)
+    if ("1" %in% colnames(out))
+        setnames(out, "1", countcol)
+    return(out)
+}
+
 
 
 dcast.wrap = function(x, lh, rh, dcast.fun, ...) {
@@ -6375,20 +6484,34 @@ normv = function(x) {
 }
 
 
-dynget = function (x, ifnotfound = stop(gettextf("%s not found", sQuote(x)),
-    domain = NA), minframe = 0L, inherits = FALSE) ## modification of base::dynGet()
+normv_sep = function(x) {
+    if (any(x < 0, na.rm = T))
+        x[which(x < 0)] = -normv(-(x[which(x < 0)])) - 0.05
+    if (any(x >= 0, na.rm = T))
+        x[which(x >= 0)] = normv((x[which(x >= 0)])) + 0.05
+    return(normv(x))
+}
+
+
+
+dynget = function (x, px = TRUE, ifnotfound = stop(gettextf("%s not found", sQuote(x)),
+                                                   domain = NA), minframe = 0L, inherits = FALSE) ## modification of base::dynGet()
 {
     tmp_x = as.list(match.call())$x
-    if (is.name(tmp_x))
-        x = as.character(tmp_x)
-    else if (!is.character(tmp_x))
+    if (is.name(tmp_x)) {
+        if (isTRUE(px))
+            x = as.character(tmp_x)
+        else
+            x = eval(tmp_x, parent.frame())
+    }
+    if (!is.character(x))
         stop("x must be a character or a name of a variable")
     n <- sys.nframe()
     myObj <- structure(list(.b = as.raw(7)), foo = 47L)
     while (n > minframe) {
         n <- n - 1L
         env <- sys.frame(n)
-        r <- get0(x, envir = env, inherits = inherits, ifnotfound = myObj)
+        r <- tryCatch(get0(x, envir = env, inherits = inherits, ifnotfound = myObj), error = function(e) return(myObj))
         if (!identical(r, myObj))
             return(r)
     }
@@ -6398,18 +6521,68 @@ dg = dynget
 
 
 rleid0 = function(x) {
-    lst = split(x, x)
-    iter.fun = function(x) {
-        length(x)
-    }
-    if (exists("elementNROWS"))
-        return(rep(seq_along(lst), elementNROWS(lst)))
-    else
-        return(rep(seq_along(lst), unlist(lapply(lst, length))))
+    browser()
+    x = setNames(paste(as.character(x)), seq_along(x))
+    lst = split(x, interaction(x))
+    ord = as.integer(names(unlist(unname(lst))))
+    return(rep(seq_along(lst), times = lengths(lst))[order(ord)])
 }
 
 
-make_heatmap = function(x, trans.fun) {
+rleseq = function(..., clump = FALSE, recurs = FALSE) {
+    lns = lengths(as.list(...))
+    if (!all(lns == lns[1]))
+        warning("not all vectors provided have same length")
+    vec = setNames(paste(as.character(...)), seq_along(max(lns, na.rm = T)))
+    rlev = rle(paste(as.character(vec)))
+    if (!isTRUE(clump)) {
+        if (isTRUE(recurs)) {
+            return(unlist(unname(lapply(rlev$lengths, seq_len))))
+        } else {
+            out = list(
+                    idx = rep(seq_along(rlev$lengths), times = rlev$lengths),
+                seq = unlist(unname(lapply(rlev$lengths, seq_len))))
+            out$lns = ave(out[[1]], out[[1]], FUN = length)
+            return(out)                
+        }
+    } else {
+        vec = setNames(paste(as.character(vec)), seq_along(vec))
+        lst = split(vec, factor(vec, levels = unique(vec)))
+        ord = as.integer(names(unlist(unname(lst))))
+        idx = rep(seq_along(lst), times = lengths(lst))
+        out = list(
+            idx = idx[order(ord)],
+            seq = rleseq(idx, clump = FALSE, recurs = TRUE)[order(ord)])
+        out$lns = ave(out[[1]], out[[1]], FUN = length)
+        return(out)
+    }   
+}
+
+
+rleid2 = function(vec) {
+    ix = rle(paste(as.character(vec)))$lengths
+    rep(seq_along(ix), times = ix)
+}
+
+
+
+
+wespanel = function(n) {
+ gplots::colorpanel(n, wes_palettes$Zissou1[1], "white", wes_palettes$Zissou[5])
+}
+
+make_heatmap = function(x, trans.fun, breaks = 1e3, grid = TRUE, pfun = "ppng", ...) {
+    h = 8; w = 8; col = alpha(bluered(breaks), 0.8)
+    Colv = FALSE; Rowv = FALSE; dendrogram = "none"; distfun = dist
+    hclustfun = hclust
+    ## rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), colsep = 1:ncol(.),
+    if (grid)
+        gridlst = alist(rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), colsep = 1:ncol(.))
+    else
+        gridlst = NULL
+    lst = list(...)    
+    for (i in seq_along(lst))
+        assign(names(lst[i]), lst[[i]])
     if (inherits(x, "data.frame"))
         x = matrify(x)
     if (!inherits(x, "matrix"))
@@ -6420,10 +6593,11 @@ make_heatmap = function(x, trans.fun) {
         trans.fun = get(trans.fun)
     else if (!is.function(trans.fun))
         stop("trans.fun must be a function or the name of a function, if provided")
-    trans.fun(x) %>% {ppng(heatmap.2(., dendrogram = "none", colsep = 1:ncol(.), rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), na.color = alpha('grey', 0.8), Rowv = FALSE, Colv = FALSE, scale = "none", trace = "none",
-                    ## breaks = tmp_lst$breaks,
-                    ## col = tmp_lst$col
-                         ), oma.scale = 2, oma.val = c(2,0,0,4), height = 6, width = 6)}
+    trans.fun(x) %>% {dg(pfun, F)(do.call(heatmap.2, c(alist(., dendrogram = dendrogram,
+                            breaks = breaks + 1, col = col,
+                            na.color = alpha('grey', 1),
+                            Rowv = Rowv, Colv = Colv, scale = "none",
+                            trace = "none", distfun = distfun, hclustfun = hclustfun), gridlst)), height = h, width = h)}
 }
 
 
@@ -6481,26 +6655,45 @@ binom.conf = function(n, tot, alpha = 0.025) {
 ##     ##     data = get("data", parent.frame(2))
 ##     ## })
 ## }
-getdat = function() { ## to be used within "with()" expr
-    pf = parent.frame(3)
+
+
+
+getdat = function(n = 0L) { ## to be used within "with()" expr
+    tmpfun = function() {
+        current.n = sys.nframe()
+        myObj <- structure(list(.b = as.raw(7)), foo = 47L)
+        while (current.n >= 0) {
+            out = tryCatch(mget("envir", sys.frame(current.n), mode = "list", ifnotfound = myObj), error = function(e) myObj)
+            if (inherits(out[[1]], "data.table"))
+                return(out[[1]])
+            current.n = current.n - 1
+        }
+    }
+    pf = parent.frame(3 + n)
     if (identical(environmentName(pf), "R_GlobalEnv"))
         return(invisible(NULL))
     if ("data" %in% names(pf))
         data = get("data", pf)
     else if ("envir" %in% names(parent.frame(2)) &&
-             inherits(get("envir", parent.frame(2)), "data.table")) ## recent addition
-        data = get("envir", parent.frame(2))
+             inherits(tmpfun(), "data.table")) ## recent addition
+        data = tmpfun()
     else
         data = get("envir", pf)
     if (is.environment(data))
         data = get("data", data)
-        ## data = data$data
+    ## data = data$data
     data
     ## with(, {
     ##     data = get("data", parent.frame(2))
     ## })
 }
 gd = getdat
+
+getdat2 = function(nm = "data") { ## to be used within "with()" expr
+    this.environment = environment()
+    return(dg(nm, F))
+}
+g2 = getdat2
 
 
 withv = function(x, expr) {
@@ -6513,6 +6706,9 @@ with2 = function(data, expr, ...) {
 }
 
 file.info2 = function(fn, col = NULL, include.all = FALSE) {
+    lst.call = as.list(match.call())
+    if (!"col" %in% names(lst.call) & grepl("[/$]", base::toString(substitute(fn))))
+        col = "path"
     if (is.null(col)) col = as.character(substitute(fn))
     fif = file.info(unique(subset2(fn, file.exists(x)))) %>% rownames_to_column(col) %>% as.data.table
     if (include.all) {
@@ -6525,9 +6721,24 @@ file.info2 = function(fn, col = NULL, include.all = FALSE) {
 
 
 subset2 = function(x, sub.expr, ...) {
-    if (!missing(sub.expr))
+    if (!missing(sub.expr)) {
         this.sub = eval(as.list(match.call())$sub.expr)
-    else if (missing(sub.expr)) {
+        if (is.numeric(this.sub)) {
+            if (any(this.sub %% 1))
+                stop("subset must be integer")
+            if (!is.null(dim(x))) {
+                if (!all(this.sub %in% seq_len(nrow(x))))
+                    stop("subset must be indexed within rows of x")
+                else
+                    this.sub = replace(logical(nrow(x)), this.sub, TRUE)
+            } else {
+                if (!all(this.sub %in% seq_along(x)))
+                    stop("subset must be indexed within x")
+                else
+                    this.sub = replace(logical(length(x)), this.sub, TRUE)
+            }
+        }
+    } else if (missing(sub.expr)) {
         if (!is.null(dim(x)))
             ## this.sub = seq_len(nrow(x))
             this.sub = logical(nrow(x)) | TRUE
@@ -6539,8 +6750,38 @@ subset2 = function(x, sub.expr, ...) {
 }
 
 replace2 = function(x, repl.expr, values) {
-    this.repl = eval(as.list(match.call())$repl.expr)
-    replace(x, this.repl, values = values)
+    lst.call = as.list(match.call())
+    if ("list"  == as.character(lst.call$repl.expr)[1]) {
+        exprs = as.list(lst.call$repl.expr)[-1]
+        length(values)
+        if (!length(exprs) == length(values) && !length(values) == 1)
+            stop("list of expressions must be the same length as values")
+        for (i in seq_along(exprs)) {
+            if (length(values) > 1)
+                x[eval(exprs[[i]])] = values[[i]]
+            else
+                x[eval(exprs[[i]])] = values
+        }
+        return(x)
+    } else {
+        this.repl = eval(lst.call$repl.expr)
+        if (inherits(this.repl, "list")) {
+            if (!length(this.repl) == length(values) && !length(values) == 1)
+                stop("list provided must be the same length as values")
+            else {
+                for (i in seq_along(this.repl)) {
+                    if (length(values) > 1)
+                        x[eval(this.repl[[i]])] = values[[i]]
+                    else
+                        x[eval(this.repl[[i]])] = values
+                }
+                return(x)
+            }
+        } else {
+            this.repl = eval(lst.call$repl.expr)
+            return(replace(x, this.repl, values = values))
+        }
+    }
 }
 
 rematch = function (vmatch_out)  {
@@ -6580,7 +6821,7 @@ ave2 = function(x, ..., FUN = mean) {
         x[] <- FUN(x)
     else {
         g <- interaction(...)
-        x = lapply(split(x, g), FUN)
+        x = unlist(lapply(split(x, g), FUN))
     }
     x
 }
@@ -6769,15 +7010,19 @@ realpath = function(x) {
 }
 
 lst.empty = function(x) {
-    S4Vectors::elementNROWS(x) == 0
+    lengths(x) == 0
+    ## S4Vectors::elementNROWS(x) == 0
 }
 
 lst.empty2zero = function(x) {
-    x[S4Vectors::elementNROWS(x) == 0] = 0
+    x[lengths(x) == 0] = 0
+    ## x[S4Vectors::elementNROWS(x) == 0] = 0
+    x
 }
 
 lst.empty2na = function(x) {
-    x[S4Vectors::elementNROWS(x) == 0] = NA
+    x[lengths(x) == 0] = NA
+    ## x[S4Vectors::elementNROWS(x) == 0] = NA
     ## x[x == "character(0)"] = NA
     ## x[x == "numeric(0)"] = NA
     ## x[x == "logical(0)"] = NA
@@ -6786,22 +7031,15 @@ lst.empty2na = function(x) {
 }
 
 lst.empty2null = function(x) {
-    x[S4Vectors::elementNROWS(x) == 0] = NULL
+    x[lengths(x) == 0] = NULL
+    ## x[S4Vectors::elementNROWS(x) == 0] = NULL
     ## x[x == "character(0)"] = NULL
     ## x[x == "numeric(0)"] = NULL
     ## x[x == "logical(0)"] = NULL
     ## x[x == "integer(0)"] = NULL
     x
 }
-
-lst.empty2null = function(x) {
-    x[S4Vectors::elementNROWS(x) == 0] = NULL
-    ## x[x == "character(0)"] = NULL
-    ## x[x == "numeric(0)"] = NULL
-    ## x[x == "logical(0)"] = NULL
-    ## x[x == "integer(0)"] = NULL
-    x
-}
+    
 
 lst.null2na = function(x) {
     x[x == "NULL"] = NA
@@ -6809,7 +7047,21 @@ lst.null2na = function(x) {
 }
 
 lst.emptychar2null = function(x) {
-    x[x == ""] = list(NULL)
+    x[!nzchar(x)] = NULL
+    x
+}
+
+
+lst.emptychar2na = function(x) {
+    ## ix = which(x == "")
+    ## if (length(ix))
+    x[!nzchar(x)] = NA_character_
+    x
+}
+
+lst.zerochar2empty = function(x) {
+    x[x == "character(0)"] = list("")
+    x
 }
 
 
@@ -6825,15 +7077,23 @@ stack.dt = function(lst, ind = "ind", values = "values", ind.as.character = TRUE
     data.table::setnames(dt, c("ind", "values"), c(ind, values))
 }
 
-lst.zerochar2empty = function(x) {
-    x[x == "character(0)"] = list("")
-}
 
-make_chunks = function(vec, num_per_chunk = 100) {
-    require(S4Vectors)
-    require(parallel)
-    ind = parallel::splitIndices(length(case_id), max(length(case_id) / max_per_chunk))
-    split(case_id, rep(seq_along(ind), times = elementNROWS(ind)))
+make_chunks = function(vec, n = 100, max_per_chunk = TRUE, num_chunk = !max_per_chunk) {
+    lst.call = as.list(match.call())
+    if (!is.null(lst.call$num_chunk) && is.null(lst.call$max_per_chunk)) {
+        max_per_chunk = !eval(lst.call$num_chunk)
+    }
+    if ((isTRUE(max_per_chunk) & isTRUE(num_chunk)) ||
+        (isFALSE(max_per_chunk) & isFALSE(num_chunk)) ||
+        (!is.logical(max_per_chunk) & !is.logical(num_chunk)))
+        stop("select either max_per_chunk OR num_chunk to be TRUE")
+    if (max_per_chunk)
+        splitter = ceiling(length(vec)) / n
+    if (num_chunk)
+        splitter = n
+    ## ind = parallel::splitIndices(length(vec), ceiling(length(vec) / max_per_chunk))
+    ind = parallel::splitIndices(length(vec), splitter)
+    split(vec, rep(seq_along(ind), times = base::lengths(ind)))
 }
 
 staveRDS = function (object, file, note = NULL, ..., verbose = FALSE)
