@@ -6562,14 +6562,17 @@ rleseq = function(..., clump = FALSE, recurs = FALSE, na.clump = TRUE, na.ignore
     if (!all(lns == lns[1]))
         warning("not all vectors provided have same length")
     fulllens = max(lns, na.rm = T)
-    vec = setNames(paste(...), fulllens)
+    vec = setNames(paste(...), seq_len(fulllens))
     ## rlev = rle(paste(as.character(vec)))
     rlev = rle(vec)
     if (na.ignore) {
         isnotna = which(rowSums(as.data.frame(lapply(list(...), is.na))) == 0)
-        out = list(idx =  rep(NA, fulllens), seq = rep(NA, fulllens), lns = rep(NA, fulllens))
-        inlst = lapply(list(...), function(x) x[isnotna])
-        tmpout = do.call(rleseq, c(... = inlst, list(clump = clump, recurs = recurs, na.clump = na.clump, na.ignore = FALSE)))
+        out = list(idx = rep(NA, fulllens), seq = rep(NA, fulllens), lns = rep(NA, fulllens))
+        if (length(isnotna))
+            vec = vec[isnotna]
+        ## inlst = lapply(list(...), function(x) x[isnotna])
+        tmpout = do.call(rleseq, c(alist(... = vec),
+                                   alist(clump = clump, recurs = recurs, na.clump = na.clump, na.ignore = FALSE)))
         ## tmpout = rleseq(..., clump = clump, recurs = recurs, na.clump = FALSE, na.ignore = FALSE)
         for (i in seq_along(out))
             out[[i]][isnotna] = tmpout[[i]]
