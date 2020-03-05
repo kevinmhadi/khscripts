@@ -4359,7 +4359,8 @@ gbar.error = function(frac, conf.low, conf.high, group, wes = "Royal1", other.pa
     if (any(!is.na(conf.low)) & any(!is.na(conf.high)))
         gg = gg + geom_errorbar(aes(ymin = conf.low, ymax = conf.high), size = 0.1, width = 0.3, position = position_dodge(width = rel(0.9)))
     if (!is.null(wes))
-        gg = gg + scale_fill_manual(values = wesanderson::wes_palette(wes))
+        gg = gg + scale_fill_manual(values = skitools::brewer.master(n = length(group), wes = TRUE, palette = wes))
+        ## gg = gg + scale_fill_manual(values = wesanderson::wes_palette(wes))
     if (!is.null(other.palette))
         gg = gg + scale_fill_manual(values = other.palette)
     if (!is.null(dat$facet1)) {
@@ -6448,7 +6449,7 @@ dcast.count = function(tbl, lh, rh = NULL, countcol = "count", ...) {
     dcast.wrap(within(tbl, {dummy = this.env$countcol}), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = length, fill = 0, ...)
 }
 
-dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggregate = "sum", ...) {
+dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggregate = "sum", value.var = "dummy", ...) {
     suppressWarnings({tbl$dummy = NULL})
     lst.call = as.list(match.call())
     if (is.name(lst.call$fun.aggregate))
@@ -6476,7 +6477,7 @@ dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggr
     this.env = environment()
     if (is.null(rh))
         rh = "dummy"
-    out = dcast.wrap(eval(expr), lh = lh, rh = rh, value.var = "dummy", fun.aggregate = fun.aggregate, fill = 0, ...)
+    out = dcast.wrap(eval(expr), lh = lh, rh = rh, value.var = value.var, fun.aggregate = fun.aggregate, fill = 0, ...)
     if ("1" %in% colnames(out))
         setnames(out, "1", countcol)
     return(out)
@@ -6552,12 +6553,29 @@ rleid0 = function(x) {
 }
 
 
-rleseq = function(..., clump = FALSE, recurs = FALSE) {
-    lns = lengths(as.list(...))
+rleseq = function(..., clump = FALSE, recurs = FALSE, na.clump = TRUE, na.ignore = FALSE) {
+    if (isTRUE(na.clump))
+        paste = base::paste
+    else
+        paste = function(..., sep = " ") stringr::str_c(..., sep = sep)
+    lns = lengths(list(...))
     if (!all(lns == lns[1]))
         warning("not all vectors provided have same length")
-    vec = setNames(paste(as.character(...)), seq_along(max(lns, na.rm = T)))
-    rlev = rle(paste(as.character(vec)))
+    fulllens = max(lns, na.rm = T)
+    vec = setNames(paste(...), fulllens)
+    ## rlev = rle(paste(as.character(vec)))
+    rlev = rle(vec)
+    if (na.ignore) {
+        isnotna = which(rowSums(as.data.frame(lapply(list(...), is.na))) == 0)
+        out = list(idx =  rep(NA, fulllens), seq = rep(NA, fulllens), lns = rep(NA, fulllens))
+        inlst = lapply(list(...), function(x) x[isnotna])
+        tmpout = do.call(rleseq, c(... = inlst, list(clump = clump, recurs = recurs, na.clump = na.clump, na.ignore = FALSE)))
+        ## tmpout = rleseq(..., clump = clump, recurs = recurs, na.clump = FALSE, na.ignore = FALSE)
+        for (i in seq_along(out))
+            out[[i]][isnotna] = tmpout[[i]]
+        return(out)
+    }
+    
     if (!isTRUE(clump)) {
         if (isTRUE(recurs)) {
             return(unlist(unname(lapply(rlev$lengths, seq_len))))
@@ -6566,10 +6584,13 @@ rleseq = function(..., clump = FALSE, recurs = FALSE) {
                     idx = rep(seq_along(rlev$lengths), times = rlev$lengths),
                 seq = unlist(unname(lapply(rlev$lengths, seq_len))))
             out$lns = ave(out[[1]], out[[1]], FUN = length)
+            ## if (na.ignore)
+            ##     complete.cases(as.data.frame(lapply(list(...), is.na)))
             return(out)                
         }
     } else {
-        vec = setNames(paste(as.character(vec)), seq_along(vec))
+        ## vec = setNames(paste(as.character(vec)), seq_along(vec))
+        vec = setNames(vec, seq_along(vec))
         lst = split(vec, factor(vec, levels = unique(vec)))
         ord = as.integer(names(unlist(unname(lst))))
         idx = rep(seq_along(lst), times = lengths(lst))
@@ -6578,7 +6599,7 @@ rleseq = function(..., clump = FALSE, recurs = FALSE) {
             seq = rleseq(idx, clump = FALSE, recurs = TRUE)[order(ord)])
         out$lns = ave(out[[1]], out[[1]], FUN = length)
         return(out)
-    }   
+    }
 }
 
 
@@ -6596,7 +6617,8 @@ wespanel = function(n) {
 
 make_heatmap = function(x, trans.fun, breaks = 1e3, grid = TRUE, pfun = "ppng", ...) {
     h = 8; w = 8; col = alpha(bluered(breaks), 0.8)
-    Colv = FALSE; Rowv = FALSE; dendrogram = "none"; distfun = dist
+    Colv = FALSE; Rowv = FALSE; dendrogram = "none"; distfun = dist;
+    key = TRUE
     hclustfun = hclust
     ## rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), colsep = 1:ncol(.),
     if (grid)
@@ -6620,7 +6642,7 @@ make_heatmap = function(x, trans.fun, breaks = 1e3, grid = TRUE, pfun = "ppng", 
                             breaks = breaks + 1, col = col,
                             na.color = alpha('grey', 1),
                             Rowv = Rowv, Colv = Colv, scale = "none",
-                            trace = "none", distfun = distfun, hclustfun = hclustfun), gridlst)), height = h, width = h)}
+                            trace = "none", distfun = distfun, hclustfun = hclustfun, key = key), gridlst)), height = h, width = h)}
 }
 
 
