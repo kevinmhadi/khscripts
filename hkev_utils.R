@@ -1238,6 +1238,15 @@ as.df = function(obj) {
 ######################
 
 
+gr.split = function(gr, ..., sep = " ") {
+  lst = as.list(match.call())[-1]
+  ix = which(names(lst) != "gr")
+  tmpix = with(gr, do.call(paste, c(lst[ix], list(sep = sep))))
+  tmpix = factor(tmpix, levels = unique(tmpix))
+  grl = gr %>% split(tmpix)
+  return(grl)
+}
+
 
 gr.spreduce = function(gr,  ..., pad = 0, sep = " ") {
   lst = as.list(match.call())[-1]
@@ -6570,15 +6579,13 @@ rleseq = function(..., clump = FALSE, recurs = FALSE, na.clump = TRUE, na.ignore
         out = list(idx = rep(NA, fulllens), seq = rep(NA, fulllens), lns = rep(NA, fulllens))
         if (length(isnotna))
             vec = vec[isnotna]
-        ## inlst = lapply(list(...), function(x) x[isnotna])
         tmpout = do.call(rleseq, c(alist(... = vec),
                                    alist(clump = clump, recurs = recurs, na.clump = na.clump, na.ignore = FALSE)))
         ## tmpout = rleseq(..., clump = clump, recurs = recurs, na.clump = FALSE, na.ignore = FALSE)
         for (i in seq_along(out))
             out[[i]][isnotna] = tmpout[[i]]
         return(out)
-    }
-    
+    }    
     if (!isTRUE(clump)) {
         if (isTRUE(recurs)) {
             return(unlist(unname(lapply(rlev$lengths, seq_len))))
