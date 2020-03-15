@@ -9189,3 +9189,181 @@ environment(newindel) <- environment(oldindel)
 attributes(newindel) <- attributes(oldindel)  # don't know if this is really needed
 assignInNamespace("getContextsIndel", newindel, ns="mutSigExtractor")
 getContextsIndel = newindel
+
+
+newgg = function(nodes, edges) {
+    if (is.null(edges) || nrow(edges) == 0) {
+        private$pedges = data.table(from = integer(0), to = integer(0), 
+            type = character(0))
+        edges = data.table()
+        if (length(nodes) == 0) {
+            private$pnodes = GRanges(seqinfo = seqinfo(nodes))
+            return(self)
+        }
+    }
+    else {
+        if (!all(c("n1", "n1.side", "n2", "n2.side") %in% names(edges))) {
+            stop("edges table not in proper format: requires columns n1, n2, n1.side, n2.side, where n1 and n2 index the provided nodes and the side arguments specify right side if 1 and left side if 0")
+        }
+        edges = as.data.table(edges)
+        if (any(edges$n1 > length(nodes) | edges$n2 > length(nodes), 
+            na.rm = TRUE)) {
+            stop("n1 or n2 fields in edges table indexing out of range nodes")
+        }
+        if (any(ix <- is.na(edges$n1) & is.na(edges$n2))) {
+            warning(paste("Removed", sum(ix), "edges from graph that have NA in both n1 and n2, edges should have either n1 or n2 NA"))
+            edges = edges[!ix, ]
+        }
+        if (any(ix <- (!is.na(edges$n1) & is.na(edges$n1.side)) | 
+            (!is.na(edges$n2) & is.na(edges$n2.side)))) {
+            stop(paste("All non NA n1 or n2 must have an n1.side or n2.side, but we found", 
+                sum(ix), "edges that violate this requirement"))
+        }
+        if ("sedge.id" %in% names(edges)) {
+            edges[, `:=`(sedge.id, NULL)]
+        }
+        if ("edge.id" %in% names(edges)) {
+            edges[, `:=`(edge.id, NULL)]
+        }
+    }
+    if (any(is.na(seqlengths(nodes)))) {
+        nodes = gUtils::gr.fix(nodes)
+    }
+    if (is.null(nodes$loose.left)) {
+        nodes$loose.left = FALSE
+    }
+    if (is.null(nodes$loose.right)) {
+        nodes$loose.right = FALSE
+    }
+    if (nrow(edges) > 0) {
+        if (is.character(edges$n1.side)) {
+            edges[, `:=`(n1.side, sign(n1.side == "right"))]
+            edges[, `:=`(n2.side, sign(n2.side == "right"))]
+        }
+        nodes$loose.left = nodes$loose.left | !(1:length(nodes) %in% 
+            union(edges$n1[edges$n1.side == 0], edges$n2[edges$n2.side == 
+                0]))
+        nodes$loose.right = nodes$loose.right | !(1:length(nodes) %in% 
+            union(edges$n1[edges$n1.side == 1], edges$n2[edges$n2.side == 
+                1]))
+    }
+    else {
+        nodes$loose.left = TRUE
+        nodes$loose.right = TRUE
+    }
+    strand(nodes) = "+"
+    nodes$node.id = 1:length(nodes)
+    names(nodes) = NULL
+    segs = c(nodes, gr.flipstrand(nodes))
+    segs$snode.id = ifelse(as.logical(strand(segs) == "+"), 1, 
+        -1) * segs$node.id
+    segs$index = 1:length(segs)
+    names(segs) = segs$snode.id
+    segs$loose.left = ifelse(is.na(segs$loose.left), FALSE, segs$loose.left)
+    segs$loose.right = ifelse(is.na(segs$loose.right), FALSE, 
+        segs$loose.right)
+    private$pnodes = segs
+    if (nrow(edges) > 0) {
+        if (!"type" %in% names(edges)) {
+            edges[, `:=`(type, "ALT")]
+        }
+        map = data.table(pid = private$pnodes$node.id, str = as.character(strand(private$pnodes)), 
+            id = 1:length(private$pnodes))
+        setkeyv(map, c("pid", "str"))
+        edges[, `:=`(jid, 1:.N)]
+        if (!is.null(edges$from)) 
+            edges$from = NULL
+        if (!is.null(edges$to)) 
+            edges$to = NULL
+        is.cn = "cn" %in% names(edges)
+        is.type = "type" %in% names(edges)
+        tmp = rbind(edges[, .(jid, from = ifelse(n1.side == 1, 
+            map[.(n1, "+"), id], map[.(n1, "-"), id]), to = ifelse(n2.side == 
+            1, map[.(n2, "-"), id], map[.(n2, "+"), id]), sedge.id = 1:.N)], 
+            edges[, .(jid, from = ifelse(n2.side == 1, map[.(n2, 
+                "+"), id], map[.(n2, "-"), id]), to = ifelse(n1.side == 
+                1, map[.(n1, "-"), id], map[.(n1, "+"), id]), 
+                sedge.id = -1 * (1:.N))])
+        tmp = merge(tmp, edges, by = "jid")
+        tmp[, `:=`(edge.id, abs(sedge.id))]
+        tmp[, `:=`(c("jid", "n1", "n2", "n1.side", "n2.side"), 
+            NULL)]
+        private$pedges = tmp
+        private$pedges[, `:=`(type, ifelse(type == "REF", "REF", 
+            "ALT"))]
+        setkey(private$pedges, sedge.id)
+    }
+    private$buildLookupTable()
+    private$stamp()
+    self$edges$mark(class = self$edges$class)
+    return(self)
+}
+
+oldgg = gGraph$private_methods$gGraphFromNodes
+environment(newgg) = environment(oldgg)
+attributes(newgg) = attributes(oldgg)
+gGraph$private_methods$gGraphFromNodes = newgg
+
+newgann = function(colName, data, id, class) {
+    if (class == "node") {
+        NONO.FIELDS = c("node.id", "snode.id", "index")
+        if (colName %in% NONO.FIELDS) 
+            stop(paste("Cannot alter these protected gNode fields: ", 
+                paste(NONO.FIELDS, collapse = ", ")))
+        if (is.null(data)) {
+            values(private$pnodes)[[colName]] = NULL
+            return(invisible(self))
+        }
+        id = self$queryLookup(id)
+        id$data = data
+        index = c(id[, index], id[, rindex])
+        data = c(id[, data], id[, data])
+        gr.dt = gr2dt(private$pnodes)
+        gr.dt[index, `:=`(paste(colName), data)]
+        values(private$pnodes)[[colName]] = gr.dt[[colName]]
+    }
+    else if (class == "edge") {
+        NONO.FIELDS = c("from", "to", "sedge.id", "edge.id", 
+            "n1", "n2", "n1.side", "n2.side")
+        if (colName %in% NONO.FIELDS) 
+            stop(paste("Cannot alter these protected gEdge fields: ", 
+                paste(NONO.FIELDS, collapse = ", ")))
+        if (is.null(data)) {
+            private$pedges[[colName]] = NULL
+            return(invisible(self))
+        }
+        if (colName == "type" && (!is.character(data) || !all(data %in% 
+            c("REF", "ALT")))) 
+            stop("type is a reserved gEdge metadata field and can only be replaced with values REF and ALT")
+        id2 = id
+        private$pedges[.(id2), `:=`(paste(colName), rep_len(data, .N))]
+    }
+    else {
+        stop("Not sure how we got to this error at all, we should never be here")
+    }
+    return(self)
+}
+
+
+oldgann = gGraph$public_methods$annotate
+environment(newgann) = environment(oldgann)
+attributes(newgann) = attributes(oldgann)
+gGraph$public_methods$annotate = newgann
+
+
+duplicated.matrix = function(x, incomparables = FALSE, MARGIN = 1, fromLast = FALSE, ...) {
+    if (!isFALSE(incomparables)) 
+        .NotYetUsed("incomparables != FALSE")
+    dx <- dim(x)
+    ndim <- length(dx)
+    if (length(MARGIN) > ndim || any(MARGIN > ndim)) 
+        stop(gettextf("MARGIN = %d is invalid for dim = %d", 
+            MARGIN, dx), domain = NA)
+    temp <- if ((ndim > 1L) && (prod(dx[-MARGIN]) > 1L)) 
+        apply(x, MARGIN, list)
+    else x
+    res <- duplicated.default(temp, fromLast = fromLast, ...)
+    dim(res) <- dim(temp)
+    dimnames(res) <- dimnames(temp)
+    res
+}

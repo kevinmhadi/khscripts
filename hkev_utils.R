@@ -1008,7 +1008,7 @@ pairs.collect.junctions = function(pairs, jn.field = "complex", id.field = "pair
     mod.dt = mltools::one_hot(cx.edt[, .(simple_type)])
     cx.edt = cbind(select(cx.edt, -matches("^simple_.*$")),
                    rename_all(mod.dt, ~paste0("simple", gsub("simple_type", "", tolower(.)))))
-    ev.types = c("bfb", "chromoplexy", "chromothripsis", "del", "dm", "dup", "fbi", "pyrgo", "qrp", "rigma", "simple_inv", "simple_invdup", "simple_tra", "tic", "tyfonas")
+    ev.types = c("bfb", "chromoplexy", "chromothripsis", "del", "dm", "cpxdm", "dup", "fbi", "pyrgo", "qrp", "rigma", "simple_inv", "simple_invdup", "simple_tra", "tic", "tyfonas")
     cx.mat = as.matrix(mutate_all(replace_na(cx.edt[, ev.types,with = FALSE], 0), as.numeric))
     cx.mat = cx.mat > 0
     mode(cx.mat) = "integer"
@@ -6469,19 +6469,19 @@ dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggr
         fun.aggregate = get(fun.aggregate)
     if ("wt" %in% names(lst.call))
         if (is.character(wt) && wt %in% colnames(tbl)) {
-            expr = expression(within(tbl, {dummy = NULL; dummy = 1 * dg(wt, FALSE)}))
+            expr = expression(within(tbl, {dummy = 1 * dg(wt, FALSE)}))
         } else if (is.numeric(wt)) {
-            expr = expression(within(tbl, {dummy = NULL; wt = NULL; dummy = 1 * dg(wt)}))
+            expr = expression(within(tbl, {wt = NULL; dummy = 1 * dg(wt)}))
         } else {
             stop("wt argument must be either a numeric vector, a name of a column, or a column that exists in the table")
         }
     else if (is.null(wt) || isFALSE(wt) || is.na(wt) || length(wt) == 0)
-        expr = expression(within(tbl, {dummy = NULL; dummy = 1}))
+        expr = expression(within(tbl, {dummy = 1}))
     else if (!"wt" %in% names(lst.call)) {
         if ("wt" %in% colnames(tbl)) {
             message("column named \"wt\" found, will weight counts using values in this field")
         }
-        expr = expression(within(tbl, {dummy = NULL; dummy = 1 * dg(wt)}))    
+        expr = expression(within(tbl, {dummy = 1 * dg(wt)}))    
     }
     this.env = environment()
     if (is.null(rh))
@@ -6566,14 +6566,13 @@ rleseq = function(..., clump = FALSE, recurs = FALSE, na.clump = TRUE, na.ignore
     if (isTRUE(na.clump))
         paste = base::paste
     else
-        paste = function(..., sep = " ") stringr::str_c(..., sep = sep)
+        paste = function(..., sep = " ") base::paste(stringr::str_c(..., sep = sep))
     lns = lengths(list(...))
     if (!all(lns == lns[1]))
         warning("not all vectors provided have same length")
     fulllens = max(lns, na.rm = T)
     vec = setNames(paste(...), seq_len(fulllens))
     ## rlev = rle(paste(as.character(vec)))
-    rlev = rle(vec)
     if (na.ignore) {
         isnotna = which(rowSums(as.data.frame(lapply(list(...), is.na))) == 0)
         out = list(idx = rep(NA, fulllens), seq = rep(NA, fulllens), lns = rep(NA, fulllens))
@@ -6587,6 +6586,7 @@ rleseq = function(..., clump = FALSE, recurs = FALSE, na.clump = TRUE, na.ignore
         return(out)
     }    
     if (!isTRUE(clump)) {
+        rlev = rle(vec)
         if (isTRUE(recurs)) {
             return(unlist(unname(lapply(rlev$lengths, seq_len))))
         } else {
@@ -6599,6 +6599,9 @@ rleseq = function(..., clump = FALSE, recurs = FALSE, na.clump = TRUE, na.ignore
             return(out)                
         }
     } else {
+        if (!isTRUE(na.clump)) {
+            vec = replace2(vec, which(x == "NA"), dedup(dg(x)[dg(x) == "NA"]))
+        }
         ## vec = setNames(paste(as.character(vec)), seq_along(vec))
         vec = setNames(vec, seq_along(vec))
         lst = split(vec, factor(vec, levels = unique(vec)))
