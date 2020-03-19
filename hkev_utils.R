@@ -893,7 +893,12 @@ gt.plot = function(gtrack, win, filename ="plot.png", title = "", h = 10, w = 10
 }
 
 
-plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "jabba_rds", cov.field.name = "cbs_cov_rds", cov.y.field = "ratio", title = "", doplot = TRUE, gt, ...) {
+plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "jabba_rds", cov.field.name = "cbs_cov_rds", cov.y.field = "ratio", title = "", doplot = TRUE, gt, plotfun = "ppng", h = 10, w = 10, ...) {
+    if (is.character(plotfun)) {
+        plotfun = get(plotfun)
+    } else if (!is.function(plotfun)) {
+        stop("plotfun needs to be a function")
+    }
     if (missing(gt)) {
         gg = gG(jabba = pairs[[field.name]])
         if (isTRUE(use.jab.cov))
@@ -907,9 +912,9 @@ plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "ja
         win = si2gr(hg_seqlengths()) %>% keepStandardChromosomes(pruning.mode = "coarse") %>% gr.sort
     if (isTRUE(doplot)) {
         if (missing(filename))
-            ppng(plot(gt, win = win, ...), res = 200, title = title)
+            plotfun(plot(gt, win = win, ...), res = 200, title = title, h = h, w = w)
         else
-            ppng(plot(gt, win = win, ...), filename = filename, res = 200, title = title)
+            plotfun(plot(gt, win = win, ...), filename = filename, res = 200, title = title, h = h, w = w)
     }
     return(gt)
 }
@@ -1378,6 +1383,7 @@ gr.within = function(data, expr)  {
     }
     data
 }
+
 
 setMethod("within", signature(data = "GRanges"), function(data, expr) {
     top_prenv1 = function (x, where = parent.frame())
@@ -3677,6 +3683,14 @@ myqstat = function(mc.cores = 5) {
 ##################################################
 ##### gTrack stuff!
 
+setMethod("within", signature(data = "gTrack"), function(data, expr) {
+    e = list2env(as.list(formatting(data)))
+    eval(substitute(expr, parent.frame()), e)
+    formatting(data) = as.data.frame(as.list(e))[, c(colnames(formatting(data))),drop = FALSE]
+    return(data)
+})
+
+
 gt.fix = function(gt, lwd.scale = 1, lwd.border.scale = 1, ywid.scale = 1) {
     len = function(ob) if (length(ob) == 0) NULL else ob
     for(i in seq_along(gt@edges) ) {
@@ -4152,7 +4166,7 @@ gg.anc = function(dat, group = FALSE, print = TRUE, y1 = NA, lwd.border = 1, wes
 }
 
 
-gg.sline = function(x, y, group = "x", smethod = "lm", dens_type = c("point", "hex"), facet1 = NULL, facet2 = NULL, transpose = FALSE, facet_scales = "fixed", formula = y ~ x, print = FALSE, hex_par = list(bins = 50)) {
+gg.sline = function(x, y, group = "x", colour = NULL, smethod = "lm", dens_type = c("point", "hex"), facet1 = NULL, facet2 = NULL, transpose = FALSE, facet_scales = "fixed", formula = y ~ x, print = FALSE, hex_par = list(bins = 50), wes = NULL, cex.scatter = 0.1) {
     if (is.null(facet1)) {
         facet1 = facet2
         facet2 = NULL
@@ -4169,26 +4183,31 @@ gg.sline = function(x, y, group = "x", smethod = "lm", dens_type = c("point", "h
         message("selecting geom_point() as default")
         dens_type = "point"
     }
-    if (identical(dens_type, "hex"))
-        gg = gg + geom_hex(bins = hex_par$bin)
-    else if (identical(dens_type, "point"))
-        gg = gg + geom_point(size = 0.1)
     gg = gg +
         ## geom_smooth(method = lm, se = TRUE) +
         geom_smooth(method = smethod, size = 1, formula = formula)
+    if (identical(dens_type, "hex"))
+        gg = gg + geom_hex(bins = hex_par$bin)
+    else if (identical(dens_type, "point"))
+        if (is.null(colour))
+            gg = gg + geom_point(size = 0.1)
+        else
+            gg = gg + geom_point(mapping = aes(colour = colour), size = cex.scatter)
     ## xlim(0, 1.5e5)
     if (!is.null(dat$facet1)) {
         if (!is.null(dat$facet2)) {
             if (transpose)
-                g = g + facet_grid(facet2 ~ facet1, scales = facet_scales)
-            else g = g + facet_grid(facet1 ~ facet2, scales = facet_scales)
+                gg = gg + facet_grid(facet2 ~ facet1, scales = facet_scales)
+            else gg = gg + facet_grid(facet1 ~ facet2, scales = facet_scales)
         }
         else {
             if (transpose)
-                g = g + facet_grid(. ~ facet1, scales = facet_scales)
-            else g = g + facet_grid(facet1 ~ ., scales = facet_scales)
+                gg = gg + facet_grid(. ~ facet1, scales = facet_scales)
+            else gg = gg + facet_grid(facet1 ~ ., scales = facet_scales)
         }
     }
+    if (!is.null(wes) && is.character(wes))
+        gg = gg + scale_colour_manual(values = brewer.master(length(unique(colour)), wes = TRUE, palette = wes))
     if (print)
         print(gg)
     else
@@ -6384,6 +6403,13 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
+mstrsplit = function(x, ...) {
+    lst = strsplit(x = x, ...)
+    mlen = max(lengths(lst))
+    lst = lapply(lst, "[", seq_len(mlen))
+    return(do.call(rbind, lst))
+}
+
 ## allpunct = "[]/*&^%$#@?=-{}<>;:\\|+~`()]"
 allpunct = '[]/*&^%$#@?=-{}<>;:\\|+~`()\"\']'
 
@@ -6490,6 +6516,18 @@ dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggr
     if ("1" %in% colnames(out))
         setnames(out, "1", countcol)
     return(out)
+}
+
+dcast.agg = function(tbl, lh, rh = "dummy", fun.aggregate = "sum", value.var, ...) {
+    suppressWarnings({tbl$dummy = NULL})
+    lst.call = as.list(match.call())
+    if (is.name(lst.call$fun.aggregate))
+        fun.aggregate = get(as.character(lst.call$fun.aggregate))
+    else if (is.call(lst.call$fun.aggregate))
+        fun.aggregate
+    else if (is.character(fun.aggregate))
+        fun.aggregate = get(fun.aggregate)
+    return(dcast.wrap(within(tbl, {dummy = "dval"}), lh = lh, rh = "dummy", value.var = value.var, fun.aggregate = fun.aggregate, ...))
 }
 
 
