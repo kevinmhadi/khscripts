@@ -6406,7 +6406,12 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 mstrsplit = function(x, ...) {
     lst = strsplit(x = x, ...)
     mlen = max(lengths(lst))
-    lst = lapply(lst, "[", seq_len(mlen))
+    unid = seq_len(mlen)
+    for (i in seq_along(lst)) {
+        length(lst[[i]]) = mlen
+    }
+    ## lst = lapply(lst, "[", unid)
+    ## lst = lapply(lst, "length<-", mlen)
     return(do.call(rbind, lst))
 }
 
