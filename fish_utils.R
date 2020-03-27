@@ -1,3 +1,11 @@
+castrod = function(mods, nm = c(names(grl.feat), names(grl.feat.ch), names(grl.feat.ov), names(grl.feat.mes), "super", "openchr_h1hesc")) {
+    ## out = rbindlist(mods)[event %nin% "qrp"][trimws(name) %in% nm][, estimate := replace2(estimate, list(p.adjust(dg(p), "BH") > 0.10, dg(estimate) < log(1.25)), list(NA, NA))]
+    out = rbindlist(mods, fill = TRUE)[event %nin% "qrp"][trimws(name) %in% nm][, estimate := normv_sep(estimate), by = name][, estimate := replace2(estimate, p.adjust(dg(p), "BH") > 0.25, NA)]
+    ## out = rbindlist(mods,fill = TRUE)[event %nin% "qrp"][trimws(name) %in% nm][, estimate := replace2(estimate, p.adjust(dg(p), "BH") > 0.10, NA)]
+    ## out = rbindlist(mods)[event %nin% "qrp"][trimws(name) %in% nm]
+    return(dcast.wrap(out, lh = "event", rh = "name", value.var = "estimate"))
+}
+
 model.enr = function(x, enr = "pos") {
     if (identical(enr, "pos"))
         summ_glm(x$model)[p.adjust(p, "bonferroni") < 0.05 & estimate > 0]

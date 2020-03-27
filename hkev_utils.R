@@ -6689,7 +6689,8 @@ wespanel = function(n) {
 make_heatmap = function(x, trans.fun, breaks = 1e3, grid = TRUE, pfun = "ppng", ...) {
     h = 8; w = 8; col = alpha(bluered(breaks), 0.8)
     Colv = FALSE; Rowv = FALSE; dendrogram = "none"; distfun = dist;
-    key = TRUE
+    key = TRUE;
+    oma.scale = 0
     hclustfun = hclust
     ## rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), colsep = 1:ncol(.),
     if (grid)
@@ -6713,7 +6714,7 @@ make_heatmap = function(x, trans.fun, breaks = 1e3, grid = TRUE, pfun = "ppng", 
                             breaks = breaks + 1, col = col,
                             na.color = alpha('grey', 1),
                             Rowv = Rowv, Colv = Colv, scale = "none",
-                            trace = "none", distfun = distfun, hclustfun = hclustfun, key = key), gridlst)), height = h, width = h)}
+                            trace = "none", distfun = distfun, hclustfun = hclustfun, key = key), gridlst)), height = h, width = h, oma.scale = oma.scale)}
 }
 
 
