@@ -1,7 +1,7 @@
 ##### For install.packages("tiff") ## SO ANNOYING
-# PKG_CPPFLAGS=-I"/gpfs/commons/groups/imielinski_lab/Software/libtiff/include" "-I/gpfs/commons/home/mimielinski/software/libfftw3/include"
+PKG_CPPFLAGS=-I"/gpfs/commons/groups/imielinski_lab/Software/libtiff/include" "-I/gpfs/commons/home/mimielinski/software/libfftw3/include"
 # # PKG_CXXFLAGS=-I"/gpfs/commons/groups/imielinski_lab/Software/libtiff/include"
-# PKG_LIBS = -L"/gpfs/commons/groups/imielinski_lab/Software/libtiff/lib" -L"/gpfs/commons/home/mimielinski/software/libfftw3/lib" -ltiff
+PKG_LIBS = -L"/gpfs/commons/groups/imielinski_lab/Software/libtiff/lib" -L"/gpfs/commons/home/mimielinski/software/libfftw3/lib" -ltiff
 
 # PKG_CPPFLAGS=-I"/gpfs/commons/groups/imielinski_lab/Software/v8/include"
 # PKG_CFLAGS=-I"/gpfs/commons/groups/imielinski_lab/Software/v8/include"
