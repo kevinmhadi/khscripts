@@ -3552,6 +3552,14 @@ cx_caller_1 = function(edges, nodes, junctions, sample_id = "", thresh = 1e5, mc
 ##################################################
 #################################################
 
+viewtask = function(jb, arglst = c("name", "arg", "default")) {
+    ifun = function(x, arglst = arglst) {
+        unlist(lst.emptychar2na(lst.zerochar2empty(lapply(arglst, function(y)
+            tryCatch((slot(x, y)), error = function(e) NA_character_)))))
+    }
+    as.data.table(data.table::transpose(lapply(jb@task@args, ifun, arglst = arglst)))
+}
+
 idj = function(x, these.ids) {
     x[match(these.ids, ids(x))]
 }
