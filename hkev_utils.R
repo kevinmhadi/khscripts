@@ -1647,30 +1647,38 @@ ra.sort2 = function(grl, ignore.strand = TRUE) {
 }
 
 
-parse.gr2 = function(str) {
-    library(stringi)
-    str = gsub("(\\w+)(:)([[:punct:]]?\\w+)(-)([[:punct:]]?\\w+)([[:punct:]]?)", "\\1 \\2 \\3 \\4 \\5 \\6", str)
-    mat = stri_split_fixed(str, pattern = " ", simplify = "TRUE")
-    gr = GRanges(seqnames = mat[,1],
-            ranges = IRanges(as.integer(mat[,3]), as.integer(mat[,5])),
-            strand = case_when(nchar(mat[,6]) == 0 | !mat[,6] %in% c("+", "-") ~ "*",
-                               TRUE ~ mat[,6]))
-    return(gr)
+## parse.gr2 = function(str) {
+##     library(stringi)
+##     str = gsub("(\\w+)(:)([[:punct:]]?\\w+)(-)([[:punct:]]?\\w+)([[:punct:]]?)", "\\1 \\2 \\3 \\4 \\5 \\6", str)
+##     mat = stri_split_fixed(str, pattern = " ", simplify = "TRUE")
+##     gr = GRanges(seqnames = mat[,1],
+##             ranges = IRanges(as.integer(mat[,3]), as.integer(mat[,5])),
+##             strand = case_when(nchar(mat[,6]) == 0 | !mat[,6] %in% c("+", "-") ~ "*",
+##                                TRUE ~ mat[,6]))
+##     return(gr)
+## }
+
+
+parse.gr2 = function(...) {
+    grl.unlist(parse.grl2(...))
 }
 
-parse.grl2 = function(str) {
-    library(stringi)
-    tmp = stri_split_regex(str, pattern = ",|;")
-    grl.ix = rep(seq_along(tmp), elementNROWS(tmp))
+
+parse.grl2 = function(str, meta = NULL) {
+    ## library(stringi)
+    tmp = stringi::stri_split_regex(str, pattern = ",|;")
+    grl.ix = rep(seq_along(tmp), lengths(tmp))
     tmp = unlist(tmp)
     tmp = gsub("(\\w+)(:)([[:punct:]]?\\w+)(-)([[:punct:]]?\\w+)([[:punct:]]?)", "\\1 \\2 \\3 \\4 \\5 \\6", tmp)
-    mat = stri_split_fixed(tmp, pattern = " ", simplify = "TRUE")
+    mat = stringi::stri_split_fixed(tmp, pattern = " ", simplify = "TRUE")
     gr = GRanges(seqnames = mat[,1],
                  ranges = IRanges(as.integer(mat[,3]), as.integer(mat[,5])),
                  strand = case_when(nchar(mat[,6]) == 0 | !mat[,6] %in% c("+", "-") ~ "*",
                                     TRUE ~ mat[,6]),
                  grl.ix = grl.ix)
-    gr =gr.noval(split(gr, gr$grl.ix))
+    gr = gr.noval(split(gr, gr$grl.ix))
+    if (!is.null(meta) && nrow(meta) == length(gr)) 
+        values(gr) = meta
     return(gr)
 }
 

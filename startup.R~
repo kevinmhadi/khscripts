@@ -28,10 +28,11 @@ options(device = grDevices::pdf)
 suppressWarnings(expr = {
     suppressMessages(expr = {
         suppressPackageStartupMessages(expr = {
+            withr::with_libpaths(priv_lib, library(gTrack), action = "prefix")
             withr::with_libpaths(priv_lib, library(igraph), action = "prefix")
             withr::with_libpaths(priv_lib, library(dplyr), action = "prefix")
+            withr::with_libpaths(priv_lib, library(Flow), action = "prefix")
             library(gGnome)
-            withr::with_libpaths(priv_lib, library(gTrack))
             library(gUtils)
             library(colorspace)
             library(MASS)
@@ -46,7 +47,6 @@ suppressWarnings(expr = {
             library(tidyverse)
             withr::with_libpaths(lab_lib, library(VariantAnnotation), action = "prefix")
             ## withr::with_libpaths("/gpfs/commons/groups/imielinski_lab/lib/R-3.4.1", library(gGnome))
-            withr::with_libpaths(priv_lib, library(Flow), action = "prefix")
             library(skitools)
             library(skidb)
             library(rtracklayer)
@@ -56,7 +56,6 @@ suppressWarnings(expr = {
             library(skitools)
             library(stringr)
             library(stringi)
-            library(Flow)
             library(naturalsort)
             library(copynumber)
             library(forcats)
@@ -76,6 +75,7 @@ suppressWarnings(expr = {
             library(ggpubr)
             library(plyranges)
             library(mltools)
+            library(tidyselect)
 #############################
             ## library(stringi)
             ## source('/gpfs/commons/home/khadi/DThelp.R')
@@ -102,7 +102,12 @@ between = data.table::between
 setnames = data.table::setnames
 select = dplyr::select
 update = Flow::update
+cache = Flow::cache
 set = data.table::set
 set_names = rlang::set_names
 matches = dplyr::matches
 n = dplyr::n
+
+
+forceload()
+forcefun()
