@@ -1673,8 +1673,7 @@ parse.grl2 = function(str, meta = NULL) {
     mat = stringi::stri_split_fixed(tmp, pattern = " ", simplify = "TRUE")
     gr = GRanges(seqnames = mat[,1],
                  ranges = IRanges(as.integer(mat[,3]), as.integer(mat[,5])),
-                 strand = case_when(nchar(mat[,6]) == 0 | !mat[,6] %in% c("+", "-") ~ "*",
-                                    TRUE ~ mat[,6]),
+                 strand = ifelse(nchar(mat[,6]) == 0 | !mat[,6] %in% c("+", "-"), "*", mat[,6]),
                  grl.ix = grl.ix)
     gr = gr.noval(split(gr, gr$grl.ix))
     if (!is.null(meta) && nrow(meta) == length(gr)) 
@@ -6397,6 +6396,33 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 
 
+
+lapply_dt = function(x, dt, LFUN = "identity", natype = NA, as.data.table = T) {
+    if (!is.function(LFUN))
+        LFUN = base::mget(x = 'identity', mode = "function", inherits = T)[[1]]
+    expr = substitute(x)
+    if (is.name(expr))
+        x = x
+    else {
+        x = trimws(gsub(',', "", unlist(strsplit(toString(expr), " "))[-1]))
+        if (!is.null(names(expr)))
+            names(x) = names(expr)[-1]
+    }
+    if (!is.null(names(x)))
+        nm = names(x)
+    else
+        nm = x
+    out = setNames(lst.emptyreplace(lapply(x, function(x, dt) {
+        dt[[x]]
+    }, dt = dt), natype), nm)
+    out = lapply(out, LFUN)
+    if (as.data.table)
+        return(as.data.table(out))
+    else
+        return(out)
+}
+
+
 fix.cols = function(dt, sep = "_") {
     this_sep = sep
     cl = colnames(dt)
@@ -6733,12 +6759,12 @@ good.file = function(x, size.thresh = 0) {
 
 
 upmet = function(set_list) {
-    require(ComplexHeatmap)
-    mc = make_comb_mat(set_list)
-    cn = comb_name(mc)
-    cs = comb_size(mc)
+    ## require(ComplexHeatmap)
+    mc = ComplexHeatmap::make_comb_mat(set_list)
+    cn = ComplexHeatmap::comb_name(mc)
+    cs = ComplexHeatmap::comb_size(mc)
     out = lapply(selfname(cn), function(x) {
-        extract_comb(mc, x)
+        ComplexHeatmap::extract_comb(mc, x)
     }) %>% stack.dt(ind = "combination", values = "elements")
     out = merge(out, data.table(combination = cn, combination_size = cs), by = "combination")
     out = out[order(-combination_size)][, grp := .GRP, by = combination]
@@ -6922,8 +6948,8 @@ vmatch = function(x, y, ...) {
 }
 
 
-file.mat.exists = function(x) {
-    matrify(x) %>% {setRownames(apply(., 2, file.exists), rownames(.))}
+file.mat.exists = function(x, rm_col1 = FALSE) {
+    matrify(x, rm_col1 = rm_col1) %>% {setRownames(apply(., 2, file.exists), rownames(.))}
 }
 
 
@@ -7165,6 +7191,13 @@ lst.empty2na = function(x) {
     ## x[x == "integer(0)"] = NA
     x
 }
+
+
+lst.emptyreplace = function(x, replace = NA) {
+    x[lengths(x) == 0] = replace
+    x
+}
+
 
 lst.empty2null = function(x) {
     x[lengths(x) == 0] = NULL
