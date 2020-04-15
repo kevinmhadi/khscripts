@@ -1278,7 +1278,7 @@ gr.splgaps = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " "), 
   ix = which(!names(lst) %in% c("gr", "sep", "cleannm", "start", "end"))
   tmpix = with(gr, do.call(paste, c(lst[ix], alist(sep = sep))))
   tmpix = factor(tmpix, levels = unique(tmpix))
-  grl = gr %>% split(tmpix)
+  grl = gr %>% GenomicRanges::split(tmpix)
   ## out = tmpgrlgaps(grl, start = start, end = end)
   out = gaps(grl, start = start, end = end)
   mcols(out) = data.table::tstrsplit(names(out), sep)
@@ -1294,7 +1294,7 @@ gr.split = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " ")) {
   ix = which(names(lst) != "gr", "sep")
   tmpix = with(gr, do.call(paste, c(lst[ix], alist(sep = sep))))
   tmpix = factor(tmpix, levels = unique(tmpix))
-  grl = gr %>% split(tmpix)
+  grl = gr %>% GenomicRanges::split(tmpix)
   return(grl)
 }
 
@@ -1304,8 +1304,8 @@ gr.spreduce = function(gr,  ..., pad = 0, sep = paste0(" ", rand.string(length =
   ix = which(!names(lst) %in% c("gr", "sep", "pad"))
   tmpix = with(gr, do.call(paste, c(lst[ix], alist(sep = sep))))
   tmpix = factor(tmpix, levels = unique(tmpix))
-  grl = gr %>% split(tmpix)
-  dt = as.data.table(reduce(grl + pad))
+  grl = gr %>% GenomicRanges::split(tmpix)
+  dt = as.data.table(GenomicRanges::reduce(grl + pad))
   nmix = which(unlist(lapply(lst[ix], function(x) is.name(x) & !is.call(x))))
   nm = lapply(lst[ix], toString)
   rmix = which(unlist(nm) %in% colnames(dt))
@@ -1316,7 +1316,7 @@ gr.spreduce = function(gr,  ..., pad = 0, sep = paste0(" ", rand.string(length =
   ## nm[-nmix] = character(0)
   nm[-nmix] = list(character(0))
   ## nmix = which(!nm == "NULL")
-  dt = dt[, cbind(.SD, setnames(as.data.table(tstrsplit(group_name, split = sep)), nmix, unlist(nm)))][, group_name := NULL]
+  dt = dt[, cbind(.SD, setnames(as.data.table(data.table::tstrsplit(group_name, split = sep)), nmix, unlist(nm)))][, group_name := NULL]
   return(dt2gr(dt))
 }
 
@@ -1675,9 +1675,9 @@ parse.grl2 = function(str, meta = NULL) {
                  ranges = IRanges(as.integer(mat[,3]), as.integer(mat[,5])),
                  strand = ifelse(nchar(mat[,6]) == 0 | !mat[,6] %in% c("+", "-"), "*", mat[,6]),
                  grl.ix = grl.ix)
-    gr = gr.noval(split(gr, gr$grl.ix))
+    gr = gr.noval(GenomicRanges::split(gr, gr$grl.ix))
     if (!is.null(meta) && nrow(meta) == length(gr)) 
-        values(gr) = meta
+        S4Vectors::values(gr) = meta
     return(gr)
 }
 
