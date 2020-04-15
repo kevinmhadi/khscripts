@@ -1276,7 +1276,7 @@ setMethod("gaps", signature(x = "CompressedGRangesList"), tmpgrlgaps)
 gr.splgaps = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " "), start = 1L, end = seqlengths(gr), cleannm = TRUE) {
   lst = as.list(match.call())[-1]
   ix = which(!names(lst) %in% c("gr", "sep", "cleannm", "start", "end"))
-  tmpix = with(gr, do.call(paste, c(lst[ix], alist(sep = sep))))
+  tmpix = with(as.list(mcols(gr)), do.call(paste, c(lst[ix], alist(sep = sep))))
   tmpix = factor(tmpix, levels = unique(tmpix))
   grl = gr %>% GenomicRanges::split(tmpix)
   ## out = tmpgrlgaps(grl, start = start, end = end)
@@ -1292,7 +1292,7 @@ gr.splgaps = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " "), 
 gr.split = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " ")) {
   lst = as.list(match.call())[-1]
   ix = which(names(lst) != "gr", "sep")
-  tmpix = with(gr, do.call(paste, c(lst[ix], alist(sep = sep))))
+  tmpix = with(as.list(mcols(gr)), do.call(paste, c(lst[ix], alist(sep = sep))))
   tmpix = factor(tmpix, levels = unique(tmpix))
   grl = gr %>% GenomicRanges::split(tmpix)
   return(grl)
@@ -1302,7 +1302,7 @@ gr.split = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " ")) {
 gr.spreduce = function(gr,  ..., pad = 0, sep = paste0(" ", rand.string(length = 8), " ")) {
   lst = as.list(match.call())[-1]
   ix = which(!names(lst) %in% c("gr", "sep", "pad"))
-  tmpix = with(gr, do.call(paste, c(lst[ix], alist(sep = sep))))
+  tmpix = with(as.list(mcols(gr)), do.call(paste, c(lst[ix], alist(sep = sep))))
   tmpix = factor(tmpix, levels = unique(tmpix))
   grl = gr %>% GenomicRanges::split(tmpix)
   dt = as.data.table(GenomicRanges::reduce(grl + pad))
@@ -1319,7 +1319,6 @@ gr.spreduce = function(gr,  ..., pad = 0, sep = paste0(" ", rand.string(length =
   dt = dt[, cbind(.SD, setnames(as.data.table(data.table::tstrsplit(group_name, split = sep)), nmix, unlist(nm)))][, group_name := NULL]
   return(dt2gr(dt))
 }
-
 
 ## s4_gr_within = function(data, expr) {
 ##     e <- list2env(as.list(as(data, "DataFrame")))
