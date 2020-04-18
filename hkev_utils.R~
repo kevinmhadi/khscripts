@@ -893,7 +893,12 @@ gt.plot = function(gtrack, win, filename ="plot.png", title = "", h = 10, w = 10
 }
 
 
-plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "jabba_rds", cov.field.name = "cbs_cov_rds", cov.y.field = "ratio", title = "", doplot = TRUE, gt, ...) {
+plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "jabba_rds", cov.field.name = "cbs_cov_rds", cov.y.field = "ratio", title = "", doplot = TRUE, gt, plotfun = "ppng", h = 10, w = 10, ...) {
+    if (is.character(plotfun)) {
+        plotfun = get(plotfun)
+    } else if (!is.function(plotfun)) {
+        stop("plotfun needs to be a function")
+    }
     if (missing(gt)) {
         gg = gG(jabba = pairs[[field.name]])
         if (isTRUE(use.jab.cov))
@@ -907,9 +912,9 @@ plot.jabba = function(pairs, win, filename, use.jab.cov = TRUE, field.name = "ja
         win = si2gr(hg_seqlengths()) %>% keepStandardChromosomes(pruning.mode = "coarse") %>% gr.sort
     if (isTRUE(doplot)) {
         if (missing(filename))
-            ppng(plot(gt, win = win, ...), res = 200, title = title)
+            plotfun(plot(gt, win = win, ...), res = 200, title = title, h = h, w = w)
         else
-            ppng(plot(gt, win = win, ...), filename = filename, res = 200, title = title)
+            plotfun(plot(gt, win = win, ...), filename = filename, res = 200, title = title, h = h, w = w)
     }
     return(gt)
 }
@@ -1008,7 +1013,7 @@ pairs.collect.junctions = function(pairs, jn.field = "complex", id.field = "pair
     mod.dt = mltools::one_hot(cx.edt[, .(simple_type)])
     cx.edt = cbind(select(cx.edt, -matches("^simple_.*$")),
                    rename_all(mod.dt, ~paste0("simple", gsub("simple_type", "", tolower(.)))))
-    ev.types = c("bfb", "chromoplexy", "chromothripsis", "del", "dm", "dup", "fbi", "pyrgo", "qrp", "rigma", "simple_inv", "simple_invdup", "simple_tra", "tic", "tyfonas")
+    ev.types = c("bfb", "chromoplexy", "chromothripsis", "del", "dm", "cpxdm", "dup", "fbi", "pyrgo", "qrp", "rigma", "simple_inv", "simple_invdup", "simple_tra", "tic", "tyfonas")
     cx.mat = as.matrix(mutate_all(replace_na(cx.edt[, ev.types,with = FALSE], 0), as.numeric))
     cx.mat = cx.mat > 0
     mode(cx.mat) = "integer"
@@ -1237,24 +1242,70 @@ as.df = function(obj) {
 ######################
 ######################
 
+tmpgrlgaps = function(x, start = 1L, end = seqlengths(x)) {
+  seqlevels = seqlevels(x)
+  ## if (!is.null(names(start))) 
+  ##   start <- start[seqlevels]
+  ## if (!is.null(names(end))) 
+  ##   end <- end[seqlevels]
+  ## start <- S4Vectors:::recycleVector(start, length(seqlevels))
+  ## start <- rep(start, each = 3L)
+  ## end <- S4Vectors:::recycleVector(end, length(seqlevels))
+  ## end <- rep(end, each = 3L)
+  gr = GenomicRanges:::deconstructGRLintoGR(x)
+  grlix = formatC(seq_along(x), width = floor(log10(length(x))) + 1, format = "d", flag = "0")
+  slix = formatC(seq_along(seqlevels), width = floor(log10(length(seqlevels))) + 1, format = "d", flag = "0")
+  cdt = data.table::CJ(Var1 = grlix, Var2 = slix)[, oix := seq_len(.N)]
+  cdt = merge(cdt, data.frame(sl = seqlengths(x), Var2 = slix), by = "Var2")
+  setkey(cdt, oix)
+  nseqlevels = cdt[, paste(Var1, Var2, sep = "|")]
+  seqlevels(gr) = nseqlevels
+  seqlengths(gr) = cdt$sl
+  rgl = GenomicRanges:::deconstructGRintoRGL(gr)
+  ## rgl2 = gaps(rgl, start = rep(rep(start, cdt[,.N]), each = 3L), end = rep(cdt$sl, each = 3L))
+  rgl2 = gaps(rgl, start = rep(rep(1, cdt[,.N]), each = 3L), end = rep(cdt$sl, each = 3L))
+  GenomicRanges:::reconstructGRLfromGR(GenomicRanges:::reconstructGRfromRGL(rgl2, gr), x)    
+}
 
-gr.split = function(gr, ..., sep = " ") {
+
+setMethod(f = "gaps", signature = signature(x = "CompressedGRangesList"), definition = NULL)
+setMethod(f = "gaps", signature = signature(x = "GRangesList"), definition = NULL)
+setMethod("gaps", signature(x = "GRangesList"), tmpgrlgaps)
+setMethod("gaps", signature(x = "CompressedGRangesList"), tmpgrlgaps)
+
+gr.splgaps = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " "), start = 1L, end = seqlengths(gr), cleannm = TRUE) {
   lst = as.list(match.call())[-1]
-  ix = which(names(lst) != "gr")
-  tmpix = with(gr, do.call(paste, c(lst[ix], list(sep = sep))))
+  ix = which(!names(lst) %in% c("gr", "sep", "cleannm", "start", "end"))
+  tmpix = with(as.list(mcols(gr)), do.call(paste, c(lst[ix], alist(sep = sep))))
   tmpix = factor(tmpix, levels = unique(tmpix))
-  grl = gr %>% split(tmpix)
+  grl = gr %>% GenomicRanges::split(tmpix)
+  ## out = tmpgrlgaps(grl, start = start, end = end)
+  out = gaps(grl, start = start, end = end)
+  mcols(out) = data.table::tstrsplit(names(out), sep)
+  colnames(mcols(out)) = unlist(strsplit(toString(lst[ix]), ", "))
+  if (cleannm)
+    names(out) = gsub(sep, " ", names(out))
+  out
+}
+
+
+gr.split = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " ")) {
+  lst = as.list(match.call())[-1]
+  ix = which(names(lst) != "gr", "sep")
+  tmpix = with(as.list(mcols(gr)), do.call(paste, c(lst[ix], alist(sep = sep))))
+  tmpix = factor(tmpix, levels = unique(tmpix))
+  grl = gr %>% GenomicRanges::split(tmpix)
   return(grl)
 }
 
 
-gr.spreduce = function(gr,  ..., pad = 0, sep = " ") {
+gr.spreduce = function(gr,  ..., pad = 0, sep = paste0(" ", rand.string(length = 8), " ")) {
   lst = as.list(match.call())[-1]
-  ix = which(names(lst) != "gr")
-  tmpix = with(gr, do.call(paste, c(lst[ix], list(sep = sep))))
+  ix = which(!names(lst) %in% c("gr", "sep", "pad"))
+  tmpix = with(as.list(mcols(gr)), do.call(paste, c(lst[ix], alist(sep = sep))))
   tmpix = factor(tmpix, levels = unique(tmpix))
-  grl = gr %>% split(tmpix)
-  dt = as.data.table(reduce(grl + pad))
+  grl = gr %>% GenomicRanges::split(tmpix)
+  dt = as.data.table(GenomicRanges::reduce(grl + pad))
   nmix = which(unlist(lapply(lst[ix], function(x) is.name(x) & !is.call(x))))
   nm = lapply(lst[ix], toString)
   rmix = which(unlist(nm) %in% colnames(dt))
@@ -1265,10 +1316,9 @@ gr.spreduce = function(gr,  ..., pad = 0, sep = " ") {
   ## nm[-nmix] = character(0)
   nm[-nmix] = list(character(0))
   ## nmix = which(!nm == "NULL")
-  dt = dt[, cbind(.SD, setnames(as.data.table(tstrsplit(group_name, split = sep)), nmix, unlist(nm)))][, group_name := NULL]
+  dt = dt[, cbind(.SD, setnames(as.data.table(data.table::tstrsplit(group_name, split = sep)), nmix, unlist(nm)))][, group_name := NULL]
   return(dt2gr(dt))
 }
-
 
 ## s4_gr_within = function(data, expr) {
 ##     e <- list2env(as.list(as(data, "DataFrame")))
@@ -1353,33 +1403,7 @@ gr.spreduce = function(gr,  ..., pad = 0, sep = " ") {
 ##     data
 ## })
 
-gr.within = function(data, expr)  {
-    pf = parent.frame()
-    data2 = as(data, "DataFrame")
-    data2$X = NULL
-    data2$data <- granges(data)
-    data2$start = start(data2$data)
-    data2$end = end(data2$data)
-    data2$strand = as.character(strand(data2$data))
-    data2$width = as.integer(width(data2$data))
-    e = evalq(environment(), data2, pf)
-    eval(substitute(expr, pf), e)
-    reserved <- c("seqnames", "start", "end", "width", "strand",
-                  "data")
-    l <- mget(setdiff(ls(e), reserved), e)
-    l <- l[!sapply(l, is.null)]
-    nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
-    mcols(data) = l
-    if (nD) {
-        for (nm in del) mcols(data)[[nm]] = NULL
-    }
-    if (!identical(granges(data), e$data)) {
-        granges(data) <- e$data
-    }
-    data
-}
-
-setMethod("within", signature(data = "GRanges"), function(data, expr) {
+gr.within = function(data, expr) {
     top_prenv1 = function (x, where = parent.frame())
     {
         sym <- substitute(x, where)
@@ -1413,7 +1437,10 @@ setMethod("within", signature(data = "GRanges"), function(data, expr) {
         granges(data) <- e$data
     }
     data
-})
+}
+
+setMethod("within", signature(data = "GRanges"), NULL)
+setMethod("within", signature(data = "GRanges"), gr.within)
 
 
 setMethod("within", signature(data = "IRanges"), function(data, expr) {
@@ -1450,95 +1477,28 @@ setMethod("within", signature(data = "IRanges"), function(data, expr) {
     data
 })
 
-
-
-## setMethod("within", signature(data = "GRangesList"), function(data, expr) {
-##     pf = parent.frame()
-##     data2 = as(data, "DataFrame")
-##     data2$X = NULL
-##     data2$data <- gr.noval(data)
-##     e = evalq(environment(), data2, pf)
-##     eval(substitute(expr, pf), e)
-##     reserved <- c("seqnames", "start", "end", "width", "strand", "data")
-##     l <- mget(setdiff(ls(e), reserved), e)
-##     l <- l[!sapply(l, is.null)]
-##     nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
-##     mcols(data) = l
-##     if (nD) {
-##         for (nm in del)
-##             mcols(data)[[nm]] = NULL
-##     }
-##     if (!identical(gr.noval(data), e$data)) {
-##         stop("change in the grangeslist detected")
-##     }
-##     data
-## })
-
-
-## setMethod("within", signature(data = "CompressedGRangesList"), function(data, expr) {
-##     pf = parent.frame()
-##     data2 = as(data, "DataFrame")
-##     data2$X = NULL
-##     data2$data <- gr.noval(data)
-##     e = evalq(environment(), data2, pf)
-##     eval(substitute(expr, pf), e)
-##     reserved <- c("seqnames", "start", "end", "width", "strand", "data")
-##     l <- mget(setdiff(ls(e), reserved), e)
-##     l <- l[!sapply(l, is.null)]
-##     nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
-##     mcols(data) = l
-##     if (nD) {
-##         for (nm in del)
-##             mcols(data)[[nm]] = NULL
-##     }
-##     if (!identical(gr.noval(data), e$data)) {
-##         stop("change in the grangeslist detected")
-##     }
-##     data
-## })
-
-
-
-setMethod("within", signature(data = "GRangesList"), function(data, expr) {
-    e <- list2env(as.list(as(data, "DataFrame")))
-    e$X = NULL
-    e$data <- gr.noval(data)
-    S4Vectors:::safeEval(substitute(expr, parent.frame()), e, S4Vectors:::top_prenv(expr))
-    ## reserved <- c("ranges", "start", "end", "width", "space")
-    reserved <- c("seqnames", "start", "end", "width", "strand", "data")
-    l <- mget(setdiff(ls(e), reserved), e)
-    l <- l[!sapply(l, is.null)]
-    nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
-    mcols(data) = l
-    if (nD) {
-        for (nm in del)
-            mcols(data)[[nm]] = NULL
+tmpgrlwithin = function(data, expr) {
+    top_prenv1 = function (x, where = parent.frame())
+    {
+        sym <- substitute(x, where)
+        if (!is.name(sym)) {
+            stop("'x' did not substitute to a symbol")
+        }
+        if (!is.environment(where)) {
+            stop("'where' must be an environment")
+        }
+        .Call2("top_prenv", sym, where, PACKAGE = "S4Vectors")
     }
-    if (!identical(gr.noval(data), e$data)) {
-        stop("change in the grangeslist detected")
-        ## granges(data) <- e$granges
-    } ## else {
-    ##     if (!identical(start(data), start(e$grangeslist)))
-    ##         start(data) <- start(e$grangeslist)
-    ##     if (!identical(end(data), end(e$grangeslist)))
-    ##         end(data) <- end(e$grangeslist)
-    ##     if (!identical(width(data), width(e$grangeslist)))
-    ##         width(data) <- width(e$grangeslist)
-    ## }
-    data
-})
-
-setMethod("within", signature(data = "CompressedGRangesList"), function(data, expr) {
     e <- list2env(as.list(as(data, "DataFrame")))
     e$X = NULL
     e$grangeslist <- gr.noval(data)
-    S4Vectors:::safeEval(substitute(expr, parent.frame()), e, S4Vectors:::top_prenv(expr))
+    S4Vectors:::safeEval(substitute(expr, parent.frame()), e, top_prenv1(expr))
     ## reserved <- c("ranges", "start", "end", "width", "space")
     reserved <- c("seqnames", "start", "end", "width", "strand", "granges", "grangeslist")
     l <- mget(setdiff(ls(e), reserved), e)
     l <- l[!sapply(l, is.null)]
     nD <- length(del <- setdiff(colnames(mcols(data)), (nl <- names(l))))
-    mcols(data) = l
+    mcols(data) = as(l, "DataFrame")
     if (nD) {
         for (nm in del)
             mcols(data)[[nm]] = NULL
@@ -1555,7 +1515,12 @@ setMethod("within", signature(data = "CompressedGRangesList"), function(data, ex
     ##         width(data) <- width(e$grangeslist)
     ## }
     data
-})
+}
+
+setMethod("within", signature(data = "CompressedGRangesList"), NULL)
+setMethod("within", signature(data = "GRangesList"), NULL)
+setMethod("within", signature(data = "CompressedGRangesList"), tmpgrlwithin)
+setMethod("within", signature(data = "GRangesList"), tmpgrlwithin)
 
 
 gr.genome = function(si) {
@@ -1681,30 +1646,37 @@ ra.sort2 = function(grl, ignore.strand = TRUE) {
 }
 
 
-parse.gr2 = function(str) {
-    library(stringi)
-    str = gsub("(\\w+)(:)([[:punct:]]?\\w+)(-)([[:punct:]]?\\w+)([[:punct:]]?)", "\\1 \\2 \\3 \\4 \\5 \\6", str)
-    mat = stri_split_fixed(str, pattern = " ", simplify = "TRUE")
-    gr = GRanges(seqnames = mat[,1],
-            ranges = IRanges(as.integer(mat[,3]), as.integer(mat[,5])),
-            strand = case_when(nchar(mat[,6]) == 0 | !mat[,6] %in% c("+", "-") ~ "*",
-                               TRUE ~ mat[,6]))
-    return(gr)
+## parse.gr2 = function(str) {
+##     library(stringi)
+##     str = gsub("(\\w+)(:)([[:punct:]]?\\w+)(-)([[:punct:]]?\\w+)([[:punct:]]?)", "\\1 \\2 \\3 \\4 \\5 \\6", str)
+##     mat = stri_split_fixed(str, pattern = " ", simplify = "TRUE")
+##     gr = GRanges(seqnames = mat[,1],
+##             ranges = IRanges(as.integer(mat[,3]), as.integer(mat[,5])),
+##             strand = case_when(nchar(mat[,6]) == 0 | !mat[,6] %in% c("+", "-") ~ "*",
+##                                TRUE ~ mat[,6]))
+##     return(gr)
+## }
+
+
+parse.gr2 = function(...) {
+    grl.unlist(parse.grl2(...))
 }
 
-parse.grl2 = function(str) {
-    library(stringi)
-    tmp = stri_split_regex(str, pattern = ",|;")
-    grl.ix = rep(seq_along(tmp), elementNROWS(tmp))
+
+parse.grl2 = function(str, meta = NULL) {
+    ## library(stringi)
+    tmp = stringi::stri_split_regex(str, pattern = ",|;")
+    grl.ix = rep(seq_along(tmp), lengths(tmp))
     tmp = unlist(tmp)
     tmp = gsub("(\\w+)(:)([[:punct:]]?\\w+)(-)([[:punct:]]?\\w+)([[:punct:]]?)", "\\1 \\2 \\3 \\4 \\5 \\6", tmp)
-    mat = stri_split_fixed(tmp, pattern = " ", simplify = "TRUE")
+    mat = stringi::stri_split_fixed(tmp, pattern = " ", simplify = "TRUE")
     gr = GRanges(seqnames = mat[,1],
                  ranges = IRanges(as.integer(mat[,3]), as.integer(mat[,5])),
-                 strand = case_when(nchar(mat[,6]) == 0 | !mat[,6] %in% c("+", "-") ~ "*",
-                                    TRUE ~ mat[,6]),
+                 strand = ifelse(nchar(mat[,6]) == 0 | !mat[,6] %in% c("+", "-"), "*", mat[,6]),
                  grl.ix = grl.ix)
-    gr =gr.noval(split(gr, gr$grl.ix))
+    gr = gr.noval(GenomicRanges::split(gr, gr$grl.ix))
+    if (!is.null(meta) && nrow(meta) == length(gr)) 
+        S4Vectors::values(gr) = meta
     return(gr)
 }
 
@@ -1733,7 +1705,7 @@ parse.grl2 = function(str) {
 ##     grcov %&% win
 ## }
 
-gr_calc_cov = function(gr, PAD = 50, field = NULL, start.base = -1e6, end.base = -5e3, win = 1e4, FUN = "mean", baseline = NULL) {
+gr_calc_cov = function(gr, PAD = 50, field = NULL, start.base = -1e6, end.base = -5e3, win = 1e4, FUN = "mean", baseline = NULL, normfun = "*", normfactor = NULL) {
     win = GRanges("Anchor", IRanges(-abs(win), abs(win)))
     library(plyranges)
     grcov = gUtils::gr.sum(gr + PAD, field = field)
@@ -1745,11 +1717,16 @@ gr_calc_cov = function(gr, PAD = 50, field = NULL, start.base = -1e6, end.base =
     ## grcov2 = gr.tile(GRanges("Anchor", IRanges(start(head(grcov, 1)), end(tail(grcov, 1)))), 1)
     if (!is.empty(grcov)) {
         ## grcov2$score = gr.eval(grcov2, grcov, score, 0)
-        grcov2 = plyranges::join_overlap_inner(grcov2, grcov)
+        grcov2 = within(plyranges::join_overlap_left(grcov2, grcov), {score = replace_na(score, 0)})
         ## grcov2 = grcov2 %$% grcov
         ## grcov2$score = grcov2$score %>% replace_na(0)
     } else {
         grcov2$score = 0
+    }
+    if (!is.null(normfactor)) {
+        if (!(length(normfactor) == length(grcov2) | length(normfactor == 1)))
+            stop("normfactor needs to be same length")
+        grcov2$score = get(normfun)(grcov2$score, normfactor)
     }
     if (is.null(baseline)) {
         baseline = with(grcov2, {
@@ -1761,12 +1738,20 @@ gr_calc_cov = function(gr, PAD = 50, field = NULL, start.base = -1e6, end.base =
     }
     ## baseline = gr2dt(grcov2)[data.table::between(start, (abs(start.base) + PAD) * sign(start.base), ((abs(end.base) + PAD) * sign(end.base)) - 1)][, sum(score * width) / sum(width)]
     score = grcov2$score
+    if (!(length(baseline) == length(score) | length(baseline == 1)))
+        stop("baseline needs to be same length as score or a length 1 vector")
     rel = pmax(score, 0) / (baseline + 1e-12)
     ## grcov2$rel = (grcov2$score) / (baseline + 1e-12)
     grcov2$score = rel
     grcov2$baseline = baseline
     grcov2 %&% win
 }
+
+
+std.calc.cov = function(anci, pad, field = NULL, baseline = NULL, FUN = "median") {
+    gr_calc_cov(anci %>% dt2gr, PAD = pad, start.base = -5e3, end.base = 0, FUN = FUN, field = field, win = 5e3, baseline = baseline)
+}
+
 
 
 rrbind = function (..., union = TRUE, as.data.table = FALSE) {
@@ -3565,6 +3550,14 @@ cx_caller_1 = function(edges, nodes, junctions, sample_id = "", thresh = 1e5, mc
 ##################################################
 #################################################
 
+viewtask = function(jb, arglst = c("name", "arg", "default")) {
+    ifun = function(x, arglst = arglst) {
+        unlist(lst.emptychar2na(lst.zerochar2empty(lapply(arglst, function(y)
+            tryCatch((slot(x, y)), error = function(e) NA_character_)))))
+    }
+    as.data.table(data.table::transpose(lapply(jb@task@args, ifun, arglst = arglst)))
+}
+
 idj = function(x, these.ids) {
     x[match(these.ids, ids(x))]
 }
@@ -3676,6 +3669,14 @@ myqstat = function(mc.cores = 5) {
 ##################################################
 ##################################################
 ##### gTrack stuff!
+
+setMethod("within", signature(data = "gTrack"), function(data, expr) {
+    e = list2env(as.list(formatting(data)))
+    eval(substitute(expr, parent.frame()), e)
+    formatting(data) = as.data.frame(as.list(e))[, c(colnames(formatting(data))),drop = FALSE]
+    return(data)
+})
+
 
 gt.fix = function(gt, lwd.scale = 1, lwd.border.scale = 1, ywid.scale = 1) {
     len = function(ob) if (length(ob) == 0) NULL else ob
@@ -4152,7 +4153,7 @@ gg.anc = function(dat, group = FALSE, print = TRUE, y1 = NA, lwd.border = 1, wes
 }
 
 
-gg.sline = function(x, y, group = "x", smethod = "lm", dens_type = c("point", "hex"), facet1 = NULL, facet2 = NULL, transpose = FALSE, facet_scales = "fixed", formula = y ~ x, print = FALSE, hex_par = list(bins = 50)) {
+gg.sline = function(x, y, group = "x", colour = NULL, smethod = "lm", dens_type = c("point", "hex"), facet1 = NULL, facet2 = NULL, transpose = FALSE, facet_scales = "fixed", formula = y ~ x, print = FALSE, hex_par = list(bins = 50), wes = NULL, cex.scatter = 0.1) {
     if (is.null(facet1)) {
         facet1 = facet2
         facet2 = NULL
@@ -4169,26 +4170,31 @@ gg.sline = function(x, y, group = "x", smethod = "lm", dens_type = c("point", "h
         message("selecting geom_point() as default")
         dens_type = "point"
     }
-    if (identical(dens_type, "hex"))
-        gg = gg + geom_hex(bins = hex_par$bin)
-    else if (identical(dens_type, "point"))
-        gg = gg + geom_point(size = 0.1)
     gg = gg +
         ## geom_smooth(method = lm, se = TRUE) +
         geom_smooth(method = smethod, size = 1, formula = formula)
+    if (identical(dens_type, "hex"))
+        gg = gg + geom_hex(bins = hex_par$bin)
+    else if (identical(dens_type, "point"))
+        if (is.null(colour))
+            gg = gg + geom_point(size = 0.1)
+        else
+            gg = gg + geom_point(mapping = aes(colour = colour), size = cex.scatter)
     ## xlim(0, 1.5e5)
     if (!is.null(dat$facet1)) {
         if (!is.null(dat$facet2)) {
             if (transpose)
-                g = g + facet_grid(facet2 ~ facet1, scales = facet_scales)
-            else g = g + facet_grid(facet1 ~ facet2, scales = facet_scales)
+                gg = gg + facet_grid(facet2 ~ facet1, scales = facet_scales)
+            else gg = gg + facet_grid(facet1 ~ facet2, scales = facet_scales)
         }
         else {
             if (transpose)
-                g = g + facet_grid(. ~ facet1, scales = facet_scales)
-            else g = g + facet_grid(facet1 ~ ., scales = facet_scales)
+                gg = gg + facet_grid(. ~ facet1, scales = facet_scales)
+            else gg = gg + facet_grid(facet1 ~ ., scales = facet_scales)
         }
     }
+    if (!is.null(wes) && is.character(wes))
+        gg = gg + scale_colour_manual(values = brewer.master(length(unique(colour)), wes = TRUE, palette = wes))
     if (print)
         print(gg)
     else
@@ -4719,8 +4725,12 @@ compare.bam.fai = function(bam, fai, return_fasta = TRUE) {
 
 
 
+## hmean = function(vec) {
+##     return(1/(sum(1/vec)/length(vec)))
+## }
+
 hmean = function(vec) {
-    return(1/(sum(1/vec)/length(vec)))
+    return(1/mean(1/vec))
 }
 
 gmean = function(vec) {
@@ -6384,6 +6394,59 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
+
+
+lapply_dt = function(x, dt, LFUN = "identity", natype = NA, as.data.table = T) {
+    if (!is.function(LFUN))
+        LFUN = base::mget(x = 'identity', mode = "function", inherits = T)[[1]]
+    expr = substitute(x)
+    if (is.name(expr))
+        x = x
+    else {
+        x = trimws(gsub(',', "", unlist(strsplit(toString(expr), " "))[-1]))
+        if (!is.null(names(expr)))
+            names(x) = names(expr)[-1]
+    }
+    if (!is.null(names(x)))
+        nm = names(x)
+    else
+        nm = x
+    out = setNames(lst.emptyreplace(lapply(x, function(x, dt) {
+        dt[[x]]
+    }, dt = dt), natype), nm)
+    out = lapply(out, LFUN)
+    if (as.data.table)
+        return(as.data.table(out))
+    else
+        return(out)
+}
+
+
+fix.cols = function(dt, sep = "_") {
+    this_sep = sep
+    cl = colnames(dt)
+    probs.num = grep("^[0-9]", cl)
+    probs.dash = grep("-", cl)
+    if (length(probs.num) | length(probs.dash)) {
+        cl[probs.num] = paste0("X", this_sep, cl[probs.num])
+        cl[probs.dash] = gsub("-", this_sep,  cl[probs.dash])
+    }
+    colnames(dt) = cl
+    return(dt)
+}
+
+mstrsplit = function(x, ...) {
+    lst = strsplit(x = x, ...)
+    mlen = max(lengths(lst))
+    unid = seq_len(mlen)
+    for (i in seq_along(lst)) {
+        length(lst[[i]]) = mlen
+    }
+    ## lst = lapply(lst, "[", unid)
+    ## lst = lapply(lst, "length<-", mlen)
+    return(do.call(rbind, lst))
+}
+
 ## allpunct = "[]/*&^%$#@?=-{}<>;:\\|+~`()]"
 allpunct = '[]/*&^%$#@?=-{}<>;:\\|+~`()\"\']'
 
@@ -6469,19 +6532,19 @@ dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggr
         fun.aggregate = get(fun.aggregate)
     if ("wt" %in% names(lst.call))
         if (is.character(wt) && wt %in% colnames(tbl)) {
-            expr = expression(within(tbl, {dummy = NULL; dummy = 1 * dg(wt, FALSE)}))
+            expr = expression(within(tbl, {dummy = 1 * dg(wt, FALSE)}))
         } else if (is.numeric(wt)) {
-            expr = expression(within(tbl, {dummy = NULL; wt = NULL; dummy = 1 * dg(wt)}))
+            expr = expression(within(tbl, {wt = NULL; dummy = 1 * dg(wt)}))
         } else {
             stop("wt argument must be either a numeric vector, a name of a column, or a column that exists in the table")
         }
     else if (is.null(wt) || isFALSE(wt) || is.na(wt) || length(wt) == 0)
-        expr = expression(within(tbl, {dummy = NULL; dummy = 1}))
+        expr = expression(within(tbl, {dummy = 1}))
     else if (!"wt" %in% names(lst.call)) {
         if ("wt" %in% colnames(tbl)) {
             message("column named \"wt\" found, will weight counts using values in this field")
         }
-        expr = expression(within(tbl, {dummy = NULL; dummy = 1 * dg(wt)}))    
+        expr = expression(within(tbl, {dummy = 1 * dg(wt)}))    
     }
     this.env = environment()
     if (is.null(rh))
@@ -6490,6 +6553,18 @@ dcast.count2 = function(tbl, lh, rh = NULL, countcol = "count", wt = 1, fun.aggr
     if ("1" %in% colnames(out))
         setnames(out, "1", countcol)
     return(out)
+}
+
+dcast.agg = function(tbl, lh, rh = "dummy", fun.aggregate = "sum", value.var, ...) {
+    suppressWarnings({tbl$dummy = NULL})
+    lst.call = as.list(match.call())
+    if (is.name(lst.call$fun.aggregate))
+        fun.aggregate = get(as.character(lst.call$fun.aggregate))
+    else if (is.call(lst.call$fun.aggregate))
+        fun.aggregate
+    else if (is.character(fun.aggregate))
+        fun.aggregate = get(fun.aggregate)
+    return(dcast.wrap(within(tbl, {dummy = "dval"}), lh = lh, rh = "dummy", value.var = value.var, fun.aggregate = fun.aggregate, ...))
 }
 
 
@@ -6562,18 +6637,32 @@ rleid0 = function(x) {
 }
 
 
-rleseq = function(..., clump = FALSE, recurs = FALSE, na.clump = TRUE, na.ignore = FALSE) {
+rleseq = function(..., clump = FALSE, recurs = FALSE, na.clump = TRUE, na.ignore = FALSE,
+                  sep = paste0(" ", rand.string(length = 6), " ")) {
+    force(sep)
+    rand.string <- function(n=1, length=12)
+    {
+        randomString <- c(1:n)                  # initialize vector
+        for (i in 1:n)
+        {
+            randomString[i] <- paste(sample(c(0:9, letters, LETTERS),
+                                            length, replace=TRUE),
+                                     collapse="")
+        }
+        return(randomString)
+    }
     if (isTRUE(na.clump))
-        paste = base::paste
+        paste = function(...,
+                         sep) base::paste(..., sep = sep)
     else
-        paste = function(..., sep = " ") stringr::str_c(..., sep = sep)
+        paste = function(...,
+                         sep) base::paste(stringr::str_c(..., sep = sep))
     lns = lengths(list(...))
     if (!all(lns == lns[1]))
         warning("not all vectors provided have same length")
     fulllens = max(lns, na.rm = T)
-    vec = setNames(paste(...), seq_len(fulllens))
+    vec = setNames(paste(..., sep = sep), seq_len(fulllens))
     ## rlev = rle(paste(as.character(vec)))
-    rlev = rle(vec)
     if (na.ignore) {
         isnotna = which(rowSums(as.data.frame(lapply(list(...), is.na))) == 0)
         out = list(idx = rep(NA, fulllens), seq = rep(NA, fulllens), lns = rep(NA, fulllens))
@@ -6587,11 +6676,12 @@ rleseq = function(..., clump = FALSE, recurs = FALSE, na.clump = TRUE, na.ignore
         return(out)
     }    
     if (!isTRUE(clump)) {
+        rlev = rle(vec)
         if (isTRUE(recurs)) {
             return(unlist(unname(lapply(rlev$lengths, seq_len))))
         } else {
             out = list(
-                    idx = rep(seq_along(rlev$lengths), times = rlev$lengths),
+                idx = rep(seq_along(rlev$lengths), times = rlev$lengths),
                 seq = unlist(unname(lapply(rlev$lengths, seq_len))))
             out$lns = ave(out[[1]], out[[1]], FUN = length)
             ## if (na.ignore)
@@ -6599,6 +6689,9 @@ rleseq = function(..., clump = FALSE, recurs = FALSE, na.clump = TRUE, na.ignore
             return(out)                
         }
     } else {
+        if (!isTRUE(na.clump)) {
+            vec = replace2(vec, which(x == "NA"), dedup(dg(x)[dg(x) == "NA"]))
+        }
         ## vec = setNames(paste(as.character(vec)), seq_along(vec))
         vec = setNames(vec, seq_along(vec))
         lst = split(vec, factor(vec, levels = unique(vec)))
@@ -6628,7 +6721,8 @@ wespanel = function(n) {
 make_heatmap = function(x, trans.fun, breaks = 1e3, grid = TRUE, pfun = "ppng", ...) {
     h = 8; w = 8; col = alpha(bluered(breaks), 0.8)
     Colv = FALSE; Rowv = FALSE; dendrogram = "none"; distfun = dist;
-    key = TRUE
+    key = TRUE;
+    oma.scale = 0
     hclustfun = hclust
     ## rowsep = 1:nrow(.), sepcolor = alpha("black", 0.5), sepwidth = c(0.001, 0.001), colsep = 1:ncol(.),
     if (grid)
@@ -6652,7 +6746,7 @@ make_heatmap = function(x, trans.fun, breaks = 1e3, grid = TRUE, pfun = "ppng", 
                             breaks = breaks + 1, col = col,
                             na.color = alpha('grey', 1),
                             Rowv = Rowv, Colv = Colv, scale = "none",
-                            trace = "none", distfun = distfun, hclustfun = hclustfun, key = key), gridlst)), height = h, width = h)}
+                            trace = "none", distfun = distfun, hclustfun = hclustfun, key = key), gridlst)), height = h, width = h, oma.scale = oma.scale)}
 }
 
 
@@ -6664,12 +6758,12 @@ good.file = function(x, size.thresh = 0) {
 
 
 upmet = function(set_list) {
-    require(ComplexHeatmap)
-    mc = make_comb_mat(set_list)
-    cn = comb_name(mc)
-    cs = comb_size(mc)
+    ## require(ComplexHeatmap)
+    mc = ComplexHeatmap::make_comb_mat(set_list)
+    cn = ComplexHeatmap::comb_name(mc)
+    cs = ComplexHeatmap::comb_size(mc)
     out = lapply(selfname(cn), function(x) {
-        extract_comb(mc, x)
+        ComplexHeatmap::extract_comb(mc, x)
     }) %>% stack.dt(ind = "combination", values = "elements")
     out = merge(out, data.table(combination = cn, combination_size = cs), by = "combination")
     out = out[order(-combination_size)][, grp := .GRP, by = combination]
@@ -6853,8 +6947,8 @@ vmatch = function(x, y, ...) {
 }
 
 
-file.mat.exists = function(x) {
-    matrify(x) %>% {setRownames(apply(., 2, file.exists), rownames(.))}
+file.mat.exists = function(x, rm_col1 = FALSE) {
+    matrify(x, rm_col1 = rm_col1) %>% {setRownames(apply(., 2, file.exists), rownames(.))}
 }
 
 
@@ -6876,10 +6970,22 @@ ave2 = function(x, ..., FUN = mean) {
         x[] <- FUN(x)
     else {
         g <- interaction(...)
-        x = unlist(lapply(split(x, g), FUN))
+        x = lapply(split(x, g), FUN)
     }
     x
 }
+
+
+ave2 = function(x, ..., FUN = mean) {
+    if (missing(...))
+        x[] <- FUN(x)
+    else {
+        g <- interaction(...)
+        x = lapply(split(x, g), FUN)
+    }
+    x
+}
+
 
 f2int = function(this_factor) {
     if (inherits(this_factor, "factor")) {
@@ -7084,6 +7190,13 @@ lst.empty2na = function(x) {
     ## x[x == "integer(0)"] = NA
     x
 }
+
+
+lst.emptyreplace = function(x, replace = NA) {
+    x[lengths(x) == 0] = replace
+    x
+}
+
 
 lst.empty2null = function(x) {
     x[lengths(x) == 0] = NULL
@@ -8296,6 +8409,44 @@ df2gr = function(df,
 }
 
 
+df2grl = function(df,
+                 seqnames.field = "seqnames",
+                 start.field = "start",
+                 end.field = "end",
+                 strand.field = "strand",
+                 split.field = "grl.ix",
+                 ignore.strand = FALSE,
+                 keep.extra.columns = TRUE) {
+    if (inherits(seqnames.field, c("numeric", "integer"))) {
+        seqnames.field = colnames(df)[seqnames.field]
+    }
+    if (inherits(start.field, c("numeric", "integer"))) {
+        start.field = colnames(df)[start.field]
+    }
+    if (inherits(end.field, c("numeric", "integer"))) {
+        end.field = colnames(df)[end.field]
+    }
+    if (inherits(strand.field, c("numeric", "integer"))) {
+        strand.field = colnames(df)[strand.field]
+    }
+    if (inherits(split.field, c("numeric", "integer"))) {
+        split.field = colnames(df)[split.field]
+    }
+    if (!inherits(df, "data.frame")) {
+        df = as.data.frame(df)
+    }
+    makeGRangesListFromDataFrame(df,
+                             seqnames.field = seqnames.field,
+                             start.field = start.field,
+                             end.field = end.field,
+                             strand.field = strand.field,
+                             split.field = split.field,
+                             ignore.strand = ignore.strand,
+                             keep.extra.columns = keep.extra.columns)
+}
+
+
+
 ## make_chunks = function(vec, num_per_chunk = 100) {
 ##         len_to = ceiling(length(vec)/num_per_chunk)
 ##         ids = split(1:length(vec), rep(1:len_to, length.out = length(vec)))
@@ -8471,7 +8622,7 @@ post_asn_ml = function(class_dat, A, w, class_field = "ra_class", out.field = "m
     p_mi_sig = class_dat[, inv_p * t_dt[classes.23405987][, setdiff(colnames(t_dt), "mut_ind"), with = FALSE]]
 ###### getting the signature (column index) with the maximum likelihood
     set.seed(10)
-    ml_sig = base::max.col(as.matrix(p_mi_sig))
+    ml_sig = max.col.narm(as.matrix(p_mi_sig), ties.method = "random")
     ## sigvar = copy(class_dat[, setdiff(colnames(class_dat), c("Mut_Con", "inv_p")), with = FALSE])[, ml_sig := colnames(p_mi_sig)[ml_sig]]
     sigvar = data.table::set(copy(class_dat[, setdiff(colnames(class_dat), c("Mut_Con", "inv_p")), with = FALSE]), j = out.field, value = colnames(p_mi_sig)[ml_sig])
     sigvar$classes.23405987 = NULL

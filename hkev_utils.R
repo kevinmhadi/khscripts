@@ -1273,20 +1273,64 @@ setMethod(f = "gaps", signature = signature(x = "GRangesList"), definition = NUL
 setMethod("gaps", signature(x = "GRangesList"), tmpgrlgaps)
 setMethod("gaps", signature(x = "CompressedGRangesList"), tmpgrlgaps)
 
+## gr.splgaps = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " "), start = 1L, end = seqlengths(gr), reclass = FALSE, cleannm = TRUE) {
+##   lst = as.list(match.call())[-1]
+##   ix = which(!names(lst) %in% c("gr", "sep", "cleannm", "start", "end", "reclass"))
+##   tmpix = with(as.list(mcols(gr)), do.call(paste, c(lst[ix], alist(sep = sep))))
+##   tmpix = factor(tmpix, levels = unique(tmpix))
+##   grl = gr %>% GenomicRanges::split(tmpix)
+##   ## out = tmpgrlgaps(grl, start = start, end = end)
+##   out = gaps(grl, start = start, end = end)
+##   if (reclass) {
+##       oclass = sapply(as.list(mcols(gr)), class)[unlist(lapply(lst[ix], toString))]
+##       mcols(out) = Map(function(x,y) as(x,y),
+##                        data.table::tstrsplit(names(out), sep),
+##                        oclass)
+##   } else {
+##       mcols(out) = data.table::tstrsplit(names(out), sep)
+##   }
+##   mcols(out) = outlst
+##   colnames(mcols(out)) = unlist(strsplit(toString(lst[ix]), ", "))
+##   if (cleannm)
+##       names(out) = gsub(sep, " ", names(out))
+##   out
+## }
+
+
+## gr.splgaps = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " "), start = 1L, end = seqlengths(gr), cleannm = TRUE) {
+##     browser()
+##   lst = as.list(match.call())[-1]
+##   ix = which(!names(lst) %in% c("gr", "sep", "cleannm", "start", "end"))
+##   tmpix = with(as.list(mcols(gr)), do.call(paste, c(lst[ix], alist(sep = sep))))
+##   tmpix = factor(tmpix, levels = unique(tmpix))
+##   grl = gr %>% GenomicRanges::split(tmpix)
+##   ## out = tmpgrlgaps(grl, start = start, end = end)
+##   out = gaps(grl, start = start, end = end)
+##   mcols(out) = data.table::tstrsplit(names(out), sep)
+##   colnames(mcols(out)) = unlist(strsplit(toString(lst[ix]), ", "))
+##   if (cleannm)
+##     names(out) = gsub(sep, " ", names(out))
+##   out
+## }
+
+
 gr.splgaps = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " "), start = 1L, end = seqlengths(gr), cleannm = TRUE) {
-  lst = as.list(match.call())[-1]
-  ix = which(!names(lst) %in% c("gr", "sep", "cleannm", "start", "end"))
-  tmpix = with(as.list(mcols(gr)), do.call(paste, c(lst[ix], alist(sep = sep))))
-  tmpix = factor(tmpix, levels = unique(tmpix))
-  grl = gr %>% GenomicRanges::split(tmpix)
-  ## out = tmpgrlgaps(grl, start = start, end = end)
-  out = gaps(grl, start = start, end = end)
-  mcols(out) = data.table::tstrsplit(names(out), sep)
-  colnames(mcols(out)) = unlist(strsplit(toString(lst[ix]), ", "))
-  if (cleannm)
-    names(out) = gsub(sep, " ", names(out))
-  out
+    lst = as.list(match.call())[-1]
+    ix = which(!names(lst) %in% c("gr", "sep", "cleannm", "start", "end"))
+    tmpix = do.call(function(...) paste(..., sep = sep),
+                    mcols(gr)[,unlist(strsplit(toString(lst[ix]), ', ')),drop = F])
+    unix = which(!duplicated(tmpix))
+    tmpix = factor(tmpix, levels = tmpix[unix])
+    grl = gr.noval(gr) %>% GenomicRanges::split(tmpix)
+    ## out = tmpgrlgaps(grl, start = start, end = end)
+    out = gaps(grl, start = start, end = end)
+    mcols(out) = mcols(gr)[unix,
+                    unlist(strsplit(toString(lst[ix]), ', ')), drop = F]
+    if (cleannm)
+        names(out) = gsub(sep, " ", names(out))
+    return(out)
 }
+
 
 
 gr.split = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " ")) {
@@ -1299,26 +1343,60 @@ gr.split = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " ")) {
 }
 
 
+## gr.spreduce = function(gr,  ..., pad = 0, sep = paste0(" ", rand.string(length = 8), " "), reclass = FALSE) {
+##   lst = as.list(match.call())[-1]
+##   ix = which(!names(lst) %in% c("gr", "sep", "pad", "reclass"))
+##   tmpix = do.call(function(...) paste(..., sep = sep),
+##                   as.list(mcols(gr)[
+##                      ,unlist(strsplit(toString(lst[ix]), ", ")),
+##                       drop = F]))
+##   unix = which(!duplicated(tmpix))
+##   ## ix = which(!duplicated(do.call(cbind,
+##   ##                     as.list(mcols(gr)[,unlist(strsplit(toString(alist(fpair, type)), ", ")),
+##   ##                                       drop = F]))))
+##   ## tmpix = with(as.list(mcols(gr)), do.call(paste, c(lst[ix], alist(sep = sep))))
+##   tmpix = factor(tmpix, levels = tmpix[unix])
+##   ## mcols(grl) = mcols(gr)[unix,unlist(strsplit(toString(alist(fpair, type)), ", ")),drop = F]
+##   grl = gr %>% GenomicRanges::split(tmpix)
+##   dt = as.data.table(GenomicRanges::reduce(grl + pad))
+##   nmix = which(unlist(lapply(lst[ix], function(x) is.name(x) & !is.call(x))))
+##   nm = lapply(lst[ix], toString)
+##   rmix = which(unlist(nm) %in% colnames(dt))
+##   nm[rmix] = list(character(0))
+##   if (length(rmix))
+##     nmix = nmix[-rmix]
+##   ## nm[lengths(nm) == 0] = list(character(0))
+##   ## nm[-nmix] = character(0)
+##   nm[-nmix] = list(character(0))
+##   ## nmix = which(!nm == "NULL")
+##   dt = dt[, cbind(.SD, setnames(as.data.table(data.table::tstrsplit(group_name, split = sep)), nmix, unlist(nm)))][, group_name := NULL]
+##   if (reclass) {
+##       oclass = sapply(as.list(mcols(gr)), class)[unlist(lapply(lst[ix], toString))]
+##       lst = Map(function(x,y) as(x,y), as.list(dt)[names(oclass)], oclass)
+##       data.table::set(dt, j = names(oclass), value = lst)
+##   }
+##   return(dt2gr(dt))
+## }
+
+
 gr.spreduce = function(gr,  ..., pad = 0, sep = paste0(" ", rand.string(length = 8), " ")) {
   lst = as.list(match.call())[-1]
   ix = which(!names(lst) %in% c("gr", "sep", "pad"))
-  tmpix = with(as.list(mcols(gr)), do.call(paste, c(lst[ix], alist(sep = sep))))
-  tmpix = factor(tmpix, levels = unique(tmpix))
-  grl = gr %>% GenomicRanges::split(tmpix)
-  dt = as.data.table(GenomicRanges::reduce(grl + pad))
-  nmix = which(unlist(lapply(lst[ix], function(x) is.name(x) & !is.call(x))))
-  nm = lapply(lst[ix], toString)
-  rmix = which(unlist(nm) %in% colnames(dt))
-  nm[rmix] = list(character(0))
-  if (length(rmix))
-    nmix = nmix[-rmix]
-  ## nm[lengths(nm) == 0] = list(character(0))
-  ## nm[-nmix] = character(0)
-  nm[-nmix] = list(character(0))
-  ## nmix = which(!nm == "NULL")
-  dt = dt[, cbind(.SD, setnames(as.data.table(data.table::tstrsplit(group_name, split = sep)), nmix, unlist(nm)))][, group_name := NULL]
-  return(dt2gr(dt))
+  tmpix = do.call(
+      function(...) paste(..., sep = sep),
+      as.list(mcols(gr)[
+         ,unlist(strsplit(toString(lst[ix]),", ")),
+          drop = F]))
+  unix = which(!duplicated(tmpix))
+  tmpix = factor(tmpix, levels = tmpix[unix])
+  grl = unname(gr.noval(gr) %>% GenomicRanges::split(tmpix))
+  grl = GenomicRanges::reduce(grl + pad)
+  out = unlist(grl)
+  mcols(out) = mcols(gr)[rep(unix, times = IRanges::width(grl@partitioning)),
+                         unlist(strsplit(toString(lst[ix]), ", ")),drop = F]
+  return(out)
 }
+
 
 ## s4_gr_within = function(data, expr) {
 ##     e <- list2env(as.list(as(data, "DataFrame")))
@@ -1402,6 +1480,7 @@ gr.spreduce = function(gr,  ..., pad = 0, sep = paste0(" ", rand.string(length =
 ##     }
 ##     data
 ## })
+
 
 gr.within = function(data, expr) {
     top_prenv1 = function (x, where = parent.frame())
@@ -6947,8 +7026,12 @@ vmatch = function(x, y, ...) {
 }
 
 
-file.mat.exists = function(x, rm_col1 = FALSE) {
-    matrify(x, rm_col1 = rm_col1) %>% {setRownames(apply(., 2, file.exists), rownames(.))}
+file.mat.exists = function(x, rm_col1 = FALSE, falsetona = TRUE) {
+    out = matrify(x, rm_col1 = rm_col1) %>% {setRownames(apply(., 2, file.exists), rownames(.))}
+    if (falsetona)
+        return(replace2(out, x == FALSE, NA))
+    else
+        return(out)
 }
 
 
