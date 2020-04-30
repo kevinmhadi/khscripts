@@ -357,6 +357,24 @@ find_dups = function(vec, re_sort = FALSE) {
 }
 
 
+find_dups = function(..., re_sort = FALSE, sep = " ") {
+  lst = as.list(match.call())[-1]
+  ix = setdiff(seq_along(lst), which(names(lst) %in% c("re_sort")))
+  cl = sapply(lst[ix], class)
+  if (length(ix) > 1)
+    vec = do.call(function(...) paste(..., sep = sep), alist(...))
+  else
+    vec = unlist(list(...))
+  dupix = which(duplicated(vec))
+  if (!re_sort) {
+    return(which(vec %in% vec[dupix]))
+  } else {
+    matching_idx = match2(sort(vec[dupix]), vec)
+    return(which(!is.na(matching_idx))[order(na.omit(matching_idx))])
+  }
+}
+
+
 #' @name undup
 #' @title an alternative to base::unique() that preserves names
 #'
@@ -377,6 +395,10 @@ selfname = function(char) {setNames(char, char)}
 check_lst = function(lst, class_condition = c("try-error", "error", "errored", "err"))
 {
     unlist(lapply(lst, function(x) class(x)[1])) %in% class_condition
+}
+
+iderr = function(lst, class_condition = c("try-error", "error", "errored", "err")) {
+  which(check_lst(lst))
 }
 
 #' a wrapper around check_lst
@@ -867,21 +889,27 @@ allsame = function(obj)
 
 
 pairs.filter.sv = function(tbl, id.field, sv.field = "svaba_unfiltered_somatic_vcf", mc.cores = 1, pon.path = '~/lab/projects/CCLE/db/tcga_and_1kg_sv_pon.rds') {
-    if (missing(id.field))
-        id.field = key(tbl)
-    if (is.null(id.field))
-        stop("please specify an id field")
-    if (!exists("sv_pon")) {
-        message("no sv_pon variable found...", "\n",
-                "loading ", pon.path)
-        sv_pon = gr.noval(readRDS(pon.path))
-    }
-    iter.fun = function(pr, tbl) {
-        ent = tbl[get(id.field) == pr]
-        .filter_sv(ent)
-    }
-    out = rbindlist(mclapply(mc.cores = mc.cores,
-                   tbl[[id.field]], iter.fun, tbl = tbl))
+  if (missing(id.field))
+    id.field = key(tbl)
+  if (is.null(id.field))
+    stop("please specify an id field")
+  if (!exists("sv_pon")) {
+    message("no sv_pon variable found...", "\n",
+      "loading ", pon.path)
+    sv_pon = gr.noval(readRDS(pon.path))
+  }
+  iter.fun = function(pr, tbl) {
+    try2({
+      ent = tbl[get(id.field) == pr]
+      return(.filter_sv(ent))
+    })
+  }
+  out = mclapply(mc.cores = mc.cores,
+    tbl[[id.field]], iter.fun, tbl = tbl)
+  out = tryCatch(rbindlist(out), error = function(e) {
+    message("error at rbindlist, returning list"); out
+  })
+  return(out)
 }
 
 
@@ -1242,6 +1270,20 @@ as.df = function(obj) {
 ######################
 ######################
 
+gr.resize = function(gr, wid, each = TRUE, resize = TRUE, fix = "center") {
+    if (resize) {
+        if (isTRUE(each)) {
+            wid = wid * 2
+        }
+        width.arg = pmax(width(gr) + wid, 1)
+    }
+  else
+    width.arg = pmax(wid, 0)
+  return(GenomicRanges::resize(gr,
+    width = width.arg,
+    fix = fix))
+}
+
 tmpgrlgaps = function(x, start = 1L, end = seqlengths(x)) {
   seqlevels = seqlevels(x)
   ## if (!is.null(names(start))) 
@@ -1315,20 +1357,27 @@ setMethod("gaps", signature(x = "CompressedGRangesList"), tmpgrlgaps)
 
 
 gr.splgaps = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " "), start = 1L, end = seqlengths(gr), cleannm = TRUE) {
-    lst = as.list(match.call())[-1]
-    ix = which(!names(lst) %in% c("gr", "sep", "cleannm", "start", "end"))
-    tmpix = do.call(function(...) paste(..., sep = sep),
-                    mcols(gr)[,unlist(strsplit(toString(lst[ix]), ', ')),drop = F])
-    unix = which(!duplicated(tmpix))
-    tmpix = factor(tmpix, levels = tmpix[unix])
-    grl = gr.noval(gr) %>% GenomicRanges::split(tmpix)
-    ## out = tmpgrlgaps(grl, start = start, end = end)
-    out = gaps(grl, start = start, end = end)
-    mcols(out) = mcols(gr)[unix,
-                    unlist(strsplit(toString(lst[ix]), ', ')), drop = F]
-    if (cleannm)
-        names(out) = gsub(sep, " ", names(out))
-    return(out)
+  lst = as.list(match.call())[-1]
+  ix = which(!names(lst) %in% c("gr", "sep", "cleannm", "start", "end"))
+  cl = sapply(lst[ix], class)
+  vars = unlist(sapply(lst[ix], function(x) unlist(sapply(x, toString))))
+  if (length(vars) == 1) {
+    if (!vars %in% colnames(mcols(gr)))
+      vars = tryCatch(unlist(list(...)), error = function(e) vars)
+  }
+  if (!all(vars %in% colnames(mcols(gr))))
+    stop("Must specify valid metadata columns in gr")
+  tmpix = do.call(function(...) paste(..., sep = sep),
+    mcols(gr)[,vars,drop = F])
+  unix = which(!duplicated(tmpix))
+  tmpix = factor(tmpix, levels = tmpix[unix])
+  grl = gr.noval(gr) %>% GenomicRanges::split(tmpix)
+  ## out = tmpgrlgaps(grl, start = start, end = end)
+  out = gaps(grl, start = start, end = end)
+  mcols(out) = mcols(gr)[unix,vars, drop = F]
+  if (cleannm)
+    names(out) = gsub(sep, " ", names(out))
+  return(out)
 }
 
 
@@ -1379,22 +1428,32 @@ gr.split = function(gr, ..., sep = paste0(" ", rand.string(length = 8), " ")) {
 ## }
 
 
-gr.spreduce = function(gr,  ..., pad = 0, sep = paste0(" ", rand.string(length = 8), " ")) {
+gr.spreduce = function(gr,  ..., ignore.strand = FALSE, pad = 0, return.grl = FALSE, sep = paste0(" ", rand.string(length = 8), " ")) {
   lst = as.list(match.call())[-1]
-  ix = which(!names(lst) %in% c("gr", "sep", "pad"))
+  ix = which(!names(lst) %in% c("gr", "sep", "pad", "ignore.strand", "return.grl"))
+  vars = unlist(sapply(lst[ix], function(x) unlist(sapply(x, toString))))
+  if (length(vars) == 1) {
+    if (!vars %in% colnames(mcols(gr)))
+      vars = tryCatch(unlist(list(...)), error = function(e) vars)
+  }
+  if (!all(vars %in% colnames(mcols(gr))))
+    stop("Must specify valid metadata columns in gr")
   tmpix = do.call(
-      function(...) paste(..., sep = sep),
-      as.list(mcols(gr)[
-         ,unlist(strsplit(toString(lst[ix]),", ")),
-          drop = F]))
+    function(...) paste(..., sep = sep),
+    as.list(mcols(gr)[,vars, drop = F]))
   unix = which(!duplicated(tmpix))
   tmpix = factor(tmpix, levels = tmpix[unix])
   grl = unname(gr.noval(gr) %>% GenomicRanges::split(tmpix))
-  grl = GenomicRanges::reduce(grl + pad)
-  out = unlist(grl)
-  mcols(out) = mcols(gr)[rep(unix, times = IRanges::width(grl@partitioning)),
-                         unlist(strsplit(toString(lst[ix]), ", ")),drop = F]
-  return(out)
+  grl = GenomicRanges::reduce(grl + pad, ignore.strand = ignore.strand)
+  if (return.grl) {
+    mcols(grl) = mcols(gr)[unix,vars,drop = F]
+    return(grl)
+  } else {
+    out = unlist(grl)
+    mcols(out) = mcols(gr)[rep(unix, times = IRanges::width(grl@partitioning)),
+      vars,drop = F]
+    return(out)
+  }
 }
 
 
@@ -1690,6 +1749,51 @@ attributes(gr2dtmod) <- attributes(oldgr2dt)  # don't know if this is really nee
 assignInNamespace("gr2dt", gr2dtmod, ns="gUtils")
 gr2dt = gr2dtmod
 
+
+gr.setdiff2 = function (query, subject, ignore.strand = TRUE, by = NULL, new = TRUE, ...) 
+{
+  if (!is.null(by)) {
+    if (ignore.strand) {
+      query = gr.stripstrand(query)
+      subject = gr.stripstrand(subject)
+    }
+    sl = seqlengths(query)
+    if (new)
+      gp = do.call(gr.splgaps, c(alist(gr = gr.fix(subject, query)), ... = lapply(by, str2lang)))
+    else {
+      tmp = gr2dt(subject)
+      tmp$strand = factor(tmp$strand, c("+", "-", "*"))
+      gp = dt2gr(tmp[, as.data.frame(gaps(GRanges(seqnames, 
+        IRanges(start, end), seqlengths = sl, strand = strand))), 
+      , by = by], seqinfo = seqinfo(query))
+    }
+    qdt = as.data.table(mcols(gr.noval(query, keep.col = by)))[, query.id := seq_len(.N)]
+    sdt = as.data.table(mcols(gr.noval(subject, keep.col = by)))[, subject.id := seq_len(.N)]
+    mdt = merge(setkeyv(unique(qdt[,-c("query.id")][, inx := TRUE]), by),
+      setkeyv(unique(sdt[, -c("subject.id")][, iny := TRUE]), by), all = T)[is.na(iny)]
+    rm(sdt)
+    gp = grl.unlist(gp)
+    if (nrow(mdt)) {
+      gp = grbind(gp, gr.spreduce(gr.noval(query[merge(qdt, mdt, by = by)$query.id],
+        keep.col = by), by))
+    }
+    rm(mdt, qdt)
+    if (ignore.strand)
+      gp = gr.stripstrand(gp[strand(gp) == "*"])
+  }
+  else {
+    if (ignore.strand) {
+      gp = gaps(gr.stripstrand(subject)) %Q% (strand == 
+                                                "*")
+    }
+    else {
+      gp = gaps(subject)
+    }
+  }
+  out = gr.findoverlaps(query, gp, qcol = names(values(query)), 
+    ignore.strand = ignore.strand, by = by, ...)
+  return(out)
+}
 
 
 ra.order = function(grl, ignore.strand = TRUE) {
@@ -3630,11 +3734,17 @@ cx_caller_1 = function(edges, nodes, junctions, sample_id = "", thresh = 1e5, mc
 #################################################
 
 viewtask = function(jb, arglst = c("name", "arg", "default")) {
-    ifun = function(x, arglst = arglst) {
-        unlist(lst.emptychar2na(lst.zerochar2empty(lapply(arglst, function(y)
-            tryCatch((slot(x, y)), error = function(e) NA_character_)))))
-    }
-    as.data.table(data.table::transpose(lapply(jb@task@args, ifun, arglst = arglst)))
+  ifun = function(x, arglst = arglst) {
+    unlist(lst.emptychar2na(lst.zerochar2empty(lapply(arglst, function(y)
+      tryCatch((slot(x, y)), error = function(e) NA_character_)))))
+  }
+  if (inherits(jb, "Job"))
+    obj = jb@task
+  else if (inherits(jb, "Task"))
+    obj = jb
+  else if (inherits(jb, "character"))
+    obj = Task(jb)
+  as.data.table(data.table::transpose(lapply(obj@args, ifun, arglst = arglst)))
 }
 
 idj = function(x, these.ids) {
@@ -6473,31 +6583,38 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
+debug.s4 = function(what, signature, where) {
+  trace(what = what, tracer = browser, at = 1, signature = signature, where = where)
+}
+
+undebug.s4 = function(what, signature, where) {
+  untrace(what = what, signature = signature, where = where)
+}
 
 
 lapply_dt = function(x, dt, LFUN = "identity", natype = NA, as.data.table = T) {
-    if (!is.function(LFUN))
-        LFUN = base::mget(x = 'identity', mode = "function", inherits = T)[[1]]
-    expr = substitute(x)
-    if (is.name(expr))
-        x = x
-    else {
-        x = trimws(gsub(',', "", unlist(strsplit(toString(expr), " "))[-1]))
-        if (!is.null(names(expr)))
-            names(x) = names(expr)[-1]
-    }
-    if (!is.null(names(x)))
-        nm = names(x)
-    else
-        nm = x
-    out = setNames(lst.emptyreplace(lapply(x, function(x, dt) {
-        dt[[x]]
-    }, dt = dt), natype), nm)
-    out = lapply(out, LFUN)
-    if (as.data.table)
-        return(as.data.table(out))
-    else
-        return(out)
+  if (!is.function(LFUN))
+    LFUN = base::mget(x = 'identity', mode = "function", inherits = T)[[1]]
+  expr = substitute(x)
+  if (is.name(expr))
+    x = x
+  else {
+    x = trimws(gsub(',', "", unlist(strsplit(toString(expr), " "))[-1]))
+    if (!is.null(names(expr)))
+      names(x) = names(expr)[-1]
+  }
+  if (!is.null(names(x)))
+    nm = ifelse(nchar(names(x)) == 0, x, names(x))
+  else
+    nm = x
+  out = setNames(lst.emptyreplace(lapply(x, function(x, dt) {
+    dt[[x]]
+  }, dt = dt), natype), nm)
+  out = lapply(out, LFUN)
+  if (as.data.table)
+    return(as.data.table(out))
+  else
+    return(out)
 }
 
 
@@ -7058,16 +7175,6 @@ ave2 = function(x, ..., FUN = mean) {
     x
 }
 
-
-ave2 = function(x, ..., FUN = mean) {
-    if (missing(...))
-        x[] <- FUN(x)
-    else {
-        g <- interaction(...)
-        x = lapply(split(x, g), FUN)
-    }
-    x
-}
 
 
 f2int = function(this_factor) {

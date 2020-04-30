@@ -161,6 +161,7 @@ merge.repl = function(dt.x,
                       force_y = TRUE,
                       overwrite_x = FALSE,
                       keep_order = FALSE,
+                      keep_colorder = TRUE,
                       ...)
 {
     is_forcats = require(forcats)
@@ -344,8 +345,18 @@ merge.repl = function(dt.x,
                     value = list(NULL, NULL))
     ## dt.repl$in.y.2345098712340987 = NULL
     ## dt.repl$in.x.2345098712340987 = NULL
-    invisible(dt.repl)
+    ## invisible(dt.repl)
+    if (keep_colorder) {
+        x_cols = colnames(dt.x)
+        ## get the order of columns in dt.repl in order of X with
+        ## additional columns tacked on end
+        setcolorder(dt.repl,
+                    intersect(union(colnames(dt.x), colnames(dt.repl)),
+                              colnames(dt.repl)))
+    }
+    return(dt.repl)
 }
+
 
 merge.suff = function(dt.x, dt.y, suffix = NULL, replace_in_x = FALSE,  sep = "_") {
     return(merge.repl(dt.x, dt.y, replace_in_x = replace_in_x, suffix = suffix, sep = sep))
