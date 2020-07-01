@@ -97,6 +97,7 @@ data.table::setDTthreads(1)
 `%+%` = gUtils::`%+%`
 `%-%` = gUtils::`%-%`
 `%^%` = gUtils::`%^%`
+width = GenomicRanges::width
 reduce = GenomicRanges::reduce
 between = data.table::between
 setnames = data.table::setnames

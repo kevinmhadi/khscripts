@@ -28,10 +28,12 @@ options(device = grDevices::pdf)
 suppressWarnings(expr = {
     suppressMessages(expr = {
         suppressPackageStartupMessages(expr = {
-            withr::with_libpaths(priv_lib, library(gTrack), action = "prefix")
+            withr::with_libpaths(lab_lib, library(gTrack), action = "prefix")
+            withr::with_libpaths(lab_lib, library(Flow), action = "prefix")
+            ## withr::with_libpaths(priv_lib, library(gTrack), action = "prefix")
             withr::with_libpaths(priv_lib, library(igraph), action = "prefix")
             withr::with_libpaths(priv_lib, library(dplyr), action = "prefix")
-            withr::with_libpaths(priv_lib, library(Flow), action = "prefix")
+            ## withr::with_libpaths(priv_lib, library(Flow), action = "prefix")
             library(gGnome)
             library(gUtils)
             library(colorspace)

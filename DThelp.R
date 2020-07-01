@@ -432,6 +432,22 @@ dt_na2zero = function(dt, these_cols = NULL) {
 }
 
 
+dt_nareplace = function(dt, these_cols, reval) {
+    if (!inherits(dt, "data.table")) {
+        setDT(dt)
+    }
+    for (this_col in these_cols) {
+        this_val = dt[[this_col]]
+        this_val = replace(this_val, which(is.na(this_val)), reval)
+        ## this_val = as.data.frame(dt)[, this_col]
+        data.table::set(dt, j = this_col, value = this_val)
+        ## dt[, this_col] = this_val
+    }
+    return(dt)
+}
+
+
+
 dt_na2empty = function(dt) {
     these_cols = which(sapply(dt, class) == "character")
     for (this_col in these_cols) {
