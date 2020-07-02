@@ -6809,6 +6809,15 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 
 
+
+write.ctab = function (x, ..., sep = ",", quote = T, row.names = F) 
+{
+    if (!is.data.frame(x)) 
+        x = as.data.frame(x)
+    write.table(x, ..., sep = sep, quote = quote, row.names = row.names)
+}
+
+
 column_to_rownames = function(.data, var = "rowname") {
     ## if (inherits(.data, c("data.frame", "DFrame"))) {
     if (!is.null(dim(.data))) {
@@ -6829,6 +6838,7 @@ column_to_rownames = function(.data, var = "rowname") {
         stop("must be a data frame-like object")
 }
 
+col2rn = column_to_rownames
 
 rownames_to_column = function(.data, var = "rowname", keep.rownames = FALSE) {
     ## if (inherits(.data, c("data.frame", "DFrame"))) {
@@ -6846,6 +6856,7 @@ rownames_to_column = function(.data, var = "rowname", keep.rownames = FALSE) {
         stop("must be a data frame-like object")
 }
 
+rn2col = rownames_to_column
 
 
 numeq = function(x, y, tol = .Machine$double.eps^0.5) {
@@ -7373,11 +7384,16 @@ upmet = function(set_list) {
 }
 
 
-dedup.cols = function(tbl) {
-    if (!inherits(tbl, "data.table"))
-        tbl[, match(unique(colnames(tbl)), colnames(tbl))]
-    else
-        tbl[, match(unique(colnames(tbl)), colnames(tbl)), with = FALSE]
+dedup.cols = function(tbl, remove = FALSE) {
+    if (remove) {
+        if (!inherits(tbl, "data.table"))
+            return(tbl[, match(unique(colnames(tbl)), colnames(tbl))])
+        else
+            return(tbl[, match(unique(colnames(tbl)), colnames(tbl)), with = FALSE])
+    } else {
+            colnames(tbl) = dedup(colnames(tbl))
+            return(tbl)
+    }
 }
 
 
