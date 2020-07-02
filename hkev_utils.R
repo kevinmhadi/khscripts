@@ -2972,6 +2972,8 @@ ra.overlaps6 = function(ra1, ra2, pad = 0) {
     ra2 = gr.noval(ra2)
     bp1 = grl.unlist(ra1) + pad
     bp2 = grl.unlist(ra2) + pad
+    ra1 = gr.fix(ra1, ra2)
+    ra2 = gr.fix(ra2, ra1)
     ix2 = unname(plyranges::find_overlaps_directed(bp1, bp2))
     ix2 = gr2dt(ix2)
     ix2[, ra.match := all(c(1,2) %in% grl.iix.x & all(c(1,2) %in% grl.iix.y)), by = .(grl.ix.x, grl.ix.y)]
