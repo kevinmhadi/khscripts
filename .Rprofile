@@ -23,7 +23,8 @@ forcefun = function(envir = globalenv(), evalenvir = globalenv()) {
 
 
 relib2 = function(lib = 'Flow', force = TRUE, unload = TRUE)
-{    
+{
+    suppressMessages(forceload())
     if (sprintf("package:%s", lib) %in% search())
     {
         expr = sprintf("detach(package:%s, force = force, unload = unload)", lib)
@@ -31,8 +32,34 @@ relib2 = function(lib = 'Flow', force = TRUE, unload = TRUE)
     }
     txt = sprintf("library(%s)", lib)
     eval(parse(text = txt))
+    suppressMessages(forceload())
 }
 
+detach2 = function(lib = "Flow", force = TRUE, unload = TRUE) {
+    suppressMessages(forceload())
+    if (sprintf("package:%s", lib) %in% search())
+    {
+        expr = sprintf("detach(package:%s, force = force, unload = unload)", lib)
+        eval(parse(text = expr))
+        tryCatch(unload(lib), error = function(e) NULL)
+    }
+    suppressMessages(forceload())
+}
+
+library2 = function(x, ...) {
+    suppressMessages(forceload())
+    arg = as.list(match.call())[["x"]]
+    if (is.symbol(arg)) {
+        lib = tryCatch(as.character(eval(arg)), error = function(e) arg)
+        if (!is.character(lib)) {
+            lib = toString(lib)
+        }
+    } else {
+        lib = x
+    }
+    library(lib, character.only = T, ...)
+    suppressMessages(forceload())
+}
 
 force2 = function(x)
     tryCatch(x, error = function(e) NULL)

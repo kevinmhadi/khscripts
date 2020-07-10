@@ -2032,7 +2032,7 @@ gr_calc_cov = function(gr, PAD = 50, field = NULL, start.base = -1e6, end.base =
     gr = dt2gr(gr)
   }
   win = GRanges("Anchor", IRanges(-abs(win), abs(win)))
-  library(plyranges)
+  silent({library(plyranges); forceload()})
   grcov = gUtils::gr.sum(gr + PAD, field = field)
   if (!is.null(field))
     grcov = grcov %>% select(score = !!field)
@@ -6810,6 +6810,55 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
+file.exists2 = function(x, nullfile = "/dev/null") {
+    return(!file.not.exists(x = x, nullfile = nullfile))
+}
+
+file.not.exists = function(x, nullfile = "/dev/null", bad = c(NA, "NA", "NULL")) {
+    isnul = (is.null(x))
+    isbadfile = 
+        (x %in% bad | x == nullfile) |
+        (x != nullfile & !file.exists(as.character(x)))
+    isnolength = len(x) == 0
+    return(isnul | isnolength | isbadfile)
+}
+
+overwriteR6 = function(newfun, oldfun, r6gen, meth = "public_methods", package = NULL, envir = globalenv()) {
+    meth = ifelse(grepl("^pub", meth), "public_methods",
+           ifelse(grepl("^pri", meth), "private_methods",
+           ifelse(grepl("^act", meth), "active",
+                  NA_character_)))
+    if (is.na(meth))
+        stop("method must refer to public, private, or active method")
+    if (!is.null(package)) {
+        if (is.character(package))
+            envpkg = asNamespace(package)
+        else if (isNamespace(package))
+            envpkg = package
+        nmpkg = environmentName(envpkg)
+    }
+    r6 = get(r6gen)
+    tmpfun = r6[[meth]][[oldfun]]
+    .newfun = get(newfun)
+    environment(.newfun) = environment(tmpfun)
+    attributes(.newfun) = attributes(tmpfun)
+    r6[[meth]][[oldfun]] = .newfun
+    NULL
+}
+
+
+overwritefun = function(newfun, oldfun, package, envir = globalenv()) {
+    if (is.character(package))
+        envpkg = asNamespace(package)
+    else if (isNamespace(package))
+        envpkg = package
+    nmpkg = environmentName(envpkg)
+    tmpfun = get(oldfun, envir = envpkg)
+    .newfun = get(newfun)
+    environment(.newfun) = environment(tmpfun)
+    attributes(.newfun) = attributes(tmpfun)
+    eval(assignInNamespace(oldfun, .newfun, ns = nmpkg), globalenv())
+}
 
 
 write.ctab = function (x, ..., sep = ",", quote = T, row.names = F) 
@@ -7408,13 +7457,16 @@ pinch = function(x, fmin = 0.01, fmax = 0.99) {
     pmax(pmin(x, fmax), fmin)
 }
 
-
-binom.conf = function(n, tot, alpha = 0.025) {
-    conf.low = qbinom(p = (1 - (alpha)), size = tot, prob = n / tot, lower.tail = FALSE) / tot
-    conf.high= qbinom(p = (1 - (alpha)), size = tot, prob = n / tot, lower.tail = TRUE) / tot
-    data.table(frac = n / tot, conf.low, conf.high)
+binom.conf = function(n, tot, alpha = 0.025, tol = 1e-8) {
+    suppressWarnings({
+        conf.low = qbinom(p = (1 - (alpha)), size = tot, prob = n / tot, lower.tail = FALSE) / tot
+        conf.high= qbinom(p = (1 - (alpha)), size = tot, prob = n / tot, lower.tail = TRUE) / tot
+    })
+    dt = data.table(frac = n / (tot + tol),
+                    conf.low = replace2(conf.low, is.na(x), 0),
+                    conf.high = replace2(conf.high, is.na(x), 0))
+    return(dt)
 }
-
 
 ## getdat = function() { ## to be used within "with()" expr
 ##     pf = parent.frame(3)
@@ -7741,7 +7793,7 @@ ne = function(...) {
 #' no standard out/error printed to console
 #'
 #' @param ... an expression
-silent = function(this_expr, this_env = parent.frame(1)) {
+silent = function(this_expr, this_env = parent.frame()) {
     eval(expr = {capture.output(
             capture.output(... = this_expr,
                            file = "/dev/null",
@@ -7749,7 +7801,9 @@ silent = function(this_expr, this_env = parent.frame(1)) {
             file = "/dev/null",
             type = "message")
     }, envir = this_env)
+    invisible()
 }
+
 ## silent = function(this_expr, this_env = parent.frame(1)) {
 ##     eval(expr = {
 ##         capture.output(... = this_expr,
