@@ -29,8 +29,10 @@ relib2 = function(lib = 'Flow', force = TRUE, unload = TRUE)
     {
         expr = sprintf("detach(package:%s, force = force, unload = unload)", lib)
         eval(parse(text = expr))
+        ## tryCatch(unload(lib), error = function(e) NULL) ## DO NOT use this line...
+        ## it will break re-librarying
     }
-    txt = sprintf("library(%s)", lib)
+    txt = sprintf("library2(%s)", lib)
     eval(parse(text = txt))
     suppressMessages(forceload())
 }
@@ -40,7 +42,7 @@ detach2 = function(lib = "Flow", force = TRUE, unload = TRUE) {
     if (sprintf("package:%s", lib) %in% search())
     {
         expr = sprintf("detach(package:%s, force = force, unload = unload)", lib)
-        eval(parse(text = expr))
+        suppressMessages(eval(parse(text = expr)))
         tryCatch(unload(lib), error = function(e) NULL)
     }
     suppressMessages(forceload())

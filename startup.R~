@@ -25,13 +25,15 @@ library(withr)
 library(tools)
 options(device = grDevices::pdf)
 
-suppressWarnings(expr = {
-    suppressMessages(expr = {
-        suppressPackageStartupMessages(expr = {
-            withr::with_libpaths(priv_lib, library(gTrack), action = "prefix")
+## suppressWarnings(expr = {
+##     suppressMessages(expr = {
+##         suppressPackageStartupMessages(expr = {
+            withr::with_libpaths(lab_lib, library(gTrack), action = "prefix")
+            withr::with_libpaths(lab_lib, library(Flow), action = "prefix")
+            ## withr::with_libpaths(priv_lib, library(gTrack), action = "prefix")
             withr::with_libpaths(priv_lib, library(igraph), action = "prefix")
             withr::with_libpaths(priv_lib, library(dplyr), action = "prefix")
-            withr::with_libpaths(priv_lib, library(Flow), action = "prefix")
+            ## withr::with_libpaths(priv_lib, library(Flow), action = "prefix")
             library(gGnome)
             library(gUtils)
             library(colorspace)
@@ -84,9 +86,9 @@ suppressWarnings(expr = {
             source("/gpfs/commons/groups/imielinski_lab/home/khadi/git/khscripts/hkev_utils.R")
             ## source('/gpfs/commons/home/khadi/safety_func.R')
             source('/gpfs/commons/groups/imielinski_lab/home/khadi/git/khscripts/safety_func.R')
-        })
-    })
-})
+##         })
+##     })
+## })
 
 
 data.table::setDTthreads(1)

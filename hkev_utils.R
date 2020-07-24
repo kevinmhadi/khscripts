@@ -4009,6 +4009,7 @@ myqstat = function(mc.cores = 5) {
 ##################################################
 ##### gTrack stuff!
 
+setMethod("within", signature(data = "gTrack"), NULL)
 setMethod("within", signature(data = "gTrack"), function(data, expr) {
     e = list2env(as.list(formatting(data)))
     eval(substitute(expr, parent.frame()), e)
@@ -4713,7 +4714,7 @@ gbar.error = function(y, conf.low, conf.high, group, wes = "Royal1", other.palet
     if (any(!is.na(conf.low)) & any(!is.na(conf.high)))
         gg = gg + geom_errorbar(aes(ymin = conf.low, ymax = conf.high), size = 0.1, width = 0.3, position = position_dodge(width = rel(0.9)))
     if (!is.null(wes))
-        gg = gg + scale_fill_manual(values = skitools::brewer.master(n = length(group), wes = TRUE, palette = wes))
+        gg = gg + scale_fill_manual(values = skitools::brewer.master(n = length(unique(fill)), wes = TRUE, palette = wes))
         ## gg = gg + scale_fill_manual(values = wesanderson::wes_palette(wes))
     if (!is.null(other.palette))
         gg = gg + scale_fill_manual(values = other.palette)
@@ -5034,13 +5035,15 @@ simple_hread = function(bampath) {
 }
 
 read.bam.header = function(bam, trim = FALSE) {
-    require(dplyr)
-    cmd = sprintf("samtools view -H %s", bam)
-    if (!trim) {
-        return(as.data.table(fread(text = system(cmd, intern = TRUE), fill = TRUE, sep = "\t")))
-    } else {
-        fread(text = system(cmd, intern = TRUE), fill = TRUE, sep = "\t") %>% filter(grepl("^SN", V2)) %>% mutate(V2 = gsub("SN:", "", V2)) %>% as.data.table
-    }
+    local({
+        require(dplyr)
+        cmd = sprintf("samtools view -H %s", bam)
+        if (!trim) {
+            return(as.data.table(fread(text = system(cmd, intern = TRUE), fill = TRUE, sep = "\t")))
+        } else {
+            fread(text = system(cmd, intern = TRUE), fill = TRUE, sep = "\t") %>% filter(grepl("^SN", V2)) %>% mutate(V2 = gsub("SN:", "", V2)) %>% as.data.table
+        }
+    })
 }
 
 
@@ -6810,15 +6813,29 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ##################################################
 ##################################################
 
-file.exists2 = function(x, nullfile = "/dev/null") {
-    return(!file.not.exists(x = x, nullfile = nullfile))
+
+seq_along2 = function(x)  {
+  seq_len(len(x))
 }
 
-file.not.exists = function(x, nullfile = "/dev/null", bad = c(NA, "NA", "NULL")) {
+
+slog = function(x, base = exp(1), nudge = 0) {
+    log(abs(x) + nudge, base = base) *
+        sign(x)
+}
+
+file.exists2 = function(x, nullfile = "/dev/null", bad = c(NA, "NA", "NULL", "")) {
+    return(!file.not.exists(x = x, nullfile = nullfile, bad = bad))
+}
+
+file.not.exists = function(x, nullfile = "/dev/null", bad = c(NA, "NA", "NULL", "")) {
     isnul = (is.null(x))
-    isbadfile = 
-        (x %in% bad | x == nullfile) |
-        (x != nullfile & !file.exists(as.character(x)))
+    ## isbadfile = 
+    ##     (x %in% bad | x == nullfile) |
+    ##     (x != nullfile & !file.exists(as.character(x)))
+    isbadfile = (x %in% bad | x == nullfile)
+    isgoodfile = which(!isbadfile)
+    isbadfile[isgoodfile] = !file.exists(as.character(x[isgoodfile]))
     isnolength = len(x) == 0
     return(isnul | isnolength | isbadfile)
 }
@@ -6938,7 +6955,7 @@ symdiff = function(x, y, ignore.na = FALSE) {
                         ix.x = NA_integer_,
                         ix.y = which(y %in% yx),
                         inx = FALSE, iny = TRUE)
-        lst = rleseq(xy$elements, clump = T)
+        lst = rleseq(yx$elements, clump = T)
         yx = cbind(yx, as.data.table(lst))
     } else
         yx = data.table()
@@ -7033,28 +7050,30 @@ interaction2 = function(..., drop = FALSE, sep = ".", lex.order = FALSE)
 
 
 lapply_dt = function(x, dt, LFUN = "identity", natype = NA, as.data.table = T) {
-  if (!is.function(LFUN))
-    LFUN = base::mget(x = 'identity', mode = "function", inherits = T)[[1]]
-  expr = substitute(x)
-  if (is.name(expr))
-    x = x
-  else {
-    x = trimws(gsub(',', "", unlist(strsplit(toString(expr), " "))[-1]))
-    if (!is.null(names(expr)))
-      names(x) = names(expr)[-1]
-  }
-  if (!is.null(names(x)))
-    nm = ifelse(nchar(names(x)) == 0, x, names(x))
-  else
-    nm = x
-  out = setNames(lst.emptyreplace(lapply(x, function(x, dt) {
-    dt[[x]]
-  }, dt = dt), natype), nm)
-  out = lapply(out, LFUN)
-  if (as.data.table)
-    return(as.data.table(out))
-  else
-    return(out)
+    if (!is.function(LFUN))
+        LFUN = base::mget(x = 'identity', mode = "function", inherits = T)[[1]]
+    expr = substitute(x)
+    if (is.name(expr))
+        x = x
+    else if (is.call(expr))
+        expr = eval(expr)
+    else {
+        x = trimws(gsub(',', "", unlist(strsplit(toString(expr), " "))[-1]))
+        if (!is.null(names(expr)))
+            names(x) = names(expr)[-1]
+    }
+    if (!is.null(names(x)))
+        nm = names(x)
+    else
+        nm = x
+    out = setNames(lst.emptyreplace(lapply(x, function(x, dt) {
+        dt[[x]]
+    }, dt = dt), natype), nm)
+    out = lapply(out, LFUN)
+    if (as.data.table)
+        return(as.data.table(out))
+    else
+        return(out)
 }
 
 
