@@ -55,6 +55,45 @@ relib2 = function(lib = 'Flow', force = TRUE, unload = TRUE)
     suppressMessages(forceload())
 }
 
+relib3 = function(..., force = TRUE, unload = TRUE)
+{
+    suppressMessages(forceload())
+        suppressMessages(forceload())
+    names2 = function(x) {
+        nm = names(x)
+        if (is.null(nm))
+            return(rep_len("", length(x)))
+        else
+            return(nm)
+    }
+    suppressMessages(forceload())
+    lst.arg = as.list(match.call(expand.dots = F))$`...`
+    nm = names2(lst.arg)
+    otherarg = lst.arg[nzchar(nm)]
+    pkgarg = lst.arg[!nzchar(nm)]
+    pkgarg = pkgarg[sapply(pkgarg, is.call)]
+    charvec = as.character(all.vars(match.call()))
+    if (length(charvec)) {
+        notfound= { set.seed(10); paste0("notfound_", round(runif(1) * 1e9)); }
+        vars = mget(charvec, ifnotfound=notfound, mode = "character", inherits = T)
+        ## charvec = unlist(strsplit(toString(vars[[1]]), ", "))
+        charvec = unique(c(names2(vars[vars == notfound]), unlist(vars[vars != notfound]))) 
+    }
+    charvec = c(charvec, unlist(as.vector(sapply(pkgarg,
+                                                 function(x) tryCatch(eval(x), error = function(e) NULL)))))
+    for (lib in charvec) {
+         if (sprintf("package:%s", lib) %in% search())
+         {
+             expr = sprintf("detach(package:%s, force = force, unload = unload)", lib)
+             eval(parse(text = expr))
+             ## tryCatch(unload(lib), error = function(e) NULL) ## DO NOT use this line...
+             ## it will break re-librarying
+         }
+         library(lib, character.only = T)
+    }
+    suppressMessages(forceload())
+}
+
 detach2 = function(lib = "Flow", force = TRUE, unload = TRUE) {
     suppressMessages(forceload())
     if (sprintf("package:%s", lib) %in% search())
