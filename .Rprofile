@@ -1,3 +1,21 @@
+names2 = function(x) {
+    nm = names(x)
+    if (is.null(nm))
+        return(rep_len("", length(x)))
+    else
+        return(nm)
+}
+
+`names2<-` = function(x, value, useempty = FALSE) {
+    names(x) = if (!is.null(value))
+                   rep_len(value, length(x))
+               else {
+                   if (useempty)
+                       rep_len("", length(x))
+               }
+    return(x)
+}
+
 forceload = function(envir = globalenv()) {
     pkgs = gsub("package:", "", grep('package:', search(), value = TRUE))
     pkgs = c(pkgs, names(sessionInfo()$loadedOnly))
@@ -62,6 +80,39 @@ library2 = function(x, ...) {
     library(lib, character.only = T, ...)
     suppressMessages(forceload())
 }
+
+library3 = function (...) 
+{
+    suppressMessages(forceload())
+    names2 = function(x) {
+        nm = names(x)
+        if (is.null(nm))
+            return(rep_len("", length(x)))
+        else
+            return(nm)
+    }
+    suppressMessages(forceload())
+    lst.arg = as.list(match.call(expand.dots = F))$`...`
+    nm = names2(lst.arg)
+    otherarg = lst.arg[nzchar(nm)]
+    pkgarg = lst.arg[!nzchar(nm)]
+    pkgarg = pkgarg[sapply(pkgarg, is.call)]
+    charvec = as.character(all.vars(match.call()))
+    if (length(charvec)) {
+        notfound= { set.seed(10); paste0("notfound_", round(runif(1) * 1e9)); }
+        vars = mget(charvec, ifnotfound=notfound, mode = "character", inherits = T)
+        ## charvec = unlist(strsplit(toString(vars[[1]]), ", "))
+        charvec = unique(c(names2(vars[vars == notfound]), unlist(vars[vars != notfound]))) 
+    }
+    charvec = c(charvec, unlist(as.vector(sapply(pkgarg,
+                                                 function(x) tryCatch(eval(x), error = function(e) NULL)))))
+    for (lib in charvec) {
+        do.call(library, c(alist(package = lib, character.only = T),
+                           otherarg))
+    }
+    suppressMessages(forceload())
+}
+
 
 force2 = function(x)
     tryCatch(x, error = function(e) NULL)

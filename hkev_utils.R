@@ -586,7 +586,7 @@ rm_mparen  = function(str) {
 
 normpath = function(p) {
     bn = basename(p)
-    d = normalizePath(dirname(p))
+    d = dirname(normalizePath(p))
     return(paste0(d, "/", bn))
 }
 
@@ -1302,6 +1302,11 @@ as.df = function(obj) {
 ######################
 ######################
 
+gr2df = function(gr, var = "rowname") {
+    return(dt_f2char(setDT(rn2col(as.data.frame(gr), var = var, keep.rownames = T)),
+                     c("seqnames", "strand")))
+}
+
 create_vcf = function(gr.mut, filepath) {
   hlst = DataFrameList(
       cmdline =
@@ -1859,15 +1864,16 @@ gr2dtmod = function(x)
     if (nr != length(x))
     {
         out = as.data.table(x)
-        for (i in c("seqnames", "strand", "width")) {
-            if (!is.null(out[[i]])) {
-                if (!i == "width") {
-                    set(out, j = i, value = as.character(out[[i]]))
-                    ## out[[i]] = as.character(out[[i]])
-                } else {
-                    set(out, j = i, value = as.numeric(out[[i]]))
-                    ## out[[i]] = as.numeric(out[[i]])
-                }
+        
+    }
+    for (i in c("seqnames", "strand", "width")) {
+        if (!is.null(out[[i]])) {
+            if (!i == "width") {
+                set(out, j = i, value = as.character(out[[i]]))
+                ## out[[i]] = as.character(out[[i]])
+            } else {
+                set(out, j = i, value = as.numeric(out[[i]]))
+                ## out[[i]] = as.numeric(out[[i]])
             }
         }
     }
@@ -4714,7 +4720,7 @@ gbar.error = function(y, conf.low, conf.high, group, wes = "Royal1", other.palet
     if (any(!is.na(conf.low)) & any(!is.na(conf.high)))
         gg = gg + geom_errorbar(aes(ymin = conf.low, ymax = conf.high), size = 0.1, width = 0.3, position = position_dodge(width = rel(0.9)))
     if (!is.null(wes))
-        gg = gg + scale_fill_manual(values = skitools::brewer.master(n = length(unique(fill)), wes = TRUE, palette = wes))
+        gg = gg + scale_fill_manual(values = skitools::brewer.master(n = length(unique(fill.arg)), wes = TRUE, palette = wes))
         ## gg = gg + scale_fill_manual(values = wesanderson::wes_palette(wes))
     if (!is.null(other.palette))
         gg = gg + scale_fill_manual(values = other.palette)
@@ -5820,6 +5826,11 @@ setAllNames = function(vec, nm) {
     return(setNames(vec, nm))
 }
 
+setNames2 = function(vec, nm, useempty = FALSE) {
+    names2(vec, useempty = useempty) = nm
+    return(vec)
+}
+
 showAllMethods = function(f, classes = NULL) {
     these_env = search()
     ## for (i in 1:length(these_env)) {
@@ -6812,6 +6823,42 @@ pcf_snv_cluster = function(snv, dist.field = "dist", kmin = 2, gamma = 25, retur
 ################################################## general R utilities
 ##################################################
 ##################################################
+
+
+names2 = function(x) {
+    nm = names(x)
+    if (is.null(nm))
+        return(rep_len("", length(x)))
+    else
+        return(nm)
+}
+
+`names2<-` = function(x, value, useempty = FALSE) {
+    names(x) = if (!is.null(value))
+                   rep_len(value, length(x))
+               else {
+                   if (useempty)
+                       rep_len("", length(x))
+               }
+    return(x)
+}
+
+make_xfold = function(dat, k = 10, nested = FALSE, times = 5, transpose = TRUE, seed = 10) {
+  obs.id = seq_along2(dat)
+  set.seed(seed)
+  if (!nested) {
+    train = caret::createFolds(obs.id, k = k, returnTrain = T)
+  } else
+    train = caret::createMultiFolds(obs.id, k = k)
+  test = lapply(train, function(x) {
+    setdiff(obs.id, x)
+  })
+  out = list(train = train, test = test)
+  if (transpose)
+    return(purrr::transpose(out))
+  else
+    return(out)
+}
 
 
 seq_along2 = function(x)  {
