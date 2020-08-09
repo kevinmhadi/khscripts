@@ -459,7 +459,12 @@ ret_ind = function(x, ix = 1)
 #' @return colnamed object
 setColnames = function(object = nm, nm = NULL, pattern = NULL, replacement = "") {
     if (!is.null(nm)) {
-        colnames(object)  = nm
+        if (is.null(names(nm)))
+            colnames(object)  = nm
+        else {
+            ix = match3(names(nm), colnames(object))
+            colnames(object)[ix] = nm
+        }
     } else if (!is.null(pattern)) {
         colnames(object) = gsub(pattern, replacement, colnames(object))
     }
@@ -1374,16 +1379,17 @@ gr.uround = function(gr, nearest = 1e4, all = TRUE, reduce = FALSE) {
   if (all) {
     wid = max(wid)
   }
-  out = gr.resize(gr, wid = wid, pad = FALSE)
-  if (reduce) {
-      out = gr.uround(reduce(gr.uround(reduce(out), reduce = FALSE)), reduce = FALSE)
-      return(out)
-  } else
-      return(out)
+  out = gr.resize(gr, wid = wid, pad = FALSE, reduce = T)
+  return(out)
+  ## if (reduce) {
+  ##     out = gr.uround(reduce(gr.uround(reduce(out), reduce = FALSE)), reduce = FALSE)
+  ##     return(out)
+  ## } else
+  ##     return(out)
 }
 
 
-gr.resize = function(gr, wid, minwid = 0, each = TRUE, pad = TRUE, ignore.strand = FALSE, fix = "center") {
+gr.resize = function(gr, wid, minwid = 0, each = TRUE, pad = TRUE, ignore.strand = FALSE, fix = "center", reduce = FALSE) {
     if (pad) {
         if (isTRUE(each)) {
             wid = wid * 2
@@ -1391,6 +1397,8 @@ gr.resize = function(gr, wid, minwid = 0, each = TRUE, pad = TRUE, ignore.strand
         width.arg = pmax(width(gr) + wid, minwid)
     } else
         width.arg = pmax(wid, minwid)
+    if (reduce) 
+        gr = reduce(gr + width.arg, ignore.strand = ignore.strand) - width.arg
     return(GenomicRanges::resize(gr,
                                  width = width.arg,
                                  fix = fix,
@@ -3902,7 +3910,7 @@ idj = function(x, these.ids) {
 }
 
 
-reset.job = function(x, ..., i = NULL, rootdir = x@rootdir, jb.mem = x@runinfo$mem, jb.cores = x@runinfo$cores, jb.time =  "3-00", update_cores = 1) {
+reset.job = function(x, ..., i = NULL, rootdir = x@rootdir, jb.mem = x@runinfo$mem, jb.cores = x@runinfo$cores, jb.time =  x@runinfo$time, update_cores = 1) {
     args = list(...)
     new.ent = copy(entities(x))
     if (!is.null(i)) {

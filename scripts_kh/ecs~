@@ -1,0 +1,5 @@
+#!/bin/bash
+
+client_name=${1}
+
+emacsclient -s $client_name --create-frame

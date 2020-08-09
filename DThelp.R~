@@ -528,9 +528,9 @@ dt_any2lg = function(dt, cols = NULL) {
 dt_f2char = function(dt, cols = NULL) {
     if (is.null(cols)) {
         ## cols = names(dt)[which(!unlist(lapply(dt, class)) == "character")]
-        cols = colnames(dt)[which(unlist(lapply(dt, class)) == "factor")]
+        cols = colnames(dt)
     } else {
-        cols = cols[which(unlist(lapply(as.list(dt)[cols], class)) == "factor")]
+        cols = names(dt)[which(!unlist(lapply(dt, class)) == "factor")]
     }
     for (this_col in cols) {
         data.table::set(dt, j = this_col, value = as.character(dt[[this_col]]))

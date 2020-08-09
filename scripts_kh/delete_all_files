@@ -1,0 +1,11 @@
+#!/bin/bash
+
+num_cores=${1}
+
+if [ "${num_cores}" = "" ]
+then
+    num_cores=1
+fi
+
+
+find */* | xargs -I {} -P ${num_cores} rm -f {}

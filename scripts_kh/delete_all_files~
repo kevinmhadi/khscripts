@@ -1,0 +1,5 @@
+#!/bin/bash
+
+num_cores=${1}
+
+find */* | xargs -I {} -P ${num_cores} rm -f {}

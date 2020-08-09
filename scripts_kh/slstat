@@ -1,0 +1,39 @@
+#!/bin/bash
+
+
+
+var="jobid,state,name,username,groupname,reason,timelimit,timeused,submittime,starttime,minmemory,numcpus,numnodes,priority,nice"
+
+IFS=","
+thisvar=""
+
+while read i; do
+    thisvar=$(echo $i)
+done <<< ${var}
+
+IFS=" "
+newvar=""
+for myval in ${thisvar}
+do
+    newvar=$(echo $newvar "<(squeue -O $myval)")
+    # echo $myval
+done
+
+CMD="paste -d \"  \" $newvar"
+
+eval $CMD
+
+# newvar=""
+# for myval in jobid state name username groupname reason timelimit timeused submittime starttime minmemory numcpus numnodes priority nice
+# do
+#     newvar=$(echo $newvar "<(squeue -O $myval)")
+# done
+
+# CMD="paste $newvar"
+
+# paste <(squeue -O jobid) <(squeue -O state) <(squeue -O name) <(squeue -O username) <(squeue -O groupname) <(squeue -O reason) <(squeue -O timelimit) <(squeue -O timeused) <(squeue -O submittime) <(squeue -O starttime) <(squeue -O minmemory) <(squeue -O numcpus) <(squeue -O numnodes) <(squeue -O priority) <(squeue -O nice)
+
+# eval $CMD
+
+
+# paste <(squeue -O 'jobid') <(squeue -O "username") <

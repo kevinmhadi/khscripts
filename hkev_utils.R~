@@ -1302,6 +1302,11 @@ as.df = function(obj) {
 ######################
 ######################
 
+gr2df = function(gr, var = "rowname") {
+    return(dt_f2char(setDT(rn2col(as.data.frame(gr), var = var, keep.rownames = T)),
+                     c("seqnames", "strand")))
+}
+
 create_vcf = function(gr.mut, filepath) {
   hlst = DataFrameList(
       cmdline =
@@ -1378,7 +1383,7 @@ gr.uround = function(gr, nearest = 1e4, all = TRUE, reduce = FALSE) {
 }
 
 
-gr.resize = function(gr, wid, minwid = 0, each = TRUE, pad = TRUE, ignore.strand = FALSE, fix = "center") {
+gr.resize = function(gr, wid, minwid = 0, each = TRUE, pad = TRUE, ignore.strand = FALSE, fix = "center", reduce = FALSE) {
     if (pad) {
         if (isTRUE(each)) {
             wid = wid * 2
@@ -1386,6 +1391,8 @@ gr.resize = function(gr, wid, minwid = 0, each = TRUE, pad = TRUE, ignore.strand
         width.arg = pmax(width(gr) + wid, minwid)
     } else
         width.arg = pmax(wid, minwid)
+    if (reduce) 
+        gr = reduce(gr, ignore.strand = ignore.strand)
     return(GenomicRanges::resize(gr,
                                  width = width.arg,
                                  fix = fix,

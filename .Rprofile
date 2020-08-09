@@ -1,3 +1,5 @@
+options(stringsAsFactors = FALSE)
+
 names2 = function(x) {
     nm = names(x)
     if (is.null(nm))
@@ -58,7 +60,6 @@ relib2 = function(lib = 'Flow', force = TRUE, unload = TRUE)
 relib3 = function(..., force = TRUE, unload = TRUE)
 {
     suppressMessages(forceload())
-        suppressMessages(forceload())
     names2 = function(x) {
         nm = names(x)
         if (is.null(nm))
@@ -66,12 +67,11 @@ relib3 = function(..., force = TRUE, unload = TRUE)
         else
             return(nm)
     }
-    suppressMessages(forceload())
     lst.arg = as.list(match.call(expand.dots = F))$`...`
     nm = names2(lst.arg)
     otherarg = lst.arg[nzchar(nm)]
     pkgarg = lst.arg[!nzchar(nm)]
-    pkgarg = pkgarg[sapply(pkgarg, is.call)]
+    pkgarg = pkgarg[sapply(pkgarg, function(x) is.call(x) || is.character(x))]
     charvec = as.character(all.vars(match.call()))
     if (length(charvec)) {
         notfound= { set.seed(10); paste0("notfound_", round(runif(1) * 1e9)); }
@@ -135,7 +135,7 @@ library3 = function (...)
     nm = names2(lst.arg)
     otherarg = lst.arg[nzchar(nm)]
     pkgarg = lst.arg[!nzchar(nm)]
-    pkgarg = pkgarg[sapply(pkgarg, is.call)]
+    pkgarg = pkgarg[sapply(pkgarg, function(x) is.call(x) || is.character(x))]
     charvec = as.character(all.vars(match.call()))
     if (length(charvec)) {
         notfound= { set.seed(10); paste0("notfound_", round(runif(1) * 1e9)); }

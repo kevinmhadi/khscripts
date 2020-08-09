@@ -1,0 +1,3 @@
+#!/bin/bash
+export PATH="/gpfs/commons/home/mimielinski/software/anaconda3/bin:$PATH"
+export PYTHONPATH=/gpfs/commons/groups/imielinski_lab/lib/python-anaconda3

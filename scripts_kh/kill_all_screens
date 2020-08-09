@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for i in $( screen -ls | grep "Attached\|Detached" | awk '{print $1}' );
+do
+    echo "Kill screen: $i"
+    screen -X -S "$i" quit
+done
