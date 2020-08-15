@@ -19,13 +19,14 @@ names2 = function(x) {
 }
 
 forceload = function(envir = globalenv()) {
+    force = function(x) x
     pkgs = gsub("package:", "", grep('package:', search(), value = TRUE))
     pkgs = c(pkgs, names(sessionInfo()$loadedOnly))
     for (pkg in pkgs) {
         tryCatch( {
             message("force loading ", pkg)
             invisible(eval(as.list((asNamespace(pkg))), envir = envir))
-            invisible(eval(eapply(asNamespace(pkg), base::force, all.names = TRUE), envir = envir))
+            invisible(eval(eapply(asNamespace(pkg), force, all.names = TRUE), envir = envir))
         }, error = function(e) message("could not force load ", pkg))
     }
 }
@@ -166,3 +167,4 @@ forceall = function(invisible = TRUE, envir = parent.frame(), evalenvir = parent
         print(eval(eapply(envir, force, all.names = TRUE), envir = evalenvir))
     }
 }    
+
