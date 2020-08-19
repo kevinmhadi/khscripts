@@ -168,3 +168,6 @@ forceall = function(invisible = TRUE, envir = parent.frame(), evalenvir = parent
     }
 }    
 
+Sys.setenv(R_DATATABLE_NUM_THREADS = 1)
+
+Sys.setenv("BASH_FUNC_blip()" = "() { echo \"hoohah\"; }")
