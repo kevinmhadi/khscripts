@@ -1,0 +1,449 @@
+;; Added by Package.el.  This must come before configurations of
+;; installed packages.  Don't delete this line.  If you don't want it,
+;; just comment it out by adding a semicolon to the start of the line.
+;; You may delete these explanatory comments.
+(package-initialize)
+
+
+(load "~/software/ess-16.04/lisp/ess-site")
+(load-file "~/essh.el")
+(load-file "~/emacs.func.el")
+(load-file "~/blog.lisp")
+(load-file "~/copypaste.lisp")
+;; (global-set-key (kbd "C-c N") `nighttime-colors)
+;; (global-set-key (kbd "C-c D") `daytime-colors)
+
+(menu-bar-mode 0)
+
+;; use this block if something breaks with C-g
+;; (global-set-key (kbd "C-^") `keyboard-quit)
+;; default is (set-input-mode t nil 0 7)
+;; (set-input-mode t nil 0 30)
+;; (global-set-key (kbd "C-g") `keyboard-quit)
+
+(global-set-key (kbd "C-c d") `insert-current-date)
+(global-set-key (kbd "C-c ;") `forward-or-backward-sexp)
+;(global-set-key (kbd "C-c ;") `goto-match-paren)
+(global-set-key (kbd "C-c f") `ess-function-name)
+(global-set-key (kbd "C-c P") `rknit-pdf)
+(global-set-key (kbd "C-c p") `rknit-pdfonly)
+(global-set-key (kbd "C-c o") `ess-swv-knit)
+(global-set-key (kbd "C-c i") `indent-region)
+(global-set-key (kbd "C-c ]") `comment-region)
+(global-set-key (kbd "C-c [") `uncomment-region)
+(global-set-key (kbd "C-c ?") `shell)
+(global-set-key (kbd "C-?") `shell)
+(global-set-key (kbd "C-c r") `rename-buffer)
+(global-set-key (kbd "C-c t") `revert-buffer)
+(global-set-key (kbd "C-c u") `overwrite-mode)
+(global-set-key (kbd "C-c p") `run-python)
+(global-set-key (kbd "C-c j") `julia)
+(global-set-key (kbd "ESC <up>") `previous-buffer)
+(global-set-key (kbd "ESC <down>") `next-buffer)
+(global-set-key (kbd "M-<up>") `previous-buffer)
+(global-set-key (kbd "M-<down>") `next-buffer)
+(global-set-key (kbd "C-c '") `check-parens)
+(global-set-key [drag-mouse-0] `mouse-set-region)
+;; (global-set-key [left-margin drag-mouse-1] `mouse-drag-vertical-line)
+;; (global-set-key [left-divider down-mouse-1] `mouse-drag-vertical-line)
+;; (global-set-key [left-margin down-mouse-1] `mouse-drag-vertical-line)
+;; (global-set-key [left-margin mouse-movement] `mouse-drag-vertical-line)
+;; (global-set-key [right-divider down-mouse-1] `mouse-drag-vertical-line)
+;; (global-set-key (kbd "ESC s") `check-parens)
+(windmove-default-keybindings)
+(blink-cursor-mode 0)
+;; (blink-cursor-mode t)
+
+(add-hook 'ess-noweb-mode-hook 'rknit-compile-and-print-pdflatex)
+(add-hook 'ess-noweb-font-lock-mode-hook 'rknit-compile-and-print-pdflatex)
+(add-hook 'ess-mode-hook
+	  (lambda ()
+	    (setq eldoc-mode nil)
+	    (setq ess-use-eldoc nil)))
+
+
+;; (setq inferior-ess-mode-hook nil)
+;; (add-hook 'inferior-ess-mode-hook 'turn-on-font-lock)
+;; (add-hook 'inferior-ess-mode-hook 'ess-S-mouse-me-menu-commands)
+(add-hook 'inferior-ess-mode-hook
+	  (lambda ()
+	    (setq eldoc-mode nil)
+	    (setq ess-use-eldoc nil)))
+
+
+(define-key esc-map "G" 'goto-line)             ; Esc-G runs the goto-line
+						; function.
+
+(define-key ctl-x-map "t" 'transpose-lines)     ; Ctrl-x t runs the
+						; transpose-lines function.
+
+(global-font-lock-mode t)
+
+
+(defun daytime-colors ()
+  (interactive)
+  (load "~/col_profile_white"))
+
+(defun my-colors ()
+  (interactive)
+  (load "~/col_profile"))
+
+
+(global-set-key (kbd "C-c N") `my-colors)
+(global-set-key (kbd "C-c E") `daytime-colors)
+
+
+;; (defun nighttime-colors ()
+;;   (interactive)
+;;   (load "~/dev/config/.emacs_colors_marcin"))
+
+
+;(set-background-color "grey11")
+;(set-foreground-color "white")
+;(set-cursor-color "white")
+;(set-frame-font "-*-fixed-*-*-*--11-*-*-*-c-*-*-*")
+;(add-to-list 'default-frame-alist '(font . "6x13"))
+;(add-to-list 'default-frame-alist '(foreground-color . "white"))
+;(add-to-list 'default-frame-alist '(background-color . "grey11"))
+;(add-to-list 'default-frame-alist '(cursor-color . "white"))
+
+;; (setq next-line-add-newlines t)
+
+(set-background-color "grey14")
+;; (set-background-color "grey15")ORIGINAL
+(set-foreground-color "grey80")
+(set-cursor-color "white")
+;; (set-frame-font "-*-fixed-*-*-*--11-*-*-*-c-*-*-*") ;; original line
+;; (set-frame-font "-*-fixed-*-*-*--13-*-*-*-c-*-*-*")
+(set-frame-font "-*-fixed-*-*-*--13-*-*-*-c-*-*-*")
+;; (set-frame-font "Courier-9")
+(add-to-list 'default-frame-alist '(font . "6x13"))
+(add-to-list 'default-frame-alist '(foreground-color . "white"))
+(add-to-list 'default-frame-alist '(background-color . "grey20"))
+(add-to-list 'default-frame-alist '(cursor-color . "white"))
+;; (set-face-background 'default "grey14")ORIGINAL
+(set-face-background 'default "grey14")
+
+(set-face-foreground 'default "grey80")
+
+(set-face-background 'mode-line-inactive "grey50")
+(set-face-foreground 'mode-line-inactive "grey20")
+
+
+(set-face-foreground 'font-lock-string-face "orange")
+(set-face-foreground 'font-lock-comment-face "wheat")
+;(set-face-foreground 'modeline-buffer-id "black")
+;(set-face-background 'modeline-buffer-id "white")
+(set-face-foreground 'font-lock-keyword-face "aquamarine")
+(set-face-foreground 'font-lock-type-face "yellow")
+(set-face-foreground 'font-lock-constant-face "yellow")
+;(set-face-foreground 'font-lock-preprocessor-face "yellow")
+;(set-face-foreground 'modeline-mousable "black")
+;(set-face-background 'modeline-mousable "white")
+;(set-face-background 'buffers-tab "grey30")
+;(set-face-background 'toolbar "grey75")
+;(set-face-background 'gui-element "grey75")
+
+
+;(require 'ess-rutils)
+
+
+(setq require-final-newline t)                  ; Make sure file always
+						; ends with a newline.
+;(x-set-font "-adobe-courier-medium-r-*-*-20-*-*-*-*-*-*-*")
+
+;(setq default-major-mode 'text-mode)            ; Default mode is text-mode.
+
+(setq text-mode-hook                            ; Enable auto-fill-mode
+ '(lambda () (auto-fill-mode 1)))               ; whenever using text-mode.
+
+(setq delete-auto-save-files t)                 ; Delete unnecessary
+						; auto-save files.
+
+(defun my-exit-from-emacs()
+  (interactive)
+  ( if (yes-or-no-p "Do you want to exit ")
+      (save-buffers-kill-emacs)))
+(global-set-key "\C-x\C-c" 'my-exit-from-emacs)
+
+;(defun small-font()
+;  (interactive)
+ ; (x-set-font "-adobe-courier-bold-r-*-*-12-*-*-*-*-*-*-*"))
+
+;(defun large-font()
+ ; (interactive)
+  ;(x-set-font "-adobe-courier-medium-r-*-*-14-*-*-*-*-*-*-*"))
+
+(defun insert-current-date ()
+   (interactive)
+   (insert (concat "#' "  (concat (getenv "USER")) " "))
+   (insert (format-time-string "%A, %b %d, %Y, Week %V, %r"))
+   )
+
+(defun adjust-window-up()
+  (interactive)
+  (scroll-up 2))
+
+(defun adjust-window-down()
+  (interactive)
+  (scroll-down 2))
+
+
+
+
+;(load "~/Software/ess-5.11/lisp/ess-site")
+;(load "~/software/ess-15.03-2/lisp/ess-site")
+
+(setq inferior-julia-program-name "/nfs/sw/julia/julia-0.4.6/bin/julia")
+(setq lazy-highlight-cleanup t)
+(setq lazy-highlight-max-at-a-time nil)
+(setq lazy-highlight-initial-delay 0)
+;; (setq transient-mark-mode t)
+;; (setq ess-smart-S-assign-key "_")
+(ess-toggle-underscore nil)
+;; (setq ess-smart-S-assign-key nil)
+;; (ess-toggle-S-assign nil)
+;; (setq transient-mark-mode nil)
+(setq transient-mark-mode t)
+(set 'server-name "daemon")
+(set 'debug-on-quit nil)
+(set 'pop-up-windows t)
+;; (set 'tooltip-mode nil)
+;; (set 'tool-bar-mode nil)
+(set-face-background 'lazy-highlight nil)
+(set-face-foreground 'lazy-highlight "red2")
+(set-face-attribute 'lazy-highlight nil
+		    :weight 'bold)
+(setq ess-swv-processor "knitr")
+(setq ess-swv-pdflatex-commands `("pdflatex"))
+(setq ess-eval-visibly-p `nowait)
+
+
+(setq comint-scroll-to-bottom-on-input t)
+(setq comint-scroll-to-bottom-on-output t)
+(setq comint-input-sender-no-newline t)
+
+;(setq redisplay-dont-pause nil)
+
+(defun ess-function-name ()
+  "Print the name of the current function in the minibuffer.
+   Based on ess-beginning-of-function"
+  (interactive)
+  (let ((init-point (point))
+	beg end done)
+    ;; First search for the start of the function definition
+    ;; in case we're sitting in a function header:
+    ;; at most end of next line
+    (if (search-forward "(" (ess-line-end-position 2) t)
+	(forward-char 1))
+    (while (not done)
+      (if (re-search-backward ess-function-pattern (point-min) t)
+	  nil
+	(goto-char init-point)
+	(error "Point is not in a function."))
+
+      (setq beg (point))
+      ;; The point is now at the start of the function name
+      (let (word regexp point end)
+	(setq point (point))
+	; Look forward for one of '" ' '"_' '"<' ' ' '_ <'
+	(while (not (looking-at "\"*[ _<]"))
+	  (forward-char 1))
+	(setq end (point))
+	(goto-char point)
+	; Look backward for the start of function name, excluding quote
+	(while (and (not (bobp)) (looking-at "\\w"))
+	  (backward-char 1))
+	(or (looking-at "\\w")
+	    (forward-char 1))
+	(and (= (point) end)
+	     (error "not looking at a word"))
+	(setq word (buffer-substring (point) end))
+	(goto-char init-point)
+	(error word)
+	)
+      ;; current function must begin and end around point
+      (setq done (<= beg init-point)))
+    beg))
+
+(defun rknit-pdf ()
+  (interactive)
+  (ess-swv-knit)
+  (sit-for 2)
+  (ess-swv-PDF "pdflatex")
+  )
+
+(defun rknit ()
+  (interactive)
+  (ess-swv-knit)
+  (sit-for 2)
+  (ess-swv-PDF "pdflatex")
+)
+
+(defun goto-match-paren (arg)
+  "Go to the matching parenthesis if on parenthesis, otherwise insert %.
+vi style of % jumping to matching brace."
+  (interactive "p")
+  (cond ((looking-at "\\s\(") (forward-list 1) (backward-char 1))
+	((looking-at "\\s\)") (forward-char 1) (backward-list 1))
+	(t (self-insert-command (or arg 1)))))
+
+(defun forward-or-backward-sexp (&optional arg)
+  "Go to the matching parenthesis character if one is adjacent to point."
+  (interactive "^p")
+  (cond ((looking-at "\\s(") (forward-sexp arg))
+	((looking-back "\\s)" 1) (backward-sexp arg))
+	;; Now, try to succeed from inside of a bracket
+	((looking-at "\\s)") (forward-char) (backward-sexp arg))
+	((looking-back "\\s(" 1) (backward-char) (forward-sexp arg))))
+
+(defun rknit-pdfonly ()
+  (interactive)
+  (ess-swv-PDF "pdflatex")
+)
+
+
+;; (defun insert-current-date ()
+;;    (interactive)
+;;    (insert (format-time-string "#' %A, %b %d, %Y %r")))
+
+; John Carr <jfc@athena.mit.edu>, Feb 1989
+; On both vax and rt the function keys emit "ESC [ # ~"
+; The keys map to values of "#" as follows:
+; F1            11
+; ...
+; F5            15
+; F6            17
+; ...
+; F10           21
+; F11           23      (RT only; this is "escape" on the vax)
+; F12 24
+; F13           25      (Vax only; no such key on RT)
+; F14           26      (Vax only; no such key on RT)
+
+; First, define an empty keymap to hold the bindings
+;(defvar fnkey-map (make-sparse-keymap) "Keymap for function keys")
+
+; Second, bind it to ESC-[ (which is the prefix used on the function keys.
+; #(define-key esc-map "[" fnkey-map)
+
+; Third, bind functions to the keys.  Note that you must use the internal
+; emacs-lisp function names, which are usually, but not always, the same as
+; the name used to invoke the command via M-x.
+
+; One key is bound to a non-standard function: "mail-sig".  This ; is a
+; keyboard macro I have defined to sign my mail with a single keystroke.
+; When a keyboard macro is invoked, the effects are as if you had typed all
+; the characters that make up its definition.  To define a keyboard macro,
+; do something like this:
+
+(fset 'mail-sig
+  " Lois Bennett <lois@athena.mit.edu>")
+
+; (set-frame-font "-misc-fixed-medium-r-semicondensed--11-*-*-*-c-60-iso8859-1")
+
+
+; The "^M" is a control character, type C-q C-m to insert it.
+; This macro can be invoked by typing M-x and its name, or with F2.
+
+(defun set-dir-switch-n()
+(interactive)
+(setq dired-listing-switches "-Al"))
+
+(defun set-dir-switch-t()
+(interactive)
+(setq dired-listing-switches "-Alt"))
+
+
+; don't ask to follow git controlled links
+(setq vc-follow-symlinks nil)
+(setq org-confirm-babel-evaluate nil)
+
+
+(setq explicit-shell-file-name "/bin/bash")
+(setq shell-command-switch "-ic")
+
+(load "~/col_profile")
+
+;(setq explicit-shell-file-name "/usr/bin/tcsh")
+
+;(setq lazy-highlight-face 'lazy-highlight2)
+
+
+;; (define-key fnkey-map "11~" 'fixup-whitespace)      ; F1
+;; (define-key fnkey-map "12~" 'undo)  ; F2
+;; (define-key fnkey-map "13~" 'what-line) ; F3 Tell current line number
+;; (define-key fnkey-map "14~" 'goto-line)        ; F4
+;; (define-key fnkey-map "15~" 'compile)       ; F5 Run compiler in emacs...
+;; (define-key fnkey-map "17~" 'next-error)    ; F6..and move cursor to next
+;;                                             ; compilation error.
+;; (define-key fnkey-map "18~" 'save-buffer)             ; F7
+;; (define-key fnkey-map "19~" 'exchange-point-and-mark) ; F8
+;; (define-key fnkey-map "20~" 'kill-region)             ; F9 Kill region
+;; (define-key fnkey-map "21~" 'mh-rmail)                      ; F10
+;; (define-key fnkey-map "23~" nil)                      ; F11 ESC
+;; (define-key fnkey-map "24~" 'adjust-window-up)        ; F12
+;; (define-key fnkey-map "25~" 'adjust-window-down)      ; F13
+;; ;(define-key fnkey-map "26~" 'large-font)             ; F14
+;; (define-key fnkey-map "28~" 'apropos)           ; Help KEY
+;; (define-key fnkey-map "29~" 'yank-pop)                ; Do key
+;; (define-key fnkey-map "1~" 'isearch-forward)          ; Find key
+;; (define-key fnkey-map "2~" 'yank)                     ; Insert Here Key
+;; (define-key fnkey-map "4~" 'set-mark-command )        ; Select key
+;; ;(define-key fnkey-map "31~" 'small-font)                      ; F17
+;; (define-key fnkey-map "32~" 'set-dir-switch-n)        ; F18
+;; (define-key fnkey-map "33~" 'set-dir-switch-t)        ; F19
+;; (define-key fnkey-map "34~" 'dired)                   ; F20
+
+; A function "nil" does nothing, and acts only as a placeholder for
+; convenience in adding new functions later.  The function "beep" does
+; the obvious.  (Note: "nil" is a constant and so does not need to be
+; quoted; "beep" is the name of a function and needs to be put after
+; a single quote (').  All added functions should be quoted in this
+;; ; manner.
+;; (global-set-key "OD" 'backward-char)
+;; (global-set-key "OC" 'forward-char)
+;; (global-set-key "OA" 'previous-line)
+;; (global-set-key "OB" 'next-line)
+;; (global-set-key "m" 'mh-smail)
+
+
+;; (add-to-list 'load-path "~/dev/config/.emacs.d/el-get/el-get")
+
+;; (unless (require 'el-get nil 'noerror)
+;;   (with-current-buffer
+;;       (url-retrieve-synchronously
+;;        "https://raw.githubusercontent.com/dimitri/el-get/master/el-get-install.el")
+;;     (goto-char (point-max))
+;;     (eval-print-last-sexp)))
+
+;; (add-to-list 'el-get-recipe-path "~/.emacs.d/el-get-user/recipes")
+;; (el-get 'sync)
+
+
+;; (add-to-list 'load-path "~/.emacs.d")
+;; (require 'auto-complete-config)
+;;(ac-config-default)
+
+
+;;(add-to-list 'load-path "~/.emacs.d/ac")
+;;(require 'auto-complete-config)
+;;(ac-config-default)
+
+;;(load-file "~/.emacs.d/themes/color-theme-twilight.el")
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(menu-bar-mode nil)
+ '(package-selected-packages (quote (evil eval-in-repl undo-tree term-keys goto-chg))))
+ ;; '(pop-up-windows t)
+ ;; '(server-name "daemon")
+ ;; '(tooltip-mode nil))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(mode-line-buffer-id ((t (:background "grey80" :foreground "grey20" :inverse-video t)))))

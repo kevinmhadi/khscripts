@@ -2,9 +2,9 @@
 # escape ^^^
 escape \377\377
 # Set to F12
-# bindkey ^[[24~ command
+bindkey ^[[24~ command
 # Set to F8
-bindkey ^[[19~ command
+# bindkey ^[[19~ command
 term xterm-256color
 bind x
 vbell off
