@@ -1,4 +1,6 @@
 options(stringsAsFactors = FALSE)
+options(bitmapType="cairo")
+options(device = grDevices::pdf)
 
 names2 = function(x) {
     nm = names(x)
@@ -169,5 +171,7 @@ forceall = function(invisible = TRUE, envir = parent.frame(), evalenvir = parent
 }    
 
 Sys.setenv(R_DATATABLE_NUM_THREADS = 1)
+Sys.setenv("GENCODE_DIR" = "~/DB/GENCODE")
 
 Sys.setenv("BASH_FUNC_blip()" = "() { echo \"hoohah\"; }")
+

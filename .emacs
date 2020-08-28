@@ -13,7 +13,7 @@
 ;; (global-set-key (kbd "C-c N") `nighttime-colors)
 ;; (global-set-key (kbd "C-c D") `daytime-colors)
 
-(menu-bar-mode 0)
+;; (menu-bar-mode 0)
 
 ;; use this block if something breaks with C-g
 ;; (global-set-key (kbd "C-^") `keyboard-quit)
@@ -70,6 +70,8 @@
 	    (setq eldoc-mode nil)
 	    (setq ess-use-eldoc nil)))
 
+(add-hook 'sh-mode-hook 'highlight-indent-guides-mode)
+
 
 (define-key esc-map "G" 'goto-line)             ; Esc-G runs the goto-line
 						; function.
@@ -109,34 +111,34 @@
 
 ;; (setq next-line-add-newlines t)
 
-(set-background-color "grey14")
-;; (set-background-color "grey15")ORIGINAL
-(set-foreground-color "grey80")
+;; (set-background-color "grey14")
+;; ;; (set-background-color "grey15")ORIGINAL
+;; (set-foreground-color "grey80")
 (set-cursor-color "white")
 ;; (set-frame-font "-*-fixed-*-*-*--11-*-*-*-c-*-*-*") ;; original line
 ;; (set-frame-font "-*-fixed-*-*-*--13-*-*-*-c-*-*-*")
 (set-frame-font "-*-fixed-*-*-*--13-*-*-*-c-*-*-*")
 ;; (set-frame-font "Courier-9")
-(add-to-list 'default-frame-alist '(font . "6x13"))
-(add-to-list 'default-frame-alist '(foreground-color . "white"))
-(add-to-list 'default-frame-alist '(background-color . "grey20"))
-(add-to-list 'default-frame-alist '(cursor-color . "white"))
-;; (set-face-background 'default "grey14")ORIGINAL
-(set-face-background 'default "grey14")
+;; (add-to-list 'default-frame-alist '(font . "6x13"))
+;; (add-to-list 'default-frame-alist '(foreground-color . "white"))
+;; (add-to-list 'default-frame-alist '(background-color . "grey20"))
+;; (add-to-list 'default-frame-alist '(cursor-color . "white"))
+;; ;; (set-face-background 'default "grey14")ORIGINAL
+;; (set-face-background 'default "grey14")
 
-(set-face-foreground 'default "grey80")
+;; (set-face-foreground 'default "grey80")
 
-(set-face-background 'mode-line-inactive "grey50")
-(set-face-foreground 'mode-line-inactive "grey20")
+;; (set-face-background 'mode-line-inactive "grey50")
+;; (set-face-foreground 'mode-line-inactive "grey20")
 
 
-(set-face-foreground 'font-lock-string-face "orange")
-(set-face-foreground 'font-lock-comment-face "wheat")
-;(set-face-foreground 'modeline-buffer-id "black")
-;(set-face-background 'modeline-buffer-id "white")
-(set-face-foreground 'font-lock-keyword-face "aquamarine")
-(set-face-foreground 'font-lock-type-face "yellow")
-(set-face-foreground 'font-lock-constant-face "yellow")
+;; (set-face-foreground 'font-lock-string-face "orange")
+;; (set-face-foreground 'font-lock-comment-face "wheat")
+;; ;(set-face-foreground 'modeline-buffer-id "black")
+;; ;(set-face-background 'modeline-buffer-id "white")
+;; (set-face-foreground 'font-lock-keyword-face "aquamarine")
+;; (set-face-foreground 'font-lock-type-face "yellow")
+;; (set-face-foreground 'font-lock-constant-face "yellow")
 ;(set-face-foreground 'font-lock-preprocessor-face "yellow")
 ;(set-face-foreground 'modeline-mousable "black")
 ;(set-face-background 'modeline-mousable "white")
@@ -206,7 +208,7 @@
 ;; (setq transient-mark-mode nil)
 (setq transient-mark-mode t)
 (set 'server-name "daemon")
-(set 'debug-on-quit nil)
+;; (set 'debug-on-quit nil)
 (set 'pop-up-windows t)
 ;; (set 'tooltip-mode nil)
 ;; (set 'tool-bar-mode nil)
@@ -436,14 +438,20 @@ vi style of % jumping to matching brace."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(debug-on-quit nil)
  '(menu-bar-mode nil)
- '(package-selected-packages (quote (evil eval-in-repl undo-tree term-keys goto-chg))))
- ;; '(pop-up-windows t)
- ;; '(server-name "daemon")
- ;; '(tooltip-mode nil))
+ '(package-check-signature nil)
+ '(package-selected-packages
+   (quote
+    (highlight-indent-guides evil eval-in-repl undo-tree term-keys goto-chg)))
+ '(pop-up-windows nil)
+ '(tool-bar-mode nil)
+ '(tooltip-mode nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(mode-line-buffer-id ((t (:background "grey80" :foreground "grey20" :inverse-video t)))))
+ '(default ((t (:inherit nil :stipple nil :background "grey14" :foreground "grey80" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 1 :width normal :foundry "default" :family "default"))))
+ '(mode-line-buffer-id ((t (:background "grey80" :foreground "grey20" :inverse-video t))))
+ '(mode-line-inactive ((t (:inherit mode-line :background "grey25" :foreground "grey45" :box (:line-width -1 :color "grey40") :weight light)))))

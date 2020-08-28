@@ -239,6 +239,4 @@
     export -f get_time
     export -f tolower
     export PATH=${PATH}:/gpfs/commons/home/khadi/edirect
-
-    echo "Hi I sourced KH's bash profile"
 }
