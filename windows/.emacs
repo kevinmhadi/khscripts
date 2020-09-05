@@ -1,8 +1,8 @@
 ;; (xterm-mouse-mode t)
 ;; This is only needed once, near the top of the file
-(eval-when-compile
-  ;; Following line is not needed if use-package.el is in ~/.emacs.d
-  (require 'use-package))
+;; (eval-when-compile
+;;   ;; Following line is not needed if use-package.el is in ~/.emacs.d
+;;   (require 'use-package))
 
 (setq-default fill-column 999999999999999999)
 
@@ -186,7 +186,7 @@ vi style of % jumping to matching brace."
 (set-cursor-color "white")
 ;; (set-frame-font "-*-fixed-*-*-*--11-*-*-*-c-*-*-*")
 ;; (add-to-list 'default-frame-alist '(font . "6x13"))
-(set-frame-font "Courier New-12:antialias=false:hinting=false")
+(set-frame-font "Consolas-12:antialias=false:hinting=false")
 ;; (add-to-list 'default-frame-alist '(font . "Andale Mono-11:antialias=false:hinting=false" ))
 
 (add-to-list 'default-frame-alist '(foreground-color . "grey80"))
@@ -228,13 +228,6 @@ vi style of % jumping to matching brace."
 (defun anapython_minitorch () (interactive)
   (let ((python-shell-interpreter "mypython_minitorch"))
     (call-interactively 'run-python)))
-
-
-
-(use-package elpy
-  :ensure t
-  :init
-  (elpy-enable))
 
 ;(require 'ess-rutils)
 
@@ -329,6 +322,12 @@ vi style of % jumping to matching brace."
 (setq org-confirm-babel-evaluate nil)
 
 (load "~/col_profile")
+
+(use-package elpy
+  :ensure t
+  :init
+  (elpy-enable))
+
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.

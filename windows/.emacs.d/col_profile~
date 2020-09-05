@@ -1,0 +1,33 @@
+;; (set-background-color "grey14")
+;; (set-background-color "grey15")ORIGINAL
+;; (set-foreground-color "grey80")
+(set-cursor-color "white")
+;; (set-frame-font "-*-fixed-*-*-*--11-*-*-*-c-*-*-*")
+;; (add-to-list 'default-frame-alist '(font . "6x13"))
+(set-frame-font "Courier New-12:antialias=false:hinting=false")
+;; (add-to-list 'default-frame-alist '(font . "Andale Mono-11:antialias=false:hinting=false" ))
+
+; (add-to-list 'default-frame-alist '(foreground-color . "grey80"))
+; (add-to-list 'default-frame-alist '(background-color . "grey20"))
+; (add-to-list 'default-frame-alist '(cursor-color . "white"))
+;; (set-face-background 'default "grey14")ORIGINAL
+; (set-face-background 'default "grey14")
+; (set-face-foreground 'default "grey80")
+
+;; (set-face-background 'mode-line-inactive "grey50")
+;; (set-face-foreground 'mode-line-inactive "grey20")
+
+
+(set-face-foreground 'font-lock-string-face "orange")
+(set-face-foreground 'font-lock-comment-face "wheat")
+;(set-face-foreground 'modeline-buffer-id "black")
+;(set-face-background 'modeline-buffer-id "white")
+(set-face-foreground 'font-lock-keyword-face "aquamarine")
+(set-face-foreground 'font-lock-type-face "yellow")
+(set-face-foreground 'font-lock-constant-face "yellow")
+;(set-face-foreground 'font-lock-preprocessor-face "yellow")
+;(set-face-foreground 'modeline-mousable "black")
+;(set-face-background 'modeline-mousable "white")
+;(set-face-background 'buffers-tab "grey30")
+;(set-face-background 'toolbar "grey75")
+;(set-face-background 'gui-element "grey75")

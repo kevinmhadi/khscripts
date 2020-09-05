@@ -1,0 +1,28 @@
+(set-background-color "grey100")
+(set-foreground-color "grey0")
+(set-cursor-color "black")
+; (set-frame-font "-*-fixed-*-*-*--11-*-*-*-c-*-*-*")
+; (add-to-list 'default-frame-alist '(font . "6x13"))
+; (add-to-list 'default-frame-alist '(foreground-color . "white"))
+; (add-to-list 'default-frame-alist '(background-color . "grey100"))
+; (add-to-list 'default-frame-alist '(cursor-color . "white"))
+(set-face-background 'default "grey100")
+(set-face-foreground 'default "grey0")
+
+(set-face-background 'mode-line-inactive "grey70")
+(set-face-foreground 'mode-line-inactive "grey10")
+
+
+(set-face-foreground 'font-lock-string-face "color-196")
+(set-face-foreground 'font-lock-comment-face "brown")
+(set-face-foreground 'font-lock-keyword-face "color-18")
+; (set-face-foreground 'font-lock-type-face "darkorange")
+(set-face-foreground 'font-lock-type-face "color-54")
+(set-face-foreground 'font-lock-constant-face "purple4")
+
+
+
+
+
+
+
