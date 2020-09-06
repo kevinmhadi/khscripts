@@ -17,6 +17,7 @@
     export LD_LIBRARY_PATH=/gpfs/commons/groups/imielinski_lab/Software/libtiff/lib:/gpfs/commons/home/mimielinski/software/libfftw3/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH=/gpfs/commons/groups/imielinski_lab/Software/protobuf/lib:~/modules/Snowman:$LD_LIBRARY_PATH:~/modules/Snowman/lib
     export PATH=/gpfs/commons/groups/imielinski_lab/Software/mosh2/mosh-1.3.2/bin:/gpfs/commons/groups/imielinski_lab/Software/protobuf/bin:~/software/libtiff/bin:~/software/libtiff/lib:~/.aspera/connect/bin:~/software/xsel-1.2.0/bin:~/software/gsl-2.4:~/lab/.local/bin/:~/git/dapars/:~/lab/git/MACS/bin/:~/scripts/:~/modules/Snowman/:~/modules/STAR:/nethome/mimielinski/Software/sshpass-1.05:~/Software/sratoolkit.2.5.7-centos_linux64/bin:~/Software/HMMCopy/HMMcopy/bin/:~/Software/UCSC/:~/software/emacs-25.2/bin:$PATH:$HOME/bin:$HOME/dev/scripts/:$HOME/Scripts/bash:~/lab/Software/CPLEX/CPLEX_Studio/cplex/bin/x86-64_linux/:${HOME}/scripts_kh
+    export PATH=${PATH}:/gpfs/commons/home/khadi/edirect
     export SKI_DB_ROOT="~/DB/"
     export SKI_SOFTWARE_ROOT="~/Software/"
     export GIT_HOME="~/git"
@@ -130,7 +131,8 @@
     fi
 
 
-    alias jupyter_run="xvfb-run jupyter notebook --notebook-dir=~/notebooks"
+
+
 
 
     # Finished adapting your PATH environment variable for use with MacPorts.
@@ -139,6 +141,7 @@
     # PS1='\s:\!:\h:\n\w\n \$ '
     PS1='\n\s:\!:\h:\n\w\n \$ '
 
+    alias jupyter_run="xvfb-run jupyter notebook --notebook-dir=~/notebooks"
     alias mskilab="ssh mskilab"
     alias picard="java -jar ~/modules/BWAMem/picard.jar"
     alias lsh="ls -lh"
@@ -231,6 +234,14 @@
 	echo "$@" | xargs | xargs
     }
 
+    gitrv() {
+	git remote -v
+    }
+    giturl() {
+	git remote set-url $1 $2
+    }
+    ## git remote set-url origin https://hostname/USERNAME/REPOSITORY.git
+
     export -f parse
     export -f get_ext
     export -f get_fn
@@ -238,5 +249,6 @@
     export -f gcom
     export -f get_time
     export -f tolower
-    export PATH=${PATH}:/gpfs/commons/home/khadi/edirect
+    export -f giturl
+    export -f gitrv
 }
