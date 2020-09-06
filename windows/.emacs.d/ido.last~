@@ -14,10 +14,10 @@
 
 ;; ----- ido-work-directory-list -----
 (
+ "c:/Users/kevin/AppData/Roaming/.emacs.d/lisp/"
  "c:/Users/kevin/git/khscripts/windows/.emacs.d/lisp/"
  "c:/Users/kevin/AppData/Roaming/.emacs.d/"
  "c:/Users/kevin/git/khscripts/windows/.emacs.d/"
- "c:/Users/kevin/AppData/Roaming/.emacs.d/lisp/"
  "c:/batch_files/"
  "c:/Users/kevin/AppData/Roaming/"
  "c:/Users/kevin/git/minitorch-0-kevinmhadi/tests/"
@@ -41,13 +41,13 @@
 
 ;; ----- ido-dir-file-cache -----
 (
+ ("c:/Users/kevin/git/khscripts/windows/.emacs.d/lisp/" (24403 57359 0 0) "default.el~" "default.el" "../" "./")
+
+ ("c:/Users/kevin/AppData/Roaming/.emacs.d/lisp/" (24403 57359 0 0) "default.el~" "default.el" "../" "./")
+
+ ("c:/Users/kevin/AppData/Roaming/.emacs.d/" (24403 57360 0 0) "url/" "snippets/" "lisp/" "init.el~" "init.el" "ido.last~" "ido.last" "elpy/" "elpa/" "default.el~" "col_profile_white" "col_profile" "auto-save-list/" "../" "./")
+
  ("c:/Users/kevin/git/khscripts/windows/.emacs.d/" (24403 57337 0 0) "url/" "snippets/" "lisp/" "init.el~" "init.el" "ido.last~" "ido.last" "elpy/" "elpa/" "default.el~" "col_profile_white" "col_profile" "auto-save-list/" "../" "./")
-
- ("c:/Users/kevin/AppData/Roaming/.emacs.d/" (24403 57230 0 0) "url/" "snippets/" "lisp/" "init.el~" "init.el" "ido.last~" "ido.last" "elpy/" "elpa/" "default.el~" "col_profile_white" "col_profile" "auto-save-list/" "../" "./")
-
- ("c:/Users/kevin/git/khscripts/windows/.emacs.d/lisp/" (24403 57033 0 0) "default.el~" "default.el" "../" "./")
-
- ("c:/Users/kevin/AppData/Roaming/.emacs.d/lisp/" (24403 57033 0 0) "default.el~" "default.el" "../" "./")
 
  ("c:/Users/" (24402 24347 0 0) "Public/" "nx/" "kevin/" "desktop.ini" "Default User/" "Default/" "All Users/" "../" "./")
 
