@@ -5,6 +5,8 @@
 # 	. /etc/bashrc
 # fi
 
+export EDITOR="emacs -nw --quick"
+
 alias jupyter_run="xvfb-run jupyter notebook --notebook-dir=~/notebooks"
 alias mskilab="ssh mskilab"
 alias picard="java -jar ~/modules/BWAMem/picard.jar"

@@ -1,0 +1,10 @@
+/gpfs/commons/groups/imielinski_lab/projects/Chantal/Flow/Mutect2PON/29331-B_29331-T/Mutect2PON.29331-B_29331-T.bsub.out
+/gpfs/commons/groups/imielinski_lab/projects/Chantal/Flow/Mutect2PON/29331-B_29331-T/#Mutect2PON.29331-B_29331-T.bsub.out#
+/gpfs/commons/home/khadi/Projects/Chantal/Flow/Mutect2PON/Sample_B01_18137T1.Sample_B01_18138B/Mutect2PON.Sample_B01_18137T1.Sample_B01_18138B.bsub.out
+/gpfs/commons/home/khadi/Projects/Chantal/Flow/Mutect2PON/Sample_B01_18137T1.Sample_B01_18138B/#Mutect2PON.Sample_B01_18137T1.Sample_B01_18138B.bsub.out#
+/gpfs/commons/home/khadi/modules/SamBcfPon/run.sh
+/gpfs/commons/home/khadi/modules/SamBcfPon/#run.sh#
+/gpfs/commons/home/khadi/tasks/Mutect2PON.task
+/gpfs/commons/home/khadi/tasks/#Mutect2PON.task#
+/gpfs/commons/home/khadi/tasks/SamBcfPon.task
+/gpfs/commons/home/khadi/tasks/#SamBcfPon.task#

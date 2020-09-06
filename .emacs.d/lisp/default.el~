@@ -1,0 +1,6 @@
+(load "~/software/ess-16.04/lisp/ess-site")
+
+(load-file "~/.emacs.d/lisp/essh.el")
+(load-file "~/.emacs.d/lisp/emacs.func.el")
+;; (load-file "~/blog.lisp")
+(load-file "~/.emacs.d/lisp/copypaste.lisp")

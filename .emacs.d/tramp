@@ -1,0 +1,6 @@
+;; -*- emacs-lisp -*- <16/05/13 10:32:31 /gpfs/commons/home/khadi/.emacs.d/tramp>
+;; Tramp connection history.  Don't change this file.
+;; You can delete it, forcing Tramp to reapply the checks.
+
+((["scp" nil "github.com" nil nil]
+  nil))

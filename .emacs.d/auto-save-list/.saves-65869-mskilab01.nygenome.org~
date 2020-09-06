@@ -1,0 +1,14 @@
+/gpfs/commons/home/khadi/modules/Signatures/run.R
+/gpfs/commons/home/khadi/modules/Signatures/#run.R#
+/gpfs/commons/home/khadi/tasks/exome_signatures.task
+/gpfs/commons/home/khadi/tasks/#exome_signatures.task#
+/gpfs/commons/home/khadi/modules/Signatures/run.sh
+/gpfs/commons/home/khadi/modules/Signatures/#run.sh#
+/gpfs/commons/home/khadi/tasks/Strelka_exome.task
+/gpfs/commons/home/khadi/tasks/#Strelka_exome.task#
+/gpfs/commons/home/khadi/batch.R
+/gpfs/commons/home/khadi/#batch.R#
+/gpfs/commons/home/khadi/Scripts/run_samtools_BRD4_all.sh
+/gpfs/commons/home/khadi/Scripts/#run_samtools_BRD4_all.sh#
+/gpfs/commons/home/khadi/links/skitools.R
+/gpfs/commons/home/khadi/links/#skitools.R#

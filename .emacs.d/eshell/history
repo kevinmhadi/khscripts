@@ -1,0 +1,15 @@
+ls
+cd ~/lab/projects/IPM
+ls
+lsh
+ls -alh
+cd files
+ls -alh
+ls -alhrt
+source ~/.bash_profile
+lsh
+lsat
+ls -alhrt
+readlink -f WGS_All_Samples_20200505.xlsx 
+cd =
+readlink -f clinical.data.request.txt 
