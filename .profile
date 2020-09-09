@@ -35,21 +35,6 @@ PERL_MM_OPT="INSTALL_BASE=/gpfs/commons/home/khadi/perl5"; export PERL_MM_OPT;
 # IFS=$' \t\n' ## default IFS value for bash
 
 
-module load gcc/8.2.0 ## only for rstan
-module load jags/4.3.0
-module unload samtools
-module load samtools/1.3.1
-module load bcftools
-module load vcftools
-
-module load mpi
-module load openmpi/2.0.2
-
-module load bedops
-module load tabix
-
-module load java/1.8
-
 if [ "$(hostname)" = "mskilab01.c.nygenome.org" ] || [ "$(hostname)" = "mskilab02.c.nygenome.org" ]
 then
     path_to_tmpdir="/scratch/$(whoami)"
@@ -68,15 +53,9 @@ if [ $( grep 'CentOS Linux release 7' /etc/redhat-release | wc -l ) -eq "1" ]
 then
     export R_LIBS="~/lab/lib/R-3.6.1"
     echo "Centos 7 detected: R_LIBS=${R_LIBS}" 1>&2
-    module load bedtools/2.27.1 ## centos 7 version
-    module remove python/2.7.8  # default load, python/3.5.1
-    module load python/3.5.1    # default load, python/3.5.1
-    module unload R
-    module load R/3.6.1
 else
     export PATH=~/software/bedtools/bedtools2/bin/:$PATH
     R_LIBS=~/software/anaconda3/lib/R/library
-    module unload R
     export PATH=/gpfs/commons/groups/imielinski_lab/Software/anaconda3/bin:$PATH
     echo "Centos 6 detected:  R_LIBS=${R_LIBS}" 1>&2
     export PYTHONPATH=""
@@ -85,6 +64,6 @@ fi
 PS1='\n\s:\!:\h:\n\w\n \$ '
 
 
-if [ "$BASH" ]; then
-    . ~/.bashrc
-fi
+# if [ "$BASH" ]; then
+#     . ~/.bashrc
+# fi

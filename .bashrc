@@ -1,9 +1,33 @@
+## only do if interactive shell
 [[ $- == *i* ]] || return 0
 
 # Source global definitions
 # if [ -f /etc/bashrc ]; then
 # 	. /etc/bashrc
 # fi
+
+module load gcc/8.2.0 ## only for rstan
+module load jags/4.3.0
+module unload samtools
+module load samtools/1.3.1
+module load bcftools
+module load vcftools
+module load mpi
+module load openmpi/2.0.2
+module load bedops
+module load tabix
+module load java/1.8
+
+if [ $( grep 'CentOS Linux release 7' /etc/redhat-release | wc -l ) -eq "1" ]
+then
+    module load bedtools/2.27.1 ## centos 7 version
+    module remove python/2.7.8  # default load, python/3.5.1
+    module load python/3.5.1    # default load, python/3.5.1
+    module unload R
+    module load R/3.6.1
+else
+    module unload R
+fi
 
 export EDITOR="emacs -nw --quick"
 
@@ -89,6 +113,10 @@ gitrv() {
 giturl() {
     git remote set-url $1 $2
 }
+
+lsat() {
+    ls -alhrt $@
+}
 ## git remote set-url origin https://hostname/USERNAME/REPOSITORY.git
 
 export -f parse
@@ -100,3 +128,4 @@ export -f get_time
 export -f tolower
 export -f giturl
 export -f gitrv
+export -f lsat

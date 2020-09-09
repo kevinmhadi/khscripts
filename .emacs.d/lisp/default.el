@@ -12,7 +12,8 @@
 (add-hook 'inferior-ess-mode-hook
 	  (lambda ()
 	    (setq eldoc-mode nil)
-	    (setq ess-use-eldoc nil)))
+	    (setq ess-use-eldoc nil)
+	    (call-interactively 'ess-disable-smart-S-assign t)))
 
 
 (load "~/software/ess-16.04/lisp/ess-site")
@@ -21,6 +22,5 @@
 (add-hook 'ess-mode-hook
 	  (lambda ()
 	    (setq eldoc-mode nil)
-	    (setq ess-use-eldoc nil)))
-
-
+	    (setq ess-use-eldoc nil)
+	    (call-interactively 'ess-disable-smart-S-assign t)))

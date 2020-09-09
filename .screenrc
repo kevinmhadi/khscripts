@@ -9,3 +9,4 @@ term xterm-256color
 bind x
 vbell off
 bell_msg ""
+shell -$SHELL

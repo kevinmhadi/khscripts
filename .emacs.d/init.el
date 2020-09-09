@@ -318,7 +318,6 @@ buffer in current window."
 (setq lazy-highlight-initial-delay 0)
 ;; (setq transient-mark-mode t)
 ;; (setq ess-smart-S-assign-key "_")
-(ess-toggle-underscore nil)
 ;; (setq ess-smart-S-assign-key nil)
 ;; (ess-toggle-S-assign nil)
 ;; (setq transient-mark-mode nil)
