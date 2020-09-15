@@ -129,3 +129,19 @@ export -f tolower
 export -f giturl
 export -f gitrv
 export -f lsat
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+# __conda_setup="$('/nfs/sw/anaconda3/anaconda3-10.19/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+# if [ $? -eq 0 ]; then
+#     eval "$__conda_setup"
+# else
+#     if [ -f "/nfs/sw/anaconda3/anaconda3-10.19/etc/profile.d/conda.sh" ]; then
+#         . "/nfs/sw/anaconda3/anaconda3-10.19/etc/profile.d/conda.sh"
+#     else
+#         export PATH="/nfs/sw/anaconda3/anaconda3-10.19/bin:$PATH"
+#     fi
+# fi
+# unset __conda_setup
+# <<< conda initialize <<<
+
