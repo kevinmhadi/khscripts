@@ -61,7 +61,7 @@ else
     export PYTHONPATH=""
 fi
 
-PS1='\n\s:\!:\h:\n\w\n \$ '
+export PS1='\n\s:\!:\h:\n\w\n \$ '
 
 
 # if [ "$BASH" ]; then

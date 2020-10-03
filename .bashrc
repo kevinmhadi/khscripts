@@ -6,6 +6,8 @@
 # 	. /etc/bashrc
 # fi
 
+export PS1='\n\s:\!:\h:\n\w\n \$ '
+
 module load gcc/8.2.0 ## only for rstan
 module load jags/4.3.0
 module unload samtools
