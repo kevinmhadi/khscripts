@@ -14,6 +14,7 @@ export GENCODE_DIR=~/DB/GENCODE
 export CPLEX_DIR=/gpfs/commons/home/khadi/lab/software/CPLEX/CPLEX_Studio
 
 export R_DATATABLE_NUM_THREADS=1
+export R_REMOTES_NO_ERRORS_FROM_WARNINGS=TRUE
 
 export C_INCLUDE_PATH=/gpfs/commons/groups/imielinski_lab/Software/libtiff/include:$C_INCLUDE_PATH
 
@@ -61,7 +62,7 @@ else
     export PYTHONPATH=""
 fi
 
-export PS1='\n\s:\!:\h:\n\w\n \$ '
+
 
 
 # if [ "$BASH" ]; then

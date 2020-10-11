@@ -20,10 +20,8 @@
 (global-set-key (kbd "C-c d") `insert-current-date)
 (global-set-key (kbd "C-c ;") `forward-or-backward-sexp)
 ;(global-set-key (kbd "C-c ;") `goto-match-paren)
-(global-set-key (kbd "C-c f") `ess-function-name)
 (global-set-key (kbd "C-c P") `rknit-pdf)
 (global-set-key (kbd "C-c p") `rknit-pdfonly)
-(global-set-key (kbd "C-c o") `ess-swv-knit)
 (global-set-key (kbd "C-c i") `indent-region)
 (global-set-key (kbd "C-c ]") `comment-region)
 (global-set-key (kbd "C-c [") `uncomment-region)
@@ -50,23 +48,13 @@
 (blink-cursor-mode 0)
 ;; (blink-cursor-mode t)
 
-(add-hook 'ess-noweb-mode-hook 'rknit-compile-and-print-pdflatex)
-(add-hook 'ess-noweb-font-lock-mode-hook 'rknit-compile-and-print-pdflatex)
-(add-hook 'ess-mode-hook
-	  (lambda ()
-	    (setq eldoc-mode nil)
-	    (setq ess-use-eldoc nil)))
 
 
 ;; (setq inferior-ess-mode-hook nil)
 ;; (add-hook 'inferior-ess-mode-hook 'turn-on-font-lock)
 ;; (add-hook 'inferior-ess-mode-hook 'ess-S-mouse-me-menu-commands)
-(add-hook 'inferior-ess-mode-hook
-	  (lambda ()
-	    (setq eldoc-mode nil)
-	    (setq ess-use-eldoc nil)))
 
-(add-hook 'sh-mode-hook 'highlight-indent-guides-mode)
+
 
 
 (define-key esc-map "G" 'goto-line)             ; Esc-G runs the goto-line
@@ -80,11 +68,11 @@
 
 (defun daytime-colors ()
   (interactive)
-  (load "~/col_profile_white"))
+  (load "~/.emacs.d/col_profile_white"))
 
 (defun my-colors ()
   (interactive)
-  (load "~/col_profile"))
+  (load "~/.emacs.d/col_profile"))
 
 
 (global-set-key (kbd "C-c N") `my-colors)
@@ -330,7 +318,6 @@ buffer in current window."
 (setq lazy-highlight-initial-delay 0)
 ;; (setq transient-mark-mode t)
 ;; (setq ess-smart-S-assign-key "_")
-(ess-toggle-underscore nil)
 ;; (setq ess-smart-S-assign-key nil)
 ;; (ess-toggle-S-assign nil)
 ;; (setq transient-mark-mode nil)
@@ -493,7 +480,7 @@ vi style of % jumping to matching brace."
 (setq explicit-shell-file-name "/bin/bash")
 (setq shell-command-switch "-ic")
 
-(load "~/col_profile")
+(load "~/.emacs.d/col_profile")
 
 ;(setq explicit-shell-file-name "/usr/bin/tcsh")
 
@@ -568,6 +555,7 @@ vi style of % jumping to matching brace."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(blink-cursor-mode nil)
  '(debug-on-quit nil)
  '(menu-bar-mode nil)
  '(package-check-signature nil)

@@ -101,7 +101,9 @@
 (set-cursor-color "white")
 ;; (set-frame-font "-*-fixed-*-*-*--11-*-*-*-c-*-*-*") ;; original line
 ;; (set-frame-font "-*-fixed-*-*-*--13-*-*-*-c-*-*-*")
-(set-frame-font "-*-fixed-*-*-*--13-*-*-*-c-*-*-*")
+;; (set-frame-font "-*-fixed-*-*-*--13-*-*-*-c-*-*-*")
+;; (set-frame-font "DejaVu Sans Mono-11")
+(set-frame-font "Fixed-13")
 ;; (set-frame-font "Courier-9")
 ;; (add-to-list 'default-frame-alist '(font . "6x13"))
 ;; (add-to-list 'default-frame-alist '(foreground-color . "white"))
@@ -555,6 +557,7 @@ vi style of % jumping to matching brace."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(blink-cursor-mode nil)
  '(debug-on-quit nil)
  '(menu-bar-mode nil)
  '(package-check-signature nil)
