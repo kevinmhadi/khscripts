@@ -93,7 +93,7 @@
 ;(add-to-list 'default-frame-alist '(background-color . "grey11"))
 ;(add-to-list 'default-frame-alist '(cursor-color . "white"))
 
-;; (setq next-line-add-newlines t)
+(setq next-line-add-newlines t)
 
 ;; (set-background-color "grey14")
 ;; ;; (set-background-color "grey15")ORIGINAL
