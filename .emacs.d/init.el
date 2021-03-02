@@ -74,8 +74,13 @@
   (interactive)
   (load "~/.emacs.d/col_profile"))
 
+(defun deep-colors ()
+  (interactive)
+  (load "~/.emacs.d/col_profile_deep"))
+
 
 (global-set-key (kbd "C-c N") `my-colors)
+(global-set-key (kbd "C-c W") `deep-colors)
 (global-set-key (kbd "C-c E") `daytime-colors)
 
 
@@ -92,8 +97,6 @@
 ;(add-to-list 'default-frame-alist '(foreground-color . "white"))
 ;(add-to-list 'default-frame-alist '(background-color . "grey11"))
 ;(add-to-list 'default-frame-alist '(cursor-color . "white"))
-
-(setq next-line-add-newlines t)
 
 ;; (set-background-color "grey14")
 ;; ;; (set-background-color "grey15")ORIGINAL
@@ -560,6 +563,7 @@ vi style of % jumping to matching brace."
  '(blink-cursor-mode nil)
  '(debug-on-quit nil)
  '(menu-bar-mode nil)
+ '(next-line-add-newlines nil)
  '(package-check-signature nil)
  '(package-selected-packages
    (quote

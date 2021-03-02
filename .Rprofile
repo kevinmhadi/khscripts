@@ -21,16 +21,46 @@
         return(x)
     }
 
-    forceload = function(envir = globalenv()) {
+    forceload = function(envir = globalenv(), .force = FALSE) {
+        if (!exists("envload_34507213048974")) {
+            envload_34507213048974 = new.env(parent = globalenv())
+            globasn(envload_34507213048974)
+            sesh =  sessionInfo()
+            pkgs = c(sesh$basePkgs,
+                     names(sesh$otherPkgs),
+                     names(sesh$loadedOnly))
+            pkvec = rep(FALSE, length(pkgs))
+            names(pkvec) = pkgs
+            envload_34507213048974$pkvec = pkvec
+        }
         force = function(x) x
-        pkgs = gsub("package:", "", grep('package:', search(), value = TRUE))
-        pkgs = c(pkgs, names(sessionInfo()$loadedOnly))
-        for (pkg in pkgs) {
-            tryCatch( {
-                message("force loading ", pkg)
-                invisible(eval(as.list((asNamespace(pkg))), envir = envir))
-                invisible(eval(eapply(asNamespace(pkg), force, all.names = TRUE), envir = envir))
-            }, error = function(e) message("could not force load ", pkg))
+        ## pkgs = gsub("package:", "", grep('package:', search(), value = TRUE))
+        ## pkgs = c(pkgs, names(sessionInfo()$loadedOnly))
+        if (!exists("sesh")) sesh =  sessionInfo()
+        if (!exists("pkgs")) {
+            pkgs = c(sesh$basePkgs,
+                     names(sesh$otherPkgs),
+                     names(sesh$loadedOnly))
+        }
+        pkvec = envload_34507213048974$pkvec
+        notloaded_firsttime = setdiff(pkgs, names(pkvec))
+        pkvec = c(pkvec, setNames(rep_len(FALSE, length(notloaded_firsttime)), notloaded_firsttime))
+        if (.force)
+            notloaded = names(pkvec)
+        else
+            notloaded = names(which(pkvec == FALSE))
+        if (length(notloaded)) {
+            for (pkg in notloaded) {
+                tryCatch( {
+                    message("force loading ", pkg)
+                    invisible(eval(as.list((asNamespace(pkg))), envir = envir))
+                    invisible(eval(eapply(asNamespace(pkg), force, all.names = TRUE), envir = envir))
+                    pkvec[pkg] = TRUE
+                }, error = function(e) message("could not force load ", pkg))
+            }
+            envload_34507213048974$pkvec = pkvec
+        } else {
+            message("nothing to forceload")
         }
     }
 
@@ -63,7 +93,18 @@
 
     relib3 = function(..., force = TRUE, unload = TRUE)
     {
-        suppressMessages(forceload())
+        if (!exists("envload_34507213048974")) {
+            envload_34507213048974 = new.env(parent = globalenv())
+            globasn(envload_34507213048974)
+            sesh =  sessionInfo()
+            pkgs = c(sesh$basePkgs,
+                     names(sesh$otherPkgs),
+                     names(sesh$loadedOnly))
+            pkvec = rep(FALSE, length(pkgs))
+            names(pkvec) = pkgs
+            envload_34507213048974$pkvec = pkvec
+        }
+        suppressMessages(forceload(.force = T))
         names2 = function(x) {
             nm = names(x)
             if (is.null(nm))
@@ -81,7 +122,7 @@
             notfound= { set.seed(10); paste0("notfound_", round(runif(1) * 1e9)); }
             vars = mget(charvec, ifnotfound=notfound, mode = "character", inherits = T)
             ## charvec = unlist(strsplit(toString(vars[[1]]), ", "))
-            charvec = unique(c(names2(vars[vars == notfound]), unlist(vars[vars != notfound]))) 
+            charvec = unique(c(names2(vars[vars == notfound]), unlist(vars[vars != notfound])))
         }
         charvec = c(charvec, unlist(as.vector(sapply(pkgarg,
                                                      function(x) tryCatch(eval(x), error = function(e) NULL)))))
@@ -93,9 +134,21 @@
                 ## tryCatch(unload(lib), error = function(e) NULL) ## DO NOT use this line...
                 ## it will break re-librarying
             }
+            pkvec = envload_34507213048974$pkvec
+            if (lib %in% names(pkvec)) {
+                pkvec = pkvec[!names(pkvec) %in% lib]
+                envload_34507213048974$pkvec = pkvec
+            } else {
+                pev = packageEvent(lib, "onLoad")
+                gh = getHook(pev)
+                if (length(gh) == 0 || is.null(gh$forceall12340987)) {
+                    setHook(pev,
+                            list("forceall12340987" = function(...) forceall(envir = asNamespace(lib))))
+                }
+            }
             library(lib, character.only = T)
         }
-        suppressMessages(forceload())
+        suppressMessages(forceload(.force = T))
     }
 
     detach2 = function(lib = "Flow", force = TRUE, unload = TRUE) {
@@ -124,7 +177,7 @@
         suppressMessages(forceload())
     }
 
-    library3 = function (...) 
+    library3 = function (...)
     {
         suppressMessages(forceload())
         names2 = function(x) {
@@ -145,18 +198,24 @@
             notfound= { set.seed(10); paste0("notfound_", round(runif(1) * 1e9)); }
             vars = mget(charvec, ifnotfound=notfound, mode = "character", inherits = T)
             ## charvec = unlist(strsplit(toString(vars[[1]]), ", "))
-            charvec = unique(c(names2(vars[vars == notfound]), unlist(vars[vars != notfound]))) 
+            charvec = unique(c(names2(vars[vars == notfound]), unlist(vars[vars != notfound])))
         }
         charvec = c(charvec, unlist(as.vector(sapply(pkgarg,
                                                      function(x) tryCatch(eval(x), error = function(e) NULL)))))
         for (lib in charvec) {
+            pev = packageEvent(lib, "onLoad")
+            gh = getHook(pev)
+            if (length(gh) == 0 || is.null(gh$forceall12340987)) {
+                setHook(pev,
+                        list("forceall12340987" = function(...) forceall(envir = asNamespace(lib))))
+            }
             do.call(library, c(alist(package = lib, character.only = T),
                                otherarg))
         }
         suppressMessages(forceload())
     }
 
-    require3 = function (...) 
+    require3 = function (...)
     {
         suppressMessages(forceload())
         names2 = function(x) {
@@ -177,11 +236,17 @@
             notfound= { set.seed(10); paste0("notfound_", round(runif(1) * 1e9)); }
             vars = mget(charvec, ifnotfound=notfound, mode = "character", inherits = T)
             ## charvec = unlist(strsplit(toString(vars[[1]]), ", "))
-            charvec = unique(c(names2(vars[vars == notfound]), unlist(vars[vars != notfound]))) 
+            charvec = unique(c(names2(vars[vars == notfound]), unlist(vars[vars != notfound])))
         }
         charvec = c(charvec, unlist(as.vector(sapply(pkgarg,
                                                      function(x) tryCatch(eval(x), error = function(e) NULL)))))
         for (lib in charvec) {
+            pev = packageEvent(lib, "onLoad")
+            gh = getHook(pev)
+            if (length(gh) == 0 || is.null(gh$forceall12340987)) {
+                setHook(pev,
+                        list("forceall12340987" = function(...) forceall(envir = asNamespace(lib))))
+            }
             do.call(require, c(alist(package = lib, character.only = T),
                                otherarg))
         }
@@ -194,27 +259,48 @@
 
 
     forceall = function(invisible = TRUE, envir = parent.frame(), evalenvir = parent.frame()) {
-        if (invisible)  {
-            invisible(eval(as.list(envir), envir = evalenvir))
-            invisible(eval(eapply(envir, force, all.names = TRUE), envir = evalenvir))
+        if (!exists("envload_34507213048974")) {
+            envload_34507213048974 = new.env(parent = globalenv())
+            globasn(envload_34507213048974)
+            sesh =  sessionInfo()
+            pkgs = c(sesh$basePkgs,
+                     names(sesh$otherPkgs),
+                     names(sesh$loadedOnly))
+            pkvec = rep(FALSE, length(pkgs))
+            names(pkvec) = pkgs
+            envload_34507213048974$pkvec = pkvec
+        }
+        pkg = environmentName(envir)
+        pkvec = envload_34507213048974$pkvec
+        if ( { pkg %in% names(pkvec) && isFALSE(pkvec[pkg]); } ||
+             { ! pkg %in% names(pkvec); } ) {
+            if (invisible == TRUE)  {
+                invisible(eval(as.list(envir), envir = evalenvir))
+                invisible(eval(eapply(envir, force, all.names = TRUE), envir = evalenvir))
+            } else {
+                print(eval(as.list(envir), envir = evalenvir))
+                print(eval(eapply(envir, force, all.names = TRUE), envir = evalenvir))
+            }
+            addon = TRUE
+            names(addon) = pkg
+            envload_34507213048974$pkvec = c(pkvec, addon)
         } else {
-            print(eval(as.list(envir), envir = evalenvir))
-            print(eval(eapply(envir, force, all.names = TRUE), envir = evalenvir))
+            message("nothing to load")
         }
     }
 
-    overwriteR6 = function (newfun, oldfun, r6gen, meth = "public_methods", package = NULL, 
-                            envir = globalenv()) 
+    overwriteR6 = function (newfun, oldfun, r6gen, meth = "public_methods", package = NULL,
+                            envir = globalenv())
     {
-        meth = ifelse(grepl("^pub", meth), "public_methods", ifelse(grepl("^pri", 
-                                                                          meth), "private_methods", ifelse(grepl("^act", meth), 
+        meth = ifelse(grepl("^pub", meth), "public_methods", ifelse(grepl("^pri",
+                                                                          meth), "private_methods", ifelse(grepl("^act", meth),
                                                                                                            "active", NA_character_)))
-        if (is.na(meth)) 
+        if (is.na(meth))
             stop("method must refer to public, private, or active method")
         if (!is.null(package)) {
-            if (is.character(package)) 
+            if (is.character(package))
                 envpkg = asNamespace(package)
-            else if (isNamespace(package)) 
+            else if (isNamespace(package))
                 envpkg = package
             nmpkg = environmentName(envpkg)
         }
@@ -227,8 +313,8 @@
         NULL
     }
 
-    globasn = function (obj, var = NULL, return_obj = TRUE, envir = .GlobalEnv, 
-                        verbose = TRUE, vareval = F) 
+    globasn = function (obj, var = NULL, return_obj = TRUE, envir = .GlobalEnv,
+                        verbose = TRUE, vareval = F)
     {
         var = as.list(match.call())$var
         if (is.null(var)) {
@@ -236,7 +322,7 @@
         }
         else {
             if (is.name(var)) {
-                if (isFALSE(vareval)) 
+                if (isFALSE(vareval))
                     var = as.character(var)
                 else var = eval(var, parent.frame())
             }
@@ -250,7 +336,7 @@
                 globx = as.character(substitute(var))
             }
         }
-        if (verbose) 
+        if (verbose)
             message("variable being assigned to ", globx)
         assign(globx, value = obj, envir = envir)
         if (return_obj) {
@@ -261,27 +347,27 @@
         }
     }
 
-    overwritefun = function (newfun, oldfun, package, envir = globalenv()) 
+    overwritefun = function (newfun, oldfun, package, envir = globalenv())
     {
-        if (is.character(package)) 
+        if (is.character(package))
             envpkg = asNamespace(package)
-        else if (isNamespace(package)) 
+        else if (isNamespace(package))
             envpkg = package
         nmpkg = environmentName(envpkg)
         tmpfun = get(oldfun, envir = envpkg)
-        .newfun = get(newfun)
+        .newfun = get(newfun, envir = parent.frame())
         environment(.newfun) = environment(tmpfun)
         attributes(.newfun) = attributes(tmpfun)
         eval(asn2(oldfun, .newfun, ns = nmpkg), globalenv())
         globasn(.newfun, oldfun, vareval = T)
     }
 
-    asn2 = function (x, value, ns, pos = -1, envir = as.environment(pos)) 
+    asn2 = function (x, value, ns, pos = -1, envir = as.environment(pos))
     {
         nf <- sys.nframe()
         if (missing(ns)) {
             nm <- attr(envir, "name", exact = TRUE)
-            if (is.null(nm) || substr(nm, 1L, 8L) != "package:") 
+            if (is.null(nm) || substr(nm, 1L, 8L) != "package:")
                 stop("environment specified is not a package")
             ns <- asNamespace(substring(nm, 9L))
         }
@@ -291,15 +377,15 @@
             in_load <- Sys.getenv("_R_NS_LOAD_")
             if (nzchar(in_load)) {
                 if (in_load != ns_name) {
-                    msg <- gettextf("changing locked binding for %s in %s whilst loading %s", 
+                    msg <- gettextf("changing locked binding for %s in %s whilst loading %s",
                                     sQuote(x), sQuote(ns_name), sQuote(in_load))
-                    if (!in_load %in% c("Matrix", "SparseM")) 
+                    if (!in_load %in% c("Matrix", "SparseM"))
                         warning(msg, call. = FALSE, domain = NA, immediate. = TRUE)
                 }
             }
             else if (nzchar(Sys.getenv("_R_WARN_ON_LOCKED_BINDINGS_"))) {
-                warning(gettextf("changing locked binding for %s in %s", 
-                                 sQuote(x), sQuote(ns_name)), call. = FALSE, domain = NA, 
+                warning(gettextf("changing locked binding for %s in %s",
+                                 sQuote(x), sQuote(ns_name)), call. = FALSE, domain = NA,
                         immediate. = TRUE)
             }
             unlockBinding(x, ns)
@@ -314,49 +400,49 @@
         }
         if (!isBaseNamespace(ns)) {
             S3 <- .getNamespaceInfo(ns, "S3methods")
-            if (!length(S3)) 
+            if (!length(S3))
                 return(invisible(NULL))
             S3names <- S3[, 3L]
             if (x %in% S3names) {
                 i <- match(x, S3names)
                 genfun <- get(S3[i, 1L], mode = "function", envir = parent.frame())
-                if (.isMethodsDispatchOn() && methods::is(genfun, 
-                                                          "genericFunction")) 
+                if (.isMethodsDispatchOn() && methods::is(genfun,
+                                                          "genericFunction"))
                     genfun <- methods::slot(genfun, "default")@methods$ANY
-                defenv <- if (typeof(genfun) == "closure") 
+                defenv <- if (typeof(genfun) == "closure")
                               environment(genfun)
                           else .BaseNamespaceEnv
                 S3Table <- get(".__S3MethodsTable__.", envir = defenv)
                 remappedName <- paste(S3[i, 1L], S3[i, 2L], sep = ".")
-                if (exists(remappedName, envir = S3Table, inherits = FALSE)) 
+                if (exists(remappedName, envir = S3Table, inherits = FALSE))
                     assign(remappedName, value, S3Table)
             }
         }
         invisible(NULL)
     }
 
-    saveRDS = function (object, file = "", ascii = FALSE, version = NULL, compress = TRUE, 
+    saveRDS = function (object, file = "", ascii = FALSE, version = NULL, compress = TRUE,
                         refhook = NULL) {
         if (is.character(file)) {
-            if (file == "") 
+            if (file == "")
                 stop("'file' must be non-empty string")
             if (!dir.exists(dirname(file)))
                 system2("mkdir", c("-p", dirname(file)))
             object <- object
-            mode <- if (ascii %in% FALSE) 
+            mode <- if (ascii %in% FALSE)
                         "wb"
                     else "w"
-            con <- if (is.logical(compress)) 
-                       if (compress) 
+            con <- if (is.logical(compress))
+                       if (compress)
                            gzfile(file, mode)
                        else file(file, mode)
-                   else switch(compress, bzip2 = bzfile(file, mode), xz = xzfile(file, 
-                                                                                 mode), gzip = gzfile(file, mode), stop("invalid 'compress' argument: ", 
+                   else switch(compress, bzip2 = bzfile(file, mode), xz = xzfile(file,
+                                                                                 mode), gzip = gzfile(file, mode), stop("invalid 'compress' argument: ",
                                                                                                                         compress))
             on.exit(close(con))
         }
         else if (inherits(file, "connection")) {
-            if (!missing(compress)) 
+            if (!missing(compress))
                 warning("'compress' is ignored unless 'file' is a file name")
             con <- file
         }
@@ -369,24 +455,42 @@
 #######################
 #######################
 #######################
-    `:::.new` = function (pkg, name) {
-        pkg <- as.character(substitute(pkg))
-        name <- as.character(substitute(name))
-        out = get(name, envir = asNamespace(pkg), inherits = FALSE)
-        forceall(envir = asNamespace(pkg), evalenvir = globalenv())
-        return(out)
+    ## if you don't wrap this in a function,
+    ## and just run it manually after startup,
+    ## everything goes bollocks...
+    startup = function() {
+        `:::.new` = function (pkg, name) {
+            pkg <- as.character(substitute(pkg))
+            name <- as.character(substitute(name))
+            pev = packageEvent(pkg, "onLoad")
+            gh = getHook(pev)
+            if (length(gh) == 0 || is.null(gh$forceall12340987)) {
+                setHook(pev,
+                        list("forceall12340987" = function(...) forceall(envir = asNamespace(pkg))))
+            }
+            out = get(name, envir = asNamespace(pkg), inherits = FALSE)
+            ## forceall(envir = asNamespace(pkg), evalenvir = globalenv())
+            return(out)
+        }
+
+        `::.new` = function (pkg, name) {
+            pkg <- as.character(substitute(pkg))
+            name <- as.character(substitute(name))
+            pev = packageEvent(pkg, "onLoad")
+            gh = getHook(pev)
+            if (length(gh) == 0 || is.null(gh$forceall12340987)) {
+                setHook(pev,
+                        list("forceall12340987" = function(...) forceall(envir = asNamespace(pkg))))
+            }
+            out = getExportedValue(pkg, name)
+            ## forceall(envir = asNamespace(pkg), evalenvir = globalenv())
+            return(out)
+        }
+
+        overwritefun("::.new", "::", package = asNamespace("base"))
+        overwritefun(":::.new", ":::", package = asNamespace("base"))
     }
 
-    `::.new` = function (pkg, name) {
-        pkg <- as.character(substitute(pkg))
-        name <- as.character(substitute(name))
-        out = getExportedValue(pkg, name)
-        forceall(envir = asNamespace(pkg), evalenvir = globalenv())
-        return(out)
-    }
-
-    overwritefun("::.new", "::", package = asNamespace("base"))
-    overwritefun(":::.new", ":::", package = asNamespace("base"))
 #######################
 #######################
 #######################
@@ -396,10 +500,9 @@
 
     Sys.setenv("BASH_FUNC_blip()" = "() { echo \"hoohah\"; }")
 
-
+    Sys.setenv(DEFAULT_GENOME = "~/DB/references/hg19/human_g1k_v37_decoy.chrom.sizes")
+    Sys.setenv(DEFAULT_BSGENOME = "~/DB/references/hg19/human_g1k_v37_decoy.chrom.sizes")
 
     ww = with
     wn = within
-
-    1
 }

@@ -62,7 +62,7 @@ else
     export PYTHONPATH=""
 fi
 
-
+export PYTHONUNBUFFERED=1
 
 
 # if [ "$BASH" ]; then

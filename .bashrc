@@ -77,10 +77,28 @@ alias p2="source ~/scripts/module_load_python2"
 get_ext() {
     filename=$(basename -- "${1}")
     extension="${filename##*.}"
-    filename="${filename%.*}"
+    # filename="${filename%.*}"
     # echo 'vcf_ext=${extension}'
     echo ${extension}
 }
+
+
+get_fn_noext() {
+    # filename=$(basename -- "${1}")
+    filename="${1}"
+    filename="${filename%.*}"
+    echo ${filename}
+}
+
+
+# get_fn_noext() {
+#     filename=$(basename -- "${1}")
+#     # extension="${filename##*.}"
+#     filename="${filename%.*}"
+#     # echo 'vcf_ext=${extension}'
+#     echo ${filename}
+# }
+
 
 get_fn() {
     fn=`readlink -f $1`
@@ -131,6 +149,7 @@ export -f tolower
 export -f giturl
 export -f gitrv
 export -f lsat
+export -f get_fn_noext
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
