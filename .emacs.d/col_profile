@@ -26,6 +26,8 @@
 (set-face-background 'region "color-25")
 (set-face-foreground 'error "color-197")
 (set-face-foreground 'font-lock-function-name-face "color-25")
+(set-face-foreground 'mode-line "grey0")
+(set-face-background 'mode-line "grey65")
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.

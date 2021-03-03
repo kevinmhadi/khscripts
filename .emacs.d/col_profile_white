@@ -23,6 +23,8 @@
 ;; (set-face-background 'region "darkgoldenrod")
 (set-face-background 'region "color-25")
 (set-face-foreground 'font-lock-function-name-face "color-25")
+(set-face-foreground 'mode-line "grey0")
+(set-face-background 'mode-line "grey65")
 
 
 (custom-set-faces
@@ -32,6 +34,6 @@
   ;; If there is more than one, they won't work right.
  '(minibuffer-prompt ((t (:weight bold :foreground "color-17"))))
  '(default ((t (:inherit nil :stipple nil :background "grey96" :foreground "grey0" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 1 :width normal :foundry "default" :family "default"))))
- '(mode-line-inactive ((t (:inherit mode-line :background "grey85" :foreground "grey25" :box (:line-width -1 :color "grey20") :weight light))))
- '(mode-line-buffer-id ((t (:background "grey99" :foreground "grey10" :inverse-video t))))
+ '(mode-line-buffer-id ((t (:background "grey100" :foreground "grey0" :inverse-video t))))
+ '(mode-line-inactive ((t (:inherit mode-line :background "grey95" :foreground "grey25" :box (:line-width -1 :color "grey20") :weight light))))
  )

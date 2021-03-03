@@ -25,7 +25,8 @@
 (set-face-foreground 'ido-subdir "color-164")
 (set-face-foreground 'error "color-197")
 (set-face-background 'region "color-25")
-
+(set-face-foreground 'mode-line "grey0")
+(set-face-background 'mode-line "grey65")
 
 
 (custom-set-faces
