@@ -505,4 +505,8 @@
 
     ww = with
     wn = within
+
+    go.R = function() {
+        evalq(source("~/startup.R"), globalenv())
+    }
 }

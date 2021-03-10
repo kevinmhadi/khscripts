@@ -47,7 +47,7 @@
 (windmove-default-keybindings)
 (blink-cursor-mode 0)
 ;; (blink-cursor-mode t)
-
+(ansi-color-for-comint-mode-on)
 
 
 ;; (setq inferior-ess-mode-hook nil)
@@ -74,8 +74,13 @@
   (interactive)
   (load "~/.emacs.d/col_profile"))
 
+(defun deep-colors ()
+  (interactive)
+  (load "~/.emacs.d/col_profile_deep"))
+
 
 (global-set-key (kbd "C-c N") `my-colors)
+(global-set-key (kbd "C-c W") `deep-colors)
 (global-set-key (kbd "C-c E") `daytime-colors)
 
 

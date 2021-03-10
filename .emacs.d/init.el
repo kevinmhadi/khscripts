@@ -47,7 +47,7 @@
 (windmove-default-keybindings)
 (blink-cursor-mode 0)
 ;; (blink-cursor-mode t)
-
+(ansi-color-for-comint-mode-filter)
 
 
 ;; (setq inferior-ess-mode-hook nil)
