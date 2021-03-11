@@ -349,16 +349,33 @@
 
     overwritefun = function (newfun, oldfun, package, envir = globalenv())
     {
-        if (is.character(package))
-            envpkg = asNamespace(package)
-        else if (isNamespace(package))
-            envpkg = package
+        if (is.character(newfun) && is.character(oldfun) && missing(package))
+            stop("must specify package for oldfun")
+        if (!missing(package)) {
+            if (is.character(package))
+                envpkg = asNamespace(package)
+            else if (isNamespace(package))
+                envpkg = package
+        } else {
+            if (missing(package)) {
+                envpkg = asNamespace(environment(oldfun))
+            }
+        }
+        if (!is.character(oldfun)) {
+            oldfun = deparse(tail(as.list(substitute(oldfun)), 1)[[1]])
+        }
+        if (!is.character(newfun)) {
+            newfunenv = asNamespace(environment(newfun))
+            newfun = deparse(tail(as.list(substitute(newfun)), 1)[[1]])
+        } else {
+            newfunenv = parent.frame()
+        }
         nmpkg = environmentName(envpkg)
         tmpfun = get(oldfun, envir = envpkg)
-        .newfun = get(newfun, envir = parent.frame())
+        .newfun = get(newfun, envir = newfunenv)
         environment(.newfun) = environment(tmpfun)
         attributes(.newfun) = attributes(tmpfun)
-        eval(asn2(oldfun, .newfun, ns = nmpkg), globalenv())
+        evalq(asn2(oldfun, .newfun, ns = nmpkg), environment(), parent.frame())
         globasn(.newfun, oldfun, vareval = T)
     }
 
@@ -507,6 +524,21 @@
     wn = within
 
     go.R = function() {
-        evalq(source("~/startup.R"), globalenv())
+        evalq({source("~/lab/home/khadi/git/khscripts/.Rprofile"); source("~/lab/home/khadi/git/khscripts/startup.R")}, globalenv())
+    }
+
+    do.dev = function() {
+        evalq({startup(); library3(devtools)}, globalenv())
+    }
+
+    test.start = function() {
+        eval(quote({
+            startup(); library3(khtools, skitools);
+            tailf = khtools::tailf
+        }), globalenv())
+        ## evalq({
+        ##     startup(); library3(khtools, skitools);
+        ##     tailf = khtools::tailf
+        ## }, globalenv())
     }
 }
