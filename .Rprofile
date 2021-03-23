@@ -53,8 +53,10 @@
             for (pkg in notloaded) {
                 tryCatch( {
                     message("force loading ", pkg)
-                    invisible(eval(as.list((asNamespace(pkg))), envir = envir))
-                    invisible(eval(eapply(asNamespace(pkg), force, all.names = TRUE), envir = envir))
+                    ## invisible(eval(as.list((asNamespace(pkg))), envir = envir))
+                    ## invisible(eval(eapply(asNamespace(pkg), force, all.names = TRUE), envir = envir))
+                    invisible(eval(parse(text = sprintf("as.list((asNamespace(\"%s\")))", pkg)), envir = envir))
+                    invisible(eval(parse(text = sprintf("eapply(asNamespace(\"%s\"), force, all.names = TRUE)", pkg)), envir = envir))
                     pkvec[pkg] = TRUE
                 }, error = function(e) message("could not force load ", pkg))
             }
@@ -275,11 +277,15 @@
         if ( { pkg %in% names(pkvec) && isFALSE(pkvec[pkg]); } ||
              { ! pkg %in% names(pkvec); } ) {
             if (invisible == TRUE)  {
-                invisible(eval(as.list(envir), envir = evalenvir))
-                invisible(eval(eapply(envir, force, all.names = TRUE), envir = evalenvir))
+                ## invisible(eval(as.list(envir), envir = evalenvir))
+                ## invisible(eval(eapply(envir, force, all.names = TRUE), envir = evalenvir))
+                invisible(eval(parse(text = sprintf("as.list(asNamespace(\"%s\"))", pkg)), evalenvir))
+                invisible(eval(parse(text = sprintf("eapply(asNamespace(\"%s\"), force, all.names = TRUE)", pkg)), envir = evalenvir))
             } else {
-                print(eval(as.list(envir), envir = evalenvir))
-                print(eval(eapply(envir, force, all.names = TRUE), envir = evalenvir))
+                ## print(eval(as.list(envir), envir = evalenvir))
+                ## print(eval(eapply(envir, force, all.names = TRUE), envir = evalenvir))
+                print(eval(parse(text = sprintf("as.list(asNamespace(\"%s\"))", pkg)), evalenvir))
+                print(eval(parse(text = sprintf("eapply(asNamespace(\"%s\"), force, all.names = TRUE)", pkg)), envir = evalenvir))
             }
             addon = TRUE
             names(addon) = pkg
@@ -425,10 +431,13 @@
                 genfun <- get(S3[i, 1L], mode = "function", envir = parent.frame())
                 if (.isMethodsDispatchOn() && methods::is(genfun,
                                                           "genericFunction"))
-                    genfun <- methods::slot(genfun, "default")@methods$ANY
-                defenv <- if (typeof(genfun) == "closure")
+                    genfun <- tryCatch(methods::slot(genfun, "default")@methods$ANY,
+                                       error = function(e) genfun)
+                defenv <- if (typeof(genfun) == "closure") {
                               environment(genfun)
-                          else .BaseNamespaceEnv
+                          } else {
+                              .BaseNamespaceEnv
+                          }
                 S3Table <- get(".__S3MethodsTable__.", envir = defenv)
                 remappedName <- paste(S3[i, 1L], S3[i, 2L], sep = ".")
                 if (exists(remappedName, envir = S3Table, inherits = FALSE))
@@ -524,11 +533,22 @@
     wn = within
 
     go.R = function() {
+        eval(quote(.libPaths(unique(c("/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2_KH", .libPaths())))), globalenv())
         evalq({source("~/lab/home/khadi/git/khscripts/.Rprofile"); source("~/lab/home/khadi/git/khscripts/startup.R")}, globalenv())
     }
 
     do.dev = function() {
-        evalq({startup(); library3(devtools)}, globalenv())
+        ## evalq({startup(); library3(devtools)}, globalenv())
+        ## eval(quote(.libPaths(unique(c("/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2_KH", .libPaths())))), globalenv())
+        eval(quote({
+            startup();
+            library3(devtools, withr);
+            with_libpaths = withr::with_libpaths;
+            iinstall = function(...) {
+                pf = parent.frame();
+                eval(quote({install(dependencies = F, quick = T)}), envir = pf)
+            };
+            bla = ""}), globalenv())
     }
 
     test.start = function() {

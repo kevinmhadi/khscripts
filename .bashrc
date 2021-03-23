@@ -8,7 +8,8 @@
 
 export PS1='\n\s:\!:\h:\n\w\n \$ '
 
-module load gcc/8.2.0 ## only for rstan
+# module load gcc/8.2.0 ## only for rstan
+module load gcc/9.2.0 ## only for rstan
 module load jags/4.3.0
 module unload samtools
 module load samtools/1.3.1
@@ -26,7 +27,8 @@ then
     module remove python/2.7.8  # default load, python/3.5.1
     module load python/3.5.1    # default load, python/3.5.1
     module unload R
-    module load R/3.6.1
+    # module load R/3.6.1
+    module load R/4.0.2
 else
     module unload R
 fi
@@ -127,17 +129,23 @@ parse() {
     echo "$@" | xargs | xargs
 }
 
-gitrv() {
+gitremote() {
     git remote -v
 }
-giturl() {
-    git remote set-url $1 $2
+gitseturl() {
+    # git remote set-url $1 $2
+    git remote set-url $@
+}
+gitsetremote() {
+    git remote set-url $@
 }
 
 lsat() {
     ls -alhrt $@
 }
 ## git remote set-url origin https://hostname/USERNAME/REPOSITORY.git
+
+# echo $(printf '%(%Y%m%d%H%M%S)T\n' -1)
 
 export -f parse
 export -f get_ext
@@ -146,8 +154,9 @@ export -f lsa
 export -f gcom
 export -f get_time
 export -f tolower
-export -f giturl
-export -f gitrv
+export -f gitseturl
+export -f gitremote
+export -f gitsetremote
 export -f lsat
 export -f get_fn_noext
 

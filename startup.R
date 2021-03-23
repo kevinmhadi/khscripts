@@ -1,3 +1,5 @@
+.libPaths(unique(c("/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2_KH", .libPaths())))
+
 Sys.setenv(DEFAULT_BSGENOME = "/gpfs/commons/groups/imielinski_lab/DB/GATK/human_g1k_v37_decoy.chrom.sizes")
 Sys.setenv(DEFAULT_GENOME = "/gpfs/commons/groups/imielinski_lab/DB/GATK/human_g1k_v37_decoy.chrom.sizes")
 
@@ -6,6 +8,7 @@ Sys.setenv(BCFTOOLS_PLUGINS = "/gpfs/commons/groups/imielinski_lab/Software/bcft
 
 startup();
 library3(
+    withr,
     skitools,
     gGnome,
     Flow,
@@ -15,6 +18,8 @@ library3(
     naturalsort,
     khtools
 )
+
+## source("~/lab/home/khadi/git/khscripts/patch_gtrack.R")
 
 brewer.master = skitools::brewer.master
 `%$%` = gUtils::`%$%`
@@ -38,4 +43,7 @@ tailf = khtools::tailf
 coalesce = khtools::coalesce
 ppdf = khtools::ppdf
 ppng = khtools::ppng
+with_libpaths = withr::with_libpaths
+with_options = withr::with_options
 overwritefun(khtools::gr.flipstrand, gUtils::gr.flipstrand); gr.flipstrand = khtools::gr.flipstrand
+

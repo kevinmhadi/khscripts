@@ -10,5 +10,34 @@ library3(
     gGnome,
     Flow,
     dplyr,
+    bamUtils,
+    skidb,
+    naturalsort,
     khtools
 )
+
+source("~/lab/home/khadi/git/khscripts/patch_gtrack.R")
+
+brewer.master = skitools::brewer.master
+`%$%` = gUtils::`%$%`
+`%&%` = gUtils::`%&%`
+`%Q%` = gUtils::`%Q%`
+`%+%` = gUtils::`%+%`
+`%-%` = gUtils::`%-%`
+`%^%` = gUtils::`%^%`
+width = GenomicRanges::width
+reduce = GenomicRanges::reduce
+between = data.table::between
+setnames = data.table::setnames
+select = dplyr::select
+update = Flow::update
+cache = Flow::cache
+set = data.table::set
+set_names = rlang::set_names
+matches = dplyr::matches
+n = dplyr::n
+tailf = khtools::tailf
+coalesce = khtools::coalesce
+ppdf = khtools::ppdf
+ppng = khtools::ppng
+overwritefun(khtools::gr.flipstrand, gUtils::gr.flipstrand); gr.flipstrand = khtools::gr.flipstrand
