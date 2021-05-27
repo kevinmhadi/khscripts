@@ -54,6 +54,7 @@ if [ $( grep 'CentOS Linux release 7' /etc/redhat-release | wc -l ) -eq "1" ]
 then
     # export R_LIBS="~/lab/lib/R-3.6.1"
     export R_LIBS="~/lab/lib/R-4.0.2"
+    # export R_LIBS="~/lab/lib/R-4.0.2_KH:~/lab/lib/R-4.0.2"
     echo "Centos 7 detected: R_LIBS=${R_LIBS}" 1>&2
 else
     export PATH=~/software/bedtools/bedtools2/bin/:$PATH

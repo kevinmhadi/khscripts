@@ -80,7 +80,7 @@
 
     relib2 = function(lib = 'Flow', force = TRUE, unload = TRUE)
     {
-        suppressMessages(forceload())
+        suppressMessages(forceload(.force = T))
         if (sprintf("package:%s", lib) %in% search())
         {
             expr = sprintf("detach(package:%s, force = force, unload = unload)", lib)
@@ -90,7 +90,7 @@
         }
         txt = sprintf("library2(%s)", lib)
         eval(parse(text = txt))
-        suppressMessages(forceload())
+        suppressMessages(forceload(.force = T))
     }
 
     relib3 = function(..., force = TRUE, unload = TRUE)
@@ -154,18 +154,18 @@
     }
 
     detach2 = function(lib = "Flow", force = TRUE, unload = TRUE) {
-        suppressMessages(forceload())
+        suppressMessages(forceload(.force = T))
         if (sprintf("package:%s", lib) %in% search())
         {
             expr = sprintf("detach(package:%s, force = force, unload = unload)", lib)
             suppressMessages(eval(parse(text = expr)))
             tryCatch(unload(lib), error = function(e) NULL)
         }
-        suppressMessages(forceload())
+        suppressMessages(forceload(.force = T))
     }
 
     library2 = function(x, ...) {
-        suppressMessages(forceload())
+        suppressMessages(forceload(.force = T))
         arg = as.list(match.call())[["x"]]
         if (is.symbol(arg)) {
             lib = tryCatch(as.character(eval(arg)), error = function(e) arg)
@@ -176,12 +176,11 @@
             lib = x
         }
         library(lib, character.only = T, ...)
-        suppressMessages(forceload())
+        suppressMessages(forceload(.force = T))
     }
 
     library3 = function (...)
     {
-        suppressMessages(forceload())
         names2 = function(x) {
             nm = names(x)
             if (is.null(nm))
@@ -189,7 +188,7 @@
             else
                 return(nm)
         }
-        suppressMessages(forceload())
+        suppressMessages(forceload(.force = T))
         lst.arg = as.list(match.call(expand.dots = F))$`...`
         nm = names2(lst.arg)
         otherarg = lst.arg[nzchar(nm)]
@@ -214,12 +213,11 @@
             do.call(library, c(alist(package = lib, character.only = T),
                                otherarg))
         }
-        suppressMessages(forceload())
+        suppressMessages(forceload(.force = T))
     }
 
     require3 = function (...)
     {
-        suppressMessages(forceload())
         names2 = function(x) {
             nm = names(x)
             if (is.null(nm))
@@ -227,7 +225,7 @@
             else
                 return(nm)
         }
-        suppressMessages(forceload())
+        suppressMessages(forceload(.force = T))
         lst.arg = as.list(match.call(expand.dots = F))$`...`
         nm = names2(lst.arg)
         otherarg = lst.arg[nzchar(nm)]
@@ -252,7 +250,7 @@
             do.call(require, c(alist(package = lib, character.only = T),
                                otherarg))
         }
-        suppressMessages(forceload())
+        suppressMessages(forceload(.force = T))
     }
 
 
@@ -549,6 +547,28 @@
                 eval(quote({install(dependencies = F, quick = T)}), envir = pf)
             };
             bla = ""}), globalenv())
+    }
+
+    private_lib = function(suffix = "_KH") {
+        libs = .libPaths()
+        orig = tail(libs, 1)
+        addon = Sys.getenv("R_LIBS")
+        addon = normalizePath(unlist(strsplit(addon, "[,|;:]")))
+        priv_lib = setdiff(libs, union(addon, orig))
+        if (length(priv_lib) == 0) {
+            if (dir.exists(suffix))
+                priv_lib = suffix
+            else
+                priv_lib = paste0(.libPaths()[1], suffix)
+            expr = parse(text = paste0(".libPaths(c(", paste(paste0("'", unique(c(priv_lib, .libPaths())), "'"), collapse = ","), "))"))
+            message("setting library path(s) to: ", paste0(unique(c(priv_lib, .libPaths())), collapse = ", "))
+            eval(expr, globalenv())
+        } else {
+            expr = parse(text = paste0(".libPaths(c(", paste(paste0("'", union(addon, orig), "'"), collapse = ","), "))"))
+            message("setting library path(s) to: ", paste0(union(addon, orig)), collapse = ", ")
+            eval(expr, globalenv())
+        }
+        invisible(NULL)
     }
 
     test.start = function() {

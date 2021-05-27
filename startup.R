@@ -16,10 +16,12 @@ library3(
     bamUtils,
     skidb,
     naturalsort,
+    magrittr,
     khtools
 )
 
 ## source("~/lab/home/khadi/git/khscripts/patch_gtrack.R")
+
 
 brewer.master = skitools::brewer.master
 `%$%` = gUtils::`%$%`
@@ -39,11 +41,14 @@ set = data.table::set
 set_names = rlang::set_names
 matches = dplyr::matches
 n = dplyr::n
+last = dplyr::last
+first = dplyr::first
 tailf = khtools::tailf
 coalesce = khtools::coalesce
 ppdf = khtools::ppdf
 ppng = khtools::ppng
 with_libpaths = withr::with_libpaths
 with_options = withr::with_options
+melt = data.table::melt
 overwritefun(khtools::gr.flipstrand, gUtils::gr.flipstrand); gr.flipstrand = khtools::gr.flipstrand
 

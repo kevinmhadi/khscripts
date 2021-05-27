@@ -45,10 +45,12 @@
 ;; (global-set-key [right-divider down-mouse-1] `mouse-drag-vertical-line)
 ;; (global-set-key (kbd "ESC s") `check-parens)
 (windmove-default-keybindings)
-(blink-cursor-mode 0)
+(blink-cursor-mode 1)
+(setq blink-cursor-blinks -1)
 ;; (blink-cursor-mode t)
 ;; (ansi-color-for-comint-mode-filter)
 
+(setq ansi-color-for-comint-mode `filter)
 
 ;; (setq inferior-ess-mode-hook nil)
 ;; (add-hook 'inferior-ess-mode-hook 'turn-on-font-lock)
@@ -458,9 +460,6 @@ vi style of % jumping to matching brace."
 ; When a keyboard macro is invoked, the effects are as if you had typed all
 ; the characters that make up its definition.  To define a keyboard macro,
 ; do something like this:
-
-(fset 'mail-sig
-  " Lois Bennett <lois@athena.mit.edu>")
 
 ; (set-frame-font "-misc-fixed-medium-r-semicondensed--11-*-*-*-c-60-iso8859-1")
 

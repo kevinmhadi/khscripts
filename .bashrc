@@ -143,6 +143,16 @@ gitsetremote() {
 lsat() {
     ls -alhrt $@
 }
+
+gitsetupstream() {
+    git push --set-upstream $@
+}
+
+getallgitbranches() {
+    git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done
+    git fetch --all
+}
+
 ## git remote set-url origin https://hostname/USERNAME/REPOSITORY.git
 
 # echo $(printf '%(%Y%m%d%H%M%S)T\n' -1)
@@ -159,6 +169,8 @@ export -f gitremote
 export -f gitsetremote
 export -f lsat
 export -f get_fn_noext
+export -f getallgitbranches
+export -f gitsetupstream
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!

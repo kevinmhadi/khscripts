@@ -50,6 +50,8 @@
 ;; (blink-cursor-mode t)
 ;; (ansi-color-for-comint-mode-filter)
 
+(setq-default cursor-type '(bar . 1))
+
 (setq ansi-color-for-comint-mode `filter)
 
 ;; (setq inferior-ess-mode-hook nil)
@@ -173,14 +175,14 @@
 ;; (global-set-key (kbd "S-C-<right>") 'enlarge-window)
 
 ;; Smooth scrolling
-;; (setq scroll-step            1
-;;       scroll-conservatively  10000)
-;; (setq hscroll-step 1)
+(setq scroll-step            1
+      scroll-conservatively  10000)
+(setq hscroll-step 1)
 
 ;; Default settings
-(setq scroll-step            0
-      scroll-conservatively  0)
-(setq hscroll-step 0)
+;; (setq scroll-step            0
+;;       scroll-conservatively  0)
+;; (setq hscroll-step 0)
 
 ;; custom funs
 (defun back-window ()

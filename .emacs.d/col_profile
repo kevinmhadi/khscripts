@@ -1,5 +1,5 @@
 ;; (set-background-color "grey14")
-;; (set-foreground-color "grey80")
+;; (set-foreground-color "grey96")
 (set-cursor-color "white")
 (set-frame-font "-*-fixed-*-*-*--13-*-*-*-c-*-*-*")
 ;; (set-frame-font "-*-fixed-*-*-*--11-*-*-*-c-*-*-*") ## original
@@ -7,8 +7,8 @@
 ; (add-to-list 'default-frame-alist '(foreground-color . "white"))
 ; (add-to-list 'default-frame-alist '(background-color . "grey20"))
 ; (add-to-list 'default-frame-alist '(cursor-color . "white"))
-; (set-face-background 'default "grey14")
-; (set-face-foreground 'default "grey80")
+(set-face-background 'default "grey14")
+(set-face-foreground 'default "grey96")
 
 ;; (set-face-background 'mode-line-inactive "grey50")
 ;; (set-face-foreground 'mode-line-inactive "grey10")
@@ -20,21 +20,21 @@
 (set-face-foreground 'font-lock-type-face "yellow")
 (set-face-foreground 'font-lock-constant-face "yellow")
 (set-face-foreground 'minibuffer-prompt "blue")
-(set-face-background 'region "darkgoldenrod")
-(set-face-foreground 'ido-subdir "color-207")
-;; (set-face-background 'region "darkgoldenrod")
 (set-face-background 'region "color-19")
+(set-face-foreground 'ido-subdir "color-207")
 (set-face-foreground 'error "color-206")
 (set-face-foreground 'font-lock-function-name-face "color-25")
 (set-face-foreground 'mode-line "grey0")
 (set-face-background 'mode-line "grey65")
+
+;; (set-face-background 'region "darkgoldenrod")
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "grey10" :foreground "grey100" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 1 :width normal :foundry "default" :family "default"))))
+ '(minibuffer-prompt ((t (:weight bold :foreground "blue"))))
  '(mode-line-buffer-id ((t (:background "grey80" :foreground "grey20" :inverse-video t))))
  '(mode-line-inactive ((t (:inherit mode-line :background "grey25" :foreground "grey45" :box (:line-width -1 :color "grey40") :weight light))))
- '(minibuffer-prompt ((t (:weight bold :foreground "blue")))))
+ )
