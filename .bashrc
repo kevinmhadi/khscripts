@@ -6,6 +6,8 @@
 # 	. /etc/bashrc
 # fi
 
+# set -a
+stty -ixon
 export PS1='\n\s:\!:\h:\n\w\n \$ '
 
 # module load gcc/8.2.0 ## only for rstan

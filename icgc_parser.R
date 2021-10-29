@@ -1,19 +1,42 @@
-library(RCurl)
-library(jsonlite)
+library3(RCurl, jsonlite)
 
 
-icgc_url = function(end, q, type, size) {
+## icgc_url = function(end, q, type, size) {
+##     base_url = "https://dcc.icgc.org/api/v1"
+##     end_url = paste(c(base_url, end), collapse = "/")
+##     query_url = paste0(end_url, "?")
+##     query_url = paste0(end_url, "q=", q, "&", "type=", type, "&", "filters={", filters, "}", "&from=1", "&size=", size)
+##     return(query_url)
+## }
+
+
+icgc_url = function(end, q) {
     base_url = "https://dcc.icgc.org/api/v1"
     end_url = paste(c(base_url, end), collapse = "/")
-    query_url = paste0(end_url, "?")
-    query_url = paste0(end_url, "q=", q, "&", "type=", type, "&", "filters={", filters, "}", "&from=1", "&size=", size)
+    query_url = paste0(end_url, "/", q)
+    ## query_url = paste0(end_url, "q=", q, "&", "type=", type, "&", "filters={", filters, "}", "&from=1", "&size=", size)
     return(query_url)
 }
+
     
+## icgc_query = function(end, q, type, size) {
+##     ## cmd = sprintf("curl -X GET --header 'Accept: application/json' 'https://dcc.icgc.org/api/v1/keywords?q=%s&type=%s&filters=%%7B%%7D&from=1&size=1'", q, type)
+##     url = icgc_url(end, q, type, size)
+##     this_query = fromJSON(RCurl::getURL(url))
+##     ## this_query = fromJSON(system(cmd, intern = T))$hits
+##     ## url = sprintf(
+##     ## RCurl::getURL(url, .opts = RCurl::curlOptions(customrequest = "GET", header = "Accept: application/json"))
+##     if (is.list(this_query) & length(this_query) == 0) {
+##         return(NULL)
+##     } else {
+##         return(this_query)
+##     }
+## }
+
 icgc_query = function(end, q, type, size) {
     ## cmd = sprintf("curl -X GET --header 'Accept: application/json' 'https://dcc.icgc.org/api/v1/keywords?q=%s&type=%s&filters=%%7B%%7D&from=1&size=1'", q, type)
-    url = icgc_url(end, q, type, size)
-    this_query = fromJSON(RCurl::getURL(url))
+    url = icgc_url(end, q)
+    this_query = fromJSON(getURL(url))
     ## this_query = fromJSON(system(cmd, intern = T))$hits
     ## url = sprintf(
     ## RCurl::getURL(url, .opts = RCurl::curlOptions(customrequest = "GET", header = "Accept: application/json"))
@@ -23,6 +46,7 @@ icgc_query = function(end, q, type, size) {
         return(this_query)
     }
 }
+
 
 
 

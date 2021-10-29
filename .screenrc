@@ -9,6 +9,8 @@ bindkey ^[[24~ command
 # bindkey ^[[24;6~ command
 # Set to Ctrl-F12
 # bindkey ^[[24;5~ command
+# Set to F10
+# bindkey ^[[21~ command
 term xterm-256color
 bind x
 vbell off

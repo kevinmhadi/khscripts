@@ -1,3 +1,5 @@
+# set -o allexport
+# set -a
 export XTERM=xterm-256color
 export TERM=xterm-256color
 export LOCKPRG='/bin/true'

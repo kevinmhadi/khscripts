@@ -50,6 +50,8 @@
 ;; (blink-cursor-mode t)
 ;; (ansi-color-for-comint-mode-filter)
 
+(setq-default cursor-type '(bar . 1))
+
 (setq ansi-color-for-comint-mode `filter)
 
 ;; (setq inferior-ess-mode-hook nil)
@@ -547,34 +549,44 @@ vi style of % jumping to matching brace."
 ;;(ac-config-default)
 
 
+
+
 ;;(add-to-list 'load-path "~/.emacs.d/ac")
 ;;(require 'auto-complete-config)
 ;;(ac-config-default)
 
-
-
 ;;(load-file "~/.emacs.d/themes/color-theme-twilight.el")
+
+ ;; '(default ((t (:inherit nil :stipple nil :background "grey14" :foreground "grey80" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 1 :width normal :foundry "default" :family "default"))))
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(ansi-color-faces-vector
+   [default default default italic underline success warning error])
  '(blink-cursor-mode nil)
+ '(custom-enabled-themes (quote (dracula)))
+ '(custom-safe-themes
+   (quote
+    ("549ccbd11c125a4e671a1e8d3609063a91228e918ffb269e57bd2cd2c0a6f1c6" default)))
  '(debug-on-quit nil)
  '(menu-bar-mode nil)
  '(next-line-add-newlines nil)
  '(package-check-signature nil)
  '(package-selected-packages
    (quote
-    (highlight-indent-guides evil eval-in-repl undo-tree term-keys goto-chg)))
+    (dracula-theme highlight-indent-guides evil eval-in-repl undo-tree term-keys goto-chg)))
  '(pop-up-windows nil)
  '(tool-bar-mode nil)
- '(tooltip-mode nil))
+ '(tooltip-mode nil)
+ '(xterm-mouse-mode t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "grey14" :foreground "grey80" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 1 :width normal :foundry "default" :family "default"))))
+ '(minibuffer-prompt ((t (:weight bold :foreground "blue"))))
  '(mode-line-buffer-id ((t (:background "grey80" :foreground "grey20" :inverse-video t))))
  '(mode-line-inactive ((t (:inherit mode-line :background "grey25" :foreground "grey45" :box (:line-width -1 :color "grey40") :weight light)))))

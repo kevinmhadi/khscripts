@@ -26,7 +26,8 @@ library3(
 brewer.master = skitools::brewer.master
 `%$%` = gUtils::`%$%`
 `%&%` = gUtils::`%&%`
-`%Q%` = gUtils::`%Q%`
+## `%Q%` = gUtils::`%Q%`
+`%Q%` = khtools::`%Q%`
 `%+%` = gUtils::`%+%`
 `%-%` = gUtils::`%-%`
 `%^%` = gUtils::`%^%`
@@ -52,3 +53,14 @@ with_options = withr::with_options
 melt = data.table::melt
 overwritefun(khtools::gr.flipstrand, gUtils::gr.flipstrand); gr.flipstrand = khtools::gr.flipstrand
 
+tryCatch({
+    .S3method("merge", "Junction", merge.Junction)
+    registerS3method("merge", "Junction", merge.Junction, envir = parent.frame())
+}, error = function(e) NULL)
+
+
+
+tryCatch({
+    .S3method("dcast", "data.table", dcast.data.table)
+    registerS3method("dcast", "data.table", dcast.data.table, envir = parent.frame())
+}, error = function(e) NULL)

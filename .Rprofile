@@ -148,7 +148,9 @@
                             list("forceall12340987" = function(...) forceall(envir = asNamespace(lib))))
                 }
             }
-            library(lib, character.only = T)
+            expr = parse(text = sprintf("library(%s)", lib))
+            eval(expr, globalenv())
+            ## library(lib, character.only = T)
         }
         suppressMessages(forceload(.force = T))
     }
@@ -210,8 +212,16 @@
                 setHook(pev,
                         list("forceall12340987" = function(...) forceall(envir = asNamespace(lib))))
             }
-            do.call(library, c(alist(package = lib, character.only = T),
-                               otherarg))
+            if (NROW(otherarg)) {
+                is.char = sapply(otherarg, is.character)
+                otherarg[is.char] = paste0("\"", otherarg[is.char], "\"")
+                otherargs = paste(paste(names(otherarg), "=", unlist(otherarg)), collapse = ",")
+                eval(parse(text = sprintf("library(%s,%s)", lib, otherargs)), globalenv())
+            } else {
+                eval(parse(text = sprintf("library(%s)", lib)), globalenv())
+            }
+            ## do.call(library, c(alist(package = lib, character.only = T),
+            ##                    otherarg))
         }
         suppressMessages(forceload(.force = T))
     }
@@ -247,8 +257,16 @@
                 setHook(pev,
                         list("forceall12340987" = function(...) forceall(envir = asNamespace(lib))))
             }
-            do.call(require, c(alist(package = lib, character.only = T),
-                               otherarg))
+            ## do.call(require, c(alist(package = lib, character.only = T),
+            ##                    otherarg))
+            if (NROW(otherarg)) {
+                is.char = sapply(otherarg, is.character)
+                otherarg[is.char] = paste0("\"", otherarg[is.char], "\"")
+                otherargs = paste(paste(names(otherarg), "=", unlist(otherarg)), collapse = ",")
+                eval(parse(text = sprintf("require(%s,%s)", lib, otherargs)), globalenv())
+            } else {
+                eval(parse(text = sprintf("require(%s)", lib)), globalenv())
+            }
         }
         suppressMessages(forceload(.force = T))
     }
@@ -369,7 +387,7 @@
             oldfun = deparse(tail(as.list(substitute(oldfun)), 1)[[1]])
         }
         if (!is.character(newfun)) {
-            newfunenv = asNamespace(environment(newfun))
+            newfunenv = environment(newfun)
             newfun = deparse(tail(as.list(substitute(newfun)), 1)[[1]])
         } else {
             newfunenv = parent.frame()
@@ -540,7 +558,7 @@
         ## eval(quote(.libPaths(unique(c("/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2_KH", .libPaths())))), globalenv())
         eval(quote({
             startup();
-            library3(devtools, withr);
+            library3(devtools, withr, roxygen2);
             with_libpaths = withr::with_libpaths;
             iinstall = function(...) {
                 pf = parent.frame();
@@ -551,7 +569,7 @@
 
     private_lib = function(suffix = "_KH") {
         libs = .libPaths()
-        orig = tail(libs, 1)
+        orig = utils::tail(libs, 1)
         addon = Sys.getenv("R_LIBS")
         addon = normalizePath(unlist(strsplit(addon, "[,|;:]")))
         priv_lib = setdiff(libs, union(addon, orig))
@@ -581,4 +599,6 @@
         ##     tailf = khtools::tailf
         ## }, globalenv())
     }
+
+    ## private_lib()
 }
