@@ -1,7 +1,8 @@
-{
+withAutoprint({
     options(stringsAsFactors = FALSE)
     options(bitmapType="cairo")
     options(device = grDevices::pdf)
+    options(scipen = 999)
 
     names2 = function(x) {
         nm = names(x)
@@ -601,4 +602,4 @@
     }
 
     ## private_lib()
-}
+}, echo = FALSE)

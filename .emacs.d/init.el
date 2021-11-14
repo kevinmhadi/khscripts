@@ -50,6 +50,9 @@
 ;; (blink-cursor-mode t)
 ;; (ansi-color-for-comint-mode-filter)
 
+(winner-mode 1)
+(icomplete-mode 1)
+
 (setq-default cursor-type '(bar . 1))
 
 (setq ansi-color-for-comint-mode `filter)

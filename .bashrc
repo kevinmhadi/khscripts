@@ -155,6 +155,15 @@ getallgitbranches() {
     git fetch --all
 }
 
+
+trimspaces() {
+    echo $1 | sed 's/[[:space:]]\{2,\}\|[	]\+/ /g'
+}
+
+
+trimspaces2() {
+    echo $1 | sed "s/[[:space:]]\{2,\}\|[$(printf '\t')]\+/ /g"
+}
 ## git remote set-url origin https://hostname/USERNAME/REPOSITORY.git
 
 # echo $(printf '%(%Y%m%d%H%M%S)T\n' -1)
@@ -173,6 +182,8 @@ export -f lsat
 export -f get_fn_noext
 export -f getallgitbranches
 export -f gitsetupstream
+export -f trimspaces
+export -f trimspaces2
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
