@@ -4,7 +4,7 @@ withAutoprint({
     options(device = grDevices::pdf)
     options(scipen = 999)
 
-    names2 = function(x) {
+    names2 <- function(x) {
         nm = names(x)
         if (is.null(nm))
             return(rep_len("", length(x)))
@@ -12,7 +12,7 @@ withAutoprint({
             return(nm)
     }
 
-    `names2<-` = function(x, value, useempty = FALSE) {
+    `names2<-` <- function(x, value, useempty = FALSE) {
         names(x) = if (!is.null(value))
                        rep_len(value, length(x))
                    else {
@@ -22,7 +22,7 @@ withAutoprint({
         return(x)
     }
 
-    forceload = function(envir = globalenv(), .force = FALSE) {
+    forceload <- function(envir = globalenv(), .force = FALSE) {
         if (!exists("envload_34507213048974")) {
             envload_34507213048974 = new.env(parent = globalenv())
             globasn(envload_34507213048974)
@@ -67,7 +67,7 @@ withAutoprint({
         }
     }
 
-    forcefun = function(envir = globalenv(), evalenvir = globalenv()) {
+    forcefun <- function(envir = globalenv(), evalenvir = globalenv()) {
         funnames = as.character(lsf.str(envir = envir))
         for (fun in funnames) {
             tryCatch( {
@@ -79,7 +79,7 @@ withAutoprint({
 
 
 
-    relib2 = function(lib = 'Flow', force = TRUE, unload = TRUE)
+    relib2 <- function(lib = 'Flow', force = TRUE, unload = TRUE)
     {
         suppressMessages(forceload(.force = T))
         if (sprintf("package:%s", lib) %in% search())
@@ -94,7 +94,7 @@ withAutoprint({
         suppressMessages(forceload(.force = T))
     }
 
-    relib3 = function(..., force = TRUE, unload = TRUE)
+    relib3 <- function(..., force = TRUE, unload = TRUE)
     {
         if (!exists("envload_34507213048974")) {
             envload_34507213048974 = new.env(parent = globalenv())
@@ -108,7 +108,7 @@ withAutoprint({
             envload_34507213048974$pkvec = pkvec
         }
         suppressMessages(forceload(.force = T))
-        names2 = function(x) {
+        names2 <- function(x) {
             nm = names(x)
             if (is.null(nm))
                 return(rep_len("", length(x)))
@@ -156,7 +156,7 @@ withAutoprint({
         suppressMessages(forceload(.force = T))
     }
 
-    detach2 = function(lib = "Flow", force = TRUE, unload = TRUE) {
+    detach2 <- function(lib = "Flow", force = TRUE, unload = TRUE) {
         suppressMessages(forceload(.force = T))
         if (sprintf("package:%s", lib) %in% search())
         {
@@ -167,7 +167,7 @@ withAutoprint({
         suppressMessages(forceload(.force = T))
     }
 
-    library2 = function(x, ...) {
+    library2 <- function(x, ...) {
         suppressMessages(forceload(.force = T))
         arg = as.list(match.call())[["x"]]
         if (is.symbol(arg)) {
@@ -182,9 +182,9 @@ withAutoprint({
         suppressMessages(forceload(.force = T))
     }
 
-    library3 = function (...)
+    library3 <- function (...)
     {
-        names2 = function(x) {
+        names2 <- function(x) {
             nm = names(x)
             if (is.null(nm))
                 return(rep_len("", length(x)))
@@ -227,7 +227,7 @@ withAutoprint({
         suppressMessages(forceload(.force = T))
     }
 
-    require3 = function (...)
+    require3 <- function (...)
     {
         names2 = function(x) {
             nm = names(x)
@@ -273,11 +273,11 @@ withAutoprint({
     }
 
 
-    force2 = function(x)
+    force2 <- function(x)
         tryCatch(x, error = function(e) NULL)
 
 
-    forceall = function(invisible = TRUE, envir = parent.frame(), evalenvir = parent.frame()) {
+    forceall <- function(invisible = TRUE, envir = parent.frame(), evalenvir = parent.frame()) {
         if (!exists("envload_34507213048974")) {
             envload_34507213048974 = new.env(parent = globalenv())
             globasn(envload_34507213048974)
@@ -336,7 +336,7 @@ withAutoprint({
         NULL
     }
 
-    globasn = function (obj, var = NULL, return_obj = TRUE, envir = .GlobalEnv,
+    globasn <- function (obj, var = NULL, return_obj = TRUE, envir = .GlobalEnv,
                         verbose = TRUE, vareval = F)
     {
         var = as.list(match.call())$var
@@ -370,7 +370,7 @@ withAutoprint({
         }
     }
 
-    overwritefun = function (newfun, oldfun, package, envir = globalenv())
+    overwritefun <- function (newfun, oldfun, package, envir = globalenv())
     {
         if (is.character(newfun) && is.character(oldfun) && missing(package))
             stop("must specify package for oldfun")
@@ -402,7 +402,7 @@ withAutoprint({
         globasn(.newfun, oldfun, vareval = T)
     }
 
-    asn2 = function (x, value, ns, pos = -1, envir = as.environment(pos))
+    asn2 <- function (x, value, ns, pos = -1, envir = as.environment(pos))
     {
         nf <- sys.nframe()
         if (missing(ns)) {
@@ -464,7 +464,7 @@ withAutoprint({
         invisible(NULL)
     }
 
-    saveRDS = function (object, file = "", ascii = FALSE, version = NULL, compress = TRUE,
+    saveRDS <- function (object, file = "", ascii = FALSE, version = NULL, compress = TRUE,
                         refhook = NULL) {
         if (is.character(file)) {
             if (file == "")
@@ -501,8 +501,8 @@ withAutoprint({
     ## if you don't wrap this in a function,
     ## and just run it manually after startup,
     ## everything goes bollocks...
-    startup = function() {
-        `:::.new` = function (pkg, name) {
+    startup <- function() {
+        `:::.new` <- function (pkg, name) {
             pkg <- as.character(substitute(pkg))
             name <- as.character(substitute(name))
             pev = packageEvent(pkg, "onLoad")
@@ -516,7 +516,7 @@ withAutoprint({
             return(out)
         }
 
-        `::.new` = function (pkg, name) {
+        `::.new` <- function (pkg, name) {
             pkg <- as.character(substitute(pkg))
             name <- as.character(substitute(name))
             pev = packageEvent(pkg, "onLoad")
@@ -549,12 +549,12 @@ withAutoprint({
     ww = with
     wn = within
 
-    go.R = function() {
+    go.R <- function() {
         eval(quote(.libPaths(unique(c("/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2_KH", .libPaths())))), globalenv())
         evalq({source("~/lab/home/khadi/git/khscripts/.Rprofile"); source("~/lab/home/khadi/git/khscripts/startup.R")}, globalenv())
     }
 
-    do.dev = function() {
+    do.dev <- function() {
         ## evalq({startup(); library3(devtools)}, globalenv())
         ## eval(quote(.libPaths(unique(c("/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2_KH", .libPaths())))), globalenv())
         eval(quote({
@@ -565,10 +565,14 @@ withAutoprint({
                 pf = parent.frame();
                 eval(quote({install(dependencies = F, quick = T)}), envir = pf)
             };
+            dinstall = function(...) {
+                pf = parent.frame();
+                eval(quote({document(); install(dependencies = F, quick = T)}), envir = pf)
+            };
             bla = ""}), globalenv())
     }
 
-    private_lib = function(suffix = "_KH") {
+    private_lib <- function(suffix = "_KH") {
         libs = .libPaths()
         orig = utils::tail(libs, 1)
         addon = Sys.getenv("R_LIBS")
@@ -590,7 +594,7 @@ withAutoprint({
         invisible(NULL)
     }
 
-    test.start = function() {
+    test.start <- function() {
         eval(quote({
             startup(); library3(khtools, skitools);
             tailf = khtools::tailf
@@ -600,6 +604,27 @@ withAutoprint({
         ##     tailf = khtools::tailf
         ## }, globalenv())
     }
+
+    system.time2 <- function (expr, gcFirst = FALSE) 
+    {
+        ppt <- function(y) {
+            if (!is.na(y[4L])) 
+                y[1L] <- y[1L] + y[4L]
+            if (!is.na(y[5L])) 
+                y[2L] <- y[2L] + y[5L]
+            paste(formatC(y[1L:3L]), collapse = " ")
+        }
+        if (gcFirst) 
+            gc(FALSE)
+        time <- proc.time()
+        on.exit(message("Timing stopped at: ", ppt(proc.time() - 
+                                                   time)))
+        expr
+        new.time <- proc.time()
+        on.exit()
+        structure(new.time - time, class = "proc_time")
+    }
+    overwritefun("system.time2", "system.time", "base")
 
     ## private_lib()
 }, echo = FALSE)

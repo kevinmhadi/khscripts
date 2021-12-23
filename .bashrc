@@ -7,7 +7,7 @@
 # fi
 
 # set -a
-stty -ixon
+stty -ixon -ixoff
 export PS1='\n\s:\!:\h:\n\w\n \$ '
 
 # module load gcc/8.2.0 ## only for rstan
@@ -127,6 +127,10 @@ gcom() {
     git commit -a -m "$@"
 }
 
+gitcommit() {
+    git commit -a -m "$@"
+}
+
 parse() {
     echo "$@" | xargs | xargs
 }
@@ -155,6 +159,21 @@ getallgitbranches() {
     git fetch --all
 }
 
+gitgetbranches() {
+    git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done
+    git fetch --all
+}
+
+
+gitfastforward() {
+    if [ $# -eq 0 ]; then
+	BRANCH="master"
+    else
+	BRANCH="$1"
+    fi
+    git merge --ff-only origin/${BRANCH}
+}
+
 
 trimspaces() {
     echo $1 | sed 's/[[:space:]]\{2,\}\|[	]\+/ /g'
@@ -162,7 +181,7 @@ trimspaces() {
 
 
 trimspaces2() {
-    echo $1 | sed "s/[[:space:]]\{2,\}\|[$(printf '\t')]\+/ /g"
+    echo $1 | sed 's/\\[[:space:]]\+/ /g' | sed "s/[[:space:]]\{2,\}\|[$(printf '\t')]\+/ /g"
 }
 ## git remote set-url origin https://hostname/USERNAME/REPOSITORY.git
 
@@ -178,10 +197,13 @@ export -f tolower
 export -f gitseturl
 export -f gitremote
 export -f gitsetremote
+export -f gitcommit
 export -f lsat
 export -f get_fn_noext
 export -f getallgitbranches
+export -f gitgetbranches
 export -f gitsetupstream
+export -f gitfastforward
 export -f trimspaces
 export -f trimspaces2
 

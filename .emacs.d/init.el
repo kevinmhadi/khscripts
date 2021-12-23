@@ -348,8 +348,8 @@ buffer in current window."
 (setq ess-eval-visibly-p `nowait)
 
 
-(setq comint-scroll-to-bottom-on-input t)
-(setq comint-scroll-to-bottom-on-output t)
+;; (setq comint-scroll-to-bottom-on-input t)
+(setq comint-scroll-to-bottom-on-output nil)
 (setq comint-input-sender-no-newline t)
 
 ;(setq redisplay-dont-pause nil)
@@ -570,6 +570,8 @@ vi style of % jumping to matching brace."
  '(ansi-color-faces-vector
    [default default default italic underline success warning error])
  '(blink-cursor-mode nil)
+ '(comint-move-point-for-output nil)
+ '(comint-scroll-show-maximum-output nil)
  '(custom-enabled-themes (quote (dracula)))
  '(custom-safe-themes
    (quote
@@ -590,6 +592,7 @@ vi style of % jumping to matching brace."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(default ((t (:inherit nil :stipple nil :background "grey0" :foreground "grey75" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 1 :width normal :foundry "default" :family "default"))))
  '(minibuffer-prompt ((t (:weight bold :foreground "blue"))))
  '(mode-line-buffer-id ((t (:background "grey80" :foreground "grey20" :inverse-video t))))
  '(mode-line-inactive ((t (:inherit mode-line :background "grey25" :foreground "grey45" :box (:line-width -1 :color "grey40") :weight light)))))
