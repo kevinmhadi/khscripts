@@ -16,7 +16,11 @@ export GENCODE_DIR=~/DB/GENCODE
 export CPLEX_DIR=/gpfs/commons/home/khadi/lab/software/CPLEX/CPLEX_Studio
 
 export R_DATATABLE_NUM_THREADS=1
-export R_REMOTES_NO_ERRORS_FROM_WARNINGS=TRUE
+export R_REMOTES_NO_ERRORS_FROM_WARNINGS="true"
+export R_REMOTES_UPGRADE="never"
+
+export R_CUSTOM_LIBS="~/lab/lib/R-4.0.2_KH"
+
 
 export C_INCLUDE_PATH=/gpfs/commons/groups/imielinski_lab/Software/libtiff/include:$C_INCLUDE_PATH
 

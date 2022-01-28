@@ -348,7 +348,7 @@ buffer in current window."
 (setq ess-eval-visibly-p `nowait)
 
 
-(setq comint-scroll-to-bottom-on-input t)
+;; (setq comint-scroll-to-bottom-on-input t)
 (setq comint-scroll-to-bottom-on-output nil)
 (setq comint-input-sender-no-newline t)
 

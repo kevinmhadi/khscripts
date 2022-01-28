@@ -187,6 +187,22 @@ trimspaces2() {
 
 # echo $(printf '%(%Y%m%d%H%M%S)T\n' -1)
 
+chmodv() {
+    per=$1; shift
+    chmod -v ${per} $@
+}
+
+scp_hop() {
+    local_path=$1
+    jump_host=$2
+    host=$3
+    destination_path=$4
+    # scp -o ProxyCommand="ssh $1
+    set -x
+    scp -o ProxyCommand="ssh $jump_host nc $host 22" $local_path $host:$destination_path
+    set +x
+}
+
 export -f parse
 export -f get_ext
 export -f get_fn
@@ -206,6 +222,8 @@ export -f gitsetupstream
 export -f gitfastforward
 export -f trimspaces
 export -f trimspaces2
+export -f scp_hop
+export -f chmodv
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!

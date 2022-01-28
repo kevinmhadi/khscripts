@@ -539,6 +539,8 @@ withAutoprint({
 #######################
 
     Sys.setenv(R_DATATABLE_NUM_THREADS = 1)
+    Sys.setenv(R_REMOTES_UPGRADE = "never")
+    Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS = "true")
     Sys.setenv("GENCODE_DIR" = "~/DB/GENCODE")
 
     Sys.setenv("BASH_FUNC_blip()" = "() { echo \"hoohah\"; }")
@@ -550,8 +552,23 @@ withAutoprint({
     wn = within
 
     go.R <- function() {
-        eval(quote(.libPaths(unique(c("/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2_KH", .libPaths())))), globalenv())
-        evalq({source("~/lab/home/khadi/git/khscripts/.Rprofile"); source("~/lab/home/khadi/git/khscripts/startup.R")}, globalenv())
+        eval(
+            quote(
+                .libPaths(
+                    unique(
+                        c(## "/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2_KH",
+                          .libPaths()
+                          )
+                    )
+                )
+            ), globalenv()
+        )
+        evalq(
+        {
+            source("~/lab/home/khadi/git/khscripts/.Rprofile");
+            source("~/lab/home/khadi/git/khscripts/startup.R")
+        }, globalenv()
+        )
     }
 
     do.dev <- function() {
@@ -563,11 +580,11 @@ withAutoprint({
             with_libpaths = withr::with_libpaths;
             iinstall = function(...) {
                 pf = parent.frame();
-                eval(quote({install(dependencies = F, quick = T)}), envir = pf)
+                eval(quote({install(dependencies = F, quick = F)}), envir = pf)
             };
             dinstall = function(...) {
                 pf = parent.frame();
-                eval(quote({document(); install(dependencies = F, quick = T)}), envir = pf)
+                eval(quote({document(); install(dependencies = F, quick = F)}), envir = pf)
             };
             bla = ""}), globalenv())
     }
