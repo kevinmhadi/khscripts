@@ -1074,3 +1074,49 @@ cmd="singularity run \
        --reference ${refpath}"
 
 echo "$(echo ${cmd})" # to echo $cmd without any of the white space
+
+
+
+
+export CMD2=$(echo $CMD | sed 's/\\[[:space:]]\+/ /g' | sed 's/[[:space:]]\{2,\}/ /g')
+
+
+
+    export CMD='singularity exec \
+		-B ${libdir}:/libdir \
+		-B ${tbam_dir}:${tbam_dir} \
+		-B ${nbam_dir}:${nbam_dir} \
+		-B ./input_links:/inputs \
+		-B "${out_path}":/data \
+		-B ${refdir}:/refdata \
+		-B ${TMP}:${TMP} \
+		-B ${TMPDIR}:${TMPDIR} \
+		-B ${refmeta}:/refmeta ${libdir}/cgpindel_fix.sif \
+		sh -c '"'"'{ perl /opt/wtsi-cgp/bin/pindel.pl -tumour /inputs/tumor.bam \
+		-normal /inputs/normal.bam \
+		-reference /refdata/${refbasepath} \
+		-exclude NC_007605,hs37d5,GL% \
+		-simrep /refmeta/simpleRepeats.bed.gz \
+		-badloci /refmeta/hiSeqDepth.bed.gz \
+		-genes /refmeta/codingexon_regions.indel.bed.gz \
+		-unmatched /refmeta/pindel_np.gff3.gz \
+		-assembly GRCh37d5 \
+		-species Human \
+		-seqtype WGS \
+		-filter /refmeta/genomicRules.lst \
+		-softfil /refmeta/softRules.lst \
+		-outdir /data/result \
+		-debug \
+		-cpus ${cores}; echo $? > /data/exit_status; } 2>&1 | tee /data/run.log'"'"''
+
+    export CMD2=$(echo $CMD | sed 's/\\[[:space:]]\+/ /g' | sed 's/[[:space:]]\{2,\}/ /g')
+
+    { echo "Running" && echo "$(echo ${CMD2})" && eval ${CMD2}; }
+
+    export ex=$(cat exit_status)
+
+    if [ ! $ex = 0 ]; then
+	echo "cgpPindel broke"
+	exit $ex
+    fi
+
