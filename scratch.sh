@@ -1082,7 +1082,7 @@ export CMD2=$(echo $CMD | sed 's/\\[[:space:]]\+/ /g' | sed 's/[[:space:]]\{2,\}
 
 
 
-    export CMD='singularity exec \
+export CMD='singularity exec \
 		-B ${libdir}:/libdir \
 		-B ${tbam_dir}:${tbam_dir} \
 		-B ${nbam_dir}:${nbam_dir} \
@@ -1109,14 +1109,168 @@ export CMD2=$(echo $CMD | sed 's/\\[[:space:]]\+/ /g' | sed 's/[[:space:]]\{2,\}
 		-debug \
 		-cpus ${cores}; echo $? > /data/exit_status; } 2>&1 | tee /data/run.log'"'"''
 
-    export CMD2=$(echo $CMD | sed 's/\\[[:space:]]\+/ /g' | sed 's/[[:space:]]\{2,\}/ /g')
+export CMD2=$(echo $CMD | sed 's/\\[[:space:]]\+/ /g' | sed 's/[[:space:]]\{2,\}/ /g')
 
-    { echo "Running" && echo "$(echo ${CMD2})" && eval ${CMD2}; }
+{ echo "Running" && echo "$(echo ${CMD2})" && eval ${CMD2}; }
 
-    export ex=$(cat exit_status)
+export ex=$(cat exit_status)
 
-    if [ ! $ex = 0 ]; then
-	echo "cgpPindel broke"
-	exit $ex
-    fi
+if [ ! $ex = 0 ]; then
+    echo "cgpPindel broke"
+    exit $ex
+fi
 
+isme="TRUE"
+len=255
+
+while (( "$#" )); do
+    case "$1" in
+	-a|--all)
+	    isme="FALSE"
+	    shift
+	    ;;
+	-l|--length)
+	    len=$1
+	    shift
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	-*|--*=)
+	echo "Error: Unsupported flag $1" >&2
+	exit 1
+	;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# script for slurm sstat
+#!/bin/bash
+
+isme="TRUE"
+len=255
+
+while (( "$#" )); do
+    case "$1" in
+	-a|--all)
+	    isme="FALSE"
+	    shift
+	    ;;
+	-l|--length)
+	    len=$1
+	    shift
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	-*|--*=)
+	echo "Error: Unsupported flag $1" >&2
+	exit 1
+	;;
+	*)
+	    break
+	    ;;
+    esac
+done
+
+
+var="jobid,state,name,username,groupname,reason,timelimit,timeused,submittime,starttime,minmemory,numcpus,numnodes,priority,nice"
+
+IFS=","
+thisvar=""
+
+while read i; do
+    thisvar=$(echo $i)
+done <<< ${var}
+
+IFS=" "
+newvar=""
+for myval in ${thisvar}
+do
+    # newvar=$(echo ${newvar}${myval}:.${len},) # . = right justified
+    newvar=$(echo ${newvar}${myval}:${len},)
+done
+
+
+if [ "$isme" = "TRUE" ]
+then
+    CMD="squeue -O ${newvar} | sed 's/[[:space:]]\{2,\}/\t/g' | awk -v var=\$(whoami) 'NR==1 {print}; \$4 == var {print \$0}'"
+elif [ "$isme" = "FALSE" ]
+then
+    CMD="squeue -O ${newvar} | sed 's/[[:space:]]\{2,\}/\t/g'"
+fi
+
+# echo $CMD
+
+eval $CMD
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+vcftools --gzvcf /gpfs/commons/groups/imielinski_lab/DB/Pubs/PCAWG/marker/snv_indel/DO52732_fixed2.vcf.gz --remove-indels --remove-filtered-all --recode --stdout | awk '
+{
+    if (match($0,/(##contig=<ID=)(.*)/,m)) {
+         sub(/chr/,"", m[2]); print m[1]m[2];
+    } else if ($0 !~ /^#/) {
+         gsub(/^chr/,""); print;
+    } else {
+         print $0 
+    }
+}' | bedtools intersect -a stdin -b /gpfs/commons/groups/imielinski_lab/projects/SV_Signatures/Flow/hrdetect/20220207/hrdetect_nonbopp/DO52732/good_rfile.bed -header | vcf-sort -c | bcftools view -S ^./excls.txt | bcftools view -v snps | bcftools norm -Ov -m-any;

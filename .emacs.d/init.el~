@@ -582,11 +582,11 @@ vi style of % jumping to matching brace."
  '(package-check-signature nil)
  '(package-selected-packages
    (quote
-    (dracula-theme highlight-indent-guides evil eval-in-repl undo-tree term-keys goto-chg)))
+    (magit dracula-theme highlight-indent-guides evil eval-in-repl undo-tree term-keys goto-chg)))
  '(pop-up-windows nil)
  '(tool-bar-mode nil)
  '(tooltip-mode nil)
- '(xterm-mouse-mode t))
+ '(xterm-mouse-mode nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

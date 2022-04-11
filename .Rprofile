@@ -2,7 +2,7 @@ withAutoprint({
     options(stringsAsFactors = FALSE)
     options(bitmapType="cairo")
     options(device = grDevices::pdf)
-    options(scipen = 999)
+    options(scipen = 0)
 
     names2 <- function(x) {
         nm = names(x)
@@ -150,6 +150,68 @@ withAutoprint({
                 }
             }
             expr = parse(text = sprintf("library(%s)", lib))
+            eval(expr, globalenv())
+            ## library(lib, character.only = T)
+        }
+        suppressMessages(forceload(.force = T))
+    }
+
+    rereq3 <- function(..., force = TRUE, unload = TRUE)
+    {
+        if (!exists("envload_34507213048974")) {
+            envload_34507213048974 = new.env(parent = globalenv())
+            globasn(envload_34507213048974)
+            sesh =  sessionInfo()
+            pkgs = c(sesh$basePkgs,
+                     names(sesh$otherPkgs),
+                     names(sesh$loadedOnly))
+            pkvec = rep(FALSE, length(pkgs))
+            names(pkvec) = pkgs
+            envload_34507213048974$pkvec = pkvec
+        }
+        suppressMessages(forceload(.force = T))
+        names2 <- function(x) {
+            nm = names(x)
+            if (is.null(nm))
+                return(rep_len("", length(x)))
+            else
+                return(nm)
+        }
+        lst.arg = as.list(match.call(expand.dots = F))$`...`
+        nm = names2(lst.arg)
+        otherarg = lst.arg[nzchar(nm)]
+        pkgarg = lst.arg[!nzchar(nm)]
+        pkgarg = pkgarg[sapply(pkgarg, function(x) is.call(x) || is.character(x))]
+        charvec = as.character(all.vars(match.call()))
+        if (length(charvec)) {
+            notfound= { set.seed(10); paste0("notfound_", round(runif(1) * 1e9)); }
+            vars = mget(charvec, ifnotfound=notfound, mode = "character", inherits = T)
+            ## charvec = unlist(strsplit(toString(vars[[1]]), ", "))
+            charvec = unique(c(names2(vars[vars == notfound]), unlist(vars[vars != notfound])))
+        }
+        charvec = c(charvec, unlist(as.vector(sapply(pkgarg,
+                                                     function(x) tryCatch(eval(x), error = function(e) NULL)))))
+        for (lib in charvec) {
+            if (sprintf("package:%s", lib) %in% search())
+            {
+                expr = sprintf("detach(package:%s, force = force, unload = unload)", lib)
+                eval(parse(text = expr))
+                ## tryCatch(unload(lib), error = function(e) NULL) ## DO NOT use this line...
+                ## it will break re-librarying
+            }
+            pkvec = envload_34507213048974$pkvec
+            if (lib %in% names(pkvec)) {
+                pkvec = pkvec[!names(pkvec) %in% lib]
+                envload_34507213048974$pkvec = pkvec
+            } else {
+                pev = packageEvent(lib, "onLoad")
+                gh = getHook(pev)
+                if (length(gh) == 0 || is.null(gh$forceall12340987)) {
+                    setHook(pev,
+                            list("forceall12340987" = function(...) forceall(envir = asNamespace(lib))))
+                }
+            }
+            expr = parse(text = sprintf("require(%s)", lib))
             eval(expr, globalenv())
             ## library(lib, character.only = T)
         }
@@ -576,7 +638,7 @@ withAutoprint({
         ## eval(quote(.libPaths(unique(c("/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2_KH", .libPaths())))), globalenv())
         eval(quote({
             startup();
-            library3(devtools, withr, roxygen2);
+            require3(devtools, withr, roxygen2);
             with_libpaths = withr::with_libpaths;
             iinstall = function(...) {
                 pf = parent.frame();

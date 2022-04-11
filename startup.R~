@@ -7,7 +7,7 @@ Sys.setenv(PATH = paste("~/software/bcftools-1.9", Sys.getenv("PATH"), sep = ":"
 Sys.setenv(BCFTOOLS_PLUGINS = "/gpfs/commons/groups/imielinski_lab/Software/bcftools-1.9/plugins")
 
 startup();
-library3(
+require3(
     withr,
     skitools,
     gGnome,
@@ -17,39 +17,66 @@ library3(
     skidb,
     naturalsort,
     magrittr,
+    signature.tools.lib,
+    tidyr,
+    MASS,
     khtools
 )
 
 ## source("~/lab/home/khadi/git/khscripts/patch_gtrack.R")
 
+exprs = expression({
+    brewer.master <- skitools::brewer.master
+    `%$%` <- gUtils::`%$%`
+    `%&%` <- gUtils::`%&%`
+    ## `%Q%` <- gUtils::`%Q%`
+    `%Q%` <- khtools::`%Q%`
+    `%+%` <- gUtils::`%+%`
+    `%-%` <- gUtils::`%-%`
+    `%^%` <- gUtils::`%^%`
+    width <- GenomicRanges::width
+    reduce <- GenomicRanges::reduce
+    between <- data.table::between
+    setnames <- data.table::setnames
+    select <- dplyr::select
+    update <- Flow::update
+    cache <- Flow::cache
+    set <- data.table::set
+    set_names <- rlang::set_names
+    matches <- dplyr::matches
+    n <- dplyr::n
+    last <- dplyr::last
+    first <- dplyr::first
+    tailf <- khtools::tailf
+    coalesce <- khtools::coalesce
+    ppdf <- khtools::ppdf
+    ppng <- khtools::ppng
+    with_libpaths <- withr::with_libpaths
+    with_options <- withr::with_options
+    melt <- data.table::melt
+    overwritefun(khtools::gr.flipstrand, gUtils::gr.flipstrand); gr.flipstrand <- khtools::gr.flipstrand
+    .S3method("merge", "Junction", merge.Junction)
+    registerS3method("merge", "Junction", merge.Junction, envir = globalenv())
+    .S3method("dcast", "data.table", dcast.data.table)
+    registerS3method("dcast", "data.table", dcast.data.table, envir = globalenv())
+})
 
-brewer.master = skitools::brewer.master
-`%$%` = gUtils::`%$%`
-`%&%` = gUtils::`%&%`
-## `%Q%` = gUtils::`%Q%`
-`%Q%` = khtools::`%Q%`
-`%+%` = gUtils::`%+%`
-`%-%` = gUtils::`%-%`
-`%^%` = gUtils::`%^%`
-width = GenomicRanges::width
-reduce = GenomicRanges::reduce
-between = data.table::between
-setnames = data.table::setnames
-select = dplyr::select
-update = Flow::update
-cache = Flow::cache
-set = data.table::set
-set_names = rlang::set_names
-matches = dplyr::matches
-n = dplyr::n
-last = dplyr::last
-first = dplyr::first
-tailf = khtools::tailf
-coalesce = khtools::coalesce
-ppdf = khtools::ppdf
-ppng = khtools::ppng
-with_libpaths = withr::with_libpaths
-with_options = withr::with_options
-melt = data.table::melt
-overwritefun(khtools::gr.flipstrand, gUtils::gr.flipstrand); gr.flipstrand = khtools::gr.flipstrand
+eix = seq(2, length(exprs[[1]]))
+for (i in eix) {
+    print(exprs[[1]][[i]])
+    tryCatch({
+        eval(exprs[[1]][[i]], envir = globalenv())
+    }, error = function(e) NULL)
+}
 
+## tryCatch({
+##     .S3method("merge", "Junction", merge.Junction)
+##     registerS3method("merge", "Junction", merge.Junction, envir = parent.frame())
+## }, error = function(e) NULL)
+
+
+
+## tryCatch({
+##     .S3method("dcast", "data.table", dcast.data.table)
+##     registerS3method("dcast", "data.table", dcast.data.table, envir = parent.frame())
+## }, error = function(e) NULL)

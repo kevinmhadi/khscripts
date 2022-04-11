@@ -178,14 +178,14 @@
 ;; (global-set-key (kbd "S-C-<right>") 'enlarge-window)
 
 ;; Smooth scrolling
-(setq scroll-step            1
-      scroll-conservatively  10000)
-(setq hscroll-step 1)
+;; (setq scroll-step            1
+;;       scroll-conservatively  10000)
+;; (setq hscroll-step 1)
 
 ;; Default settings
-;; (setq scroll-step            0
-;;       scroll-conservatively  0)
-;; (setq hscroll-step 0)
+(setq scroll-step            0
+      scroll-conservatively  0)
+(setq hscroll-step 0)
 
 ;; custom funs
 (defun back-window ()
@@ -306,7 +306,7 @@ buffer in current window."
 
 (defun insert-current-date ()
    (interactive)
-   (insert (concat "#' "  (concat (getenv "USER")) " "))
+   (insert (concat "## "  (concat (getenv "USER")) " "))
    (insert (format-time-string "%A, %b %d, %Y, Week %V, %r"))
    )
 
