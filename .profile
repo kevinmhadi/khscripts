@@ -18,6 +18,8 @@ export CPLEX_DIR=/gpfs/commons/home/khadi/lab/software/CPLEX/CPLEX_Studio
 export R_DATATABLE_NUM_THREADS=1
 export R_REMOTES_NO_ERRORS_FROM_WARNINGS="true"
 export R_REMOTES_UPGRADE="never"
+export R_INTERACTIVE_DEVICE=png
+export R_DEFAULT_DEVICE=png
 
 export C_INCLUDE_PATH=/gpfs/commons/groups/imielinski_lab/Software/libtiff/include:$C_INCLUDE_PATH
 

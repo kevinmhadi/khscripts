@@ -23,7 +23,7 @@ module load openmpi/2.0.2
 module load bedops
 module load tabix
 module load java/1.8
-module load vim
+# module load vim
 
 if [ $( grep 'CentOS Linux release 7' /etc/redhat-release | wc -l ) -eq "1" ]
 then

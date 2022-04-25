@@ -551,8 +551,8 @@ vi style of % jumping to matching brace."
 ;; (require 'auto-complete-config)
 ;;(ac-config-default)
 
-
-
+(global-set-key "\C-c$" 'toggle-truncate-lines)
+(set-default 'truncate-lines t)
 
 ;;(add-to-list 'load-path "~/.emacs.d/ac")
 ;;(require 'auto-complete-config)

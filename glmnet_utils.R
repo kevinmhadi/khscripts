@@ -2,14 +2,84 @@ source("/gpfs/commons/groups/imielinski_lab/home/khadi/git/khscripts/.Rprofile")
 require3(khtools, glmnet, randomForest, caret, dplyr, signature.tools.lib, pROC)
 
 
+## robust.scale <- function(x, qlow = 0.1, qhigh = 0.9) {
+##   out = x
+##   ql = quantile(out, qlow)
+##   qh = quantile(out, qhigh)
+##   out = pmax(out, ql)
+##   out = pmin(out, qh)
+##   return(out)
+## }
+
 robust.scale <- function(x, qlow = 0.1, qhigh = 0.9) {
-  out = x
-  ql = quantile(out, qlow)
-  qh = quantile(out, qhigh)
-  out = pmax(out, ql)
-  out = pmin(out, qh)
-  return(out)
+    MEDIAN =  median(x, na.rm = T)
+    (x - MEDIAN) / quantile(x, qlow)
 }
+
+
+
+mystats = function(x, na.rm = TRUE) {
+    if (is.null(dim(x))) {
+        x = as.data.frame(x)
+    }
+    fun = function(x) {
+        if (is.numeric(x)) {
+            c(
+                mean = mean(x, na.rm = na.rm),
+                median = median(x, na.rm = na.rm),
+                sd = sd(x, na.rm = na.rm),
+                mad = mad(x, na.rm = na.rm),
+                var = stats::var(x, na.rm = na.rm),
+                min = min(x, na.rm = na.rm),
+                max = max(x, na.rm = na.rm),
+                q25 = unname(quantile(x, 0.25, na.rm = na.rm)),
+                q75 = unname(quantile(x, 0.75, na.rm = na.rm)),
+                q10 = unname(quantile(x, 0.10, na.rm = na.rm)),
+                q90 = unname(quantile(x, 0.90, na.rm = na.rm))
+            )
+        } else {
+            c(
+                mean = NA_real_,
+                median = NA_real_,
+                sd = NA_real_,
+                mad = NA_real_,
+                var = NA_real_,
+                min = NA_real_,
+                max = NA_real_,
+                q25 = NA_real_,
+                q75 = NA_real_,
+                q10 = NA_real_,
+                q90 = NA_real_
+            )
+        }
+    }
+    cn = colnames(x)
+    out.lst = lapply(x, fun)
+    out.lst
+    ## transp(out.lst, c)
+}
+
+
+my_preprocess = function(dat) {
+    lapply(dat, function(x) {
+        if (inherits(x, c("numeric", "integer"))) {
+            unlist(mystats(x))
+        }
+    })
+}
+
+my_predict = function(mypre, newdat, method = "robust") {
+    goods = sapply(mypre, Negate(is.null))
+    nm = names(goods[goods])
+    qm = qmat(newdat,,nm)
+    if (identical(method, "robust")) {
+        mp = mapply(function(x,y) {
+            (x - y["x.median"]) / (y["x.q90"] - y["x.q10"])
+        }, qm, mypp[nm], SIMPLIFY = F)
+    }
+    do.assign(newdat, setColnames(as.data.frame(mp), nm))
+}
+
 
 do.pp = function(dat, vars, method = c("center", "scale"), prefun = NULL, rangeBounds = c(0, 1), verbose = TRUE) {
     require(caret)
@@ -22,8 +92,13 @@ do.pp = function(dat, vars, method = c("center", "scale"), prefun = NULL, rangeB
         prefun = NULL
     }
     if (!is.null(method) && is.character(method)){
-        pp = preProcess(dat %>% select(!!vars), method = method, rangeBounds = rangeBounds, verbose = verbose)
-        dat = predict(pp, dat)
+        if (identical(method, "robust")) {            
+            pp = dat %>% select(!!vars) %>% mypreprocess
+            dat = my_predict(dat)
+        } else {
+            pp = preProcess(dat %>% select(!!vars), method = method, rangeBounds = rangeBounds, verbose = verbose)
+            dat = predict(pp, dat)
+        }
     } else {
         pp = NULL
     }
@@ -41,8 +116,11 @@ predict.pp = function(pp.res, newdat, apply.prefun = TRUE) {
     } else {
       pp.res$prefun = NULL
     }
-    if (!is.null(pp.res$pp))
+    if (!is.null(pp.res$pp) && !identical(pp.res$method, "robust")) {
         newdat = predict(pp.res$pp, newdat)
+    } else if (identical(pp.res$method, "robust")) {
+        newdat = my_predict(pp.res$pp, newdat)
+    }
     return(structure(list(pp = pp.res$pp, newdat = newdat, prefun = pp.res$prefun, vars = pp.res$vars, method = pp.res$method, orig_newdat = odat), class = "carpost"))
 }
 
@@ -466,6 +544,18 @@ feature_importance <- function(ixfold, xfolds, dat, lambda = 0, vars, seed = 10,
 
     testd = fit_classifier(trainglm, testd, s = s, alpha = alpha)
 
+    cls.mod = class(trainglm)[1]
+    if (identical(cls.mod, "cv.glmnet")) {
+        gmod = trainglm$glmnet.fit
+    } else {
+        gmod = trainglm
+    }
+    classnames = gmod$classnames
+    if (length(classnames) == 2) {
+        classnames = classnames[2]
+    }
+    scores = qmat(testd,,classnames)
+
 
     testd$fold_id = nm
     testd$Method = "all"
@@ -549,7 +639,7 @@ feature_importance <- function(ixfold, xfolds, dat, lambda = 0, vars, seed = 10,
     dec_accuracy$fold_id = nm
 
     bigroc = rbind(rbindlist(permute_lst$roc),
-                   make_roc(testd, ycol, colnames(scores))[, Method := "all"][, fold_id := nm])
+                   make_roc(testd, ycol, classnames)[, Method := "all"][, fold_id := nm])
 
 
     ## mlab = mroclab(testd[[ycol]])
