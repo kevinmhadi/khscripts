@@ -1,6 +1,7 @@
 ## only do if interactive shell
 [[ $- == *i* ]] || return 0
 
+
 # Source global definitions
 # if [ -f /etc/bashrc ]; then
 # 	. /etc/bashrc
@@ -22,6 +23,7 @@ module load openmpi/2.0.2
 module load bedops
 module load tabix
 module load java/1.8
+# module load vim
 
 if [ $( grep 'CentOS Linux release 7' /etc/redhat-release | wc -l ) -eq "1" ]
 then
@@ -35,7 +37,6 @@ else
     module unload R
 fi
 
-export EDITOR="emacs -nw --quick"
 
 alias jupyter_run="xvfb-run jupyter notebook --notebook-dir=~/notebooks"
 alias mskilab="ssh mskilab"
@@ -45,22 +46,11 @@ alias lss="ls -lSrh"
 alias lst="ls -lhrt"
 alias lsd="ls -ld */"
 alias duh="du -h --max-depth 1"
-alias michor="ssh marcin@sphinx.dfci.harvard.edu"
-alias eris="ssh -Y mbi1@rgs03.research.partners.org"
-alias cga3="ssh -Y marcin@cga3.broadinstitute.org"
-alias cga2="ssh -Y marcin@cga2.broadinstitute.org"
-alias copper="ssh -Y marcin@copper.broadinstitute.org"
-alias gold="ssh -Y marcin@gold.broadinstitute.org"
-alias kras="ssh -Y marcin@cga-kras.broadinstitute.org"
-alias tp53="ssh -Y marcin@cga-tp53.broadinstitute.org"
-alias rb1="ssh -Y marcin@cga-rb1.broadinstitute.org"
-alias cdk="ssh -Y marcin@cga-cdkn2a.broadinstitute.org"
-alias wcmc="ssh -Y mai9037@aristotle.med.cornell.edu"
+alias wcmc="ssh -Y keh2019@aristotle.med.cornell.edu"
 alias penn="ssh pennstation"
 alias harlem="ssh harlem"
 alias sr="screen -r -d"
 alias sd="screen -d -r"
-alias dcc="sftp ImielinskM@dccsftp.nci.nih.gov"
 alias rf="readlink -f"
 alias TIME="~/Software/time/time -v"
 alias igv='java -Xmx4g -jar ~/software/IGV_2.3.25/igv.jar'
@@ -225,18 +215,18 @@ export -f trimspaces2
 export -f scp_hop
 export -f chmodv
 
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-# __conda_setup="$('/nfs/sw/anaconda3/anaconda3-10.19/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+# # >>> conda initialize >>>
+# # !! Contents within this block are managed by 'conda init' !!
+# __conda_setup="$('/gpfs/commons/groups/imielinski_lab/Software/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
 # if [ $? -eq 0 ]; then
 #     eval "$__conda_setup"
 # else
-#     if [ -f "/nfs/sw/anaconda3/anaconda3-10.19/etc/profile.d/conda.sh" ]; then
-#         . "/nfs/sw/anaconda3/anaconda3-10.19/etc/profile.d/conda.sh"
+#     if [ -f "/gpfs/commons/groups/imielinski_lab/Software/anaconda3/etc/profile.d/conda.sh" ]; then
+#         . "/gpfs/commons/groups/imielinski_lab/Software/anaconda3/etc/profile.d/conda.sh"
 #     else
-#         export PATH="/nfs/sw/anaconda3/anaconda3-10.19/bin:$PATH"
+#         export PATH="/gpfs/commons/groups/imielinski_lab/Software/anaconda3/bin:$PATH"
 #     fi
 # fi
 # unset __conda_setup
-# <<< conda initialize <<<
+# # <<< conda initialize <<<[w
 

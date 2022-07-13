@@ -8,6 +8,11 @@
 
 (add-hook 'sh-mode-hook 'highlight-indent-guides-mode)
 
+(defun unstick-ansi-color-codes ()
+  (interactive)
+  (end-of-buffer)
+  (insert "echo -e \"\033[m\"")
+  (comint-send-input nil t))
 
 (add-hook 'inferior-ess-mode-hook
 	  (lambda ()
