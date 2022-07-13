@@ -498,8 +498,7 @@ withAutoprint({
 #######################
 #######################
 #######################
-    ## if you don't wrap this in a function,
-    ## and just run it manually after startup,
+    ## if you don't wrap this in a function to manually run it,
     ## everything goes bollocks...
     startup <- function() {
         `:::.new` <- function (pkg, name) {
