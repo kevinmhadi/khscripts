@@ -3,6 +3,39 @@ options(bitmapType="cairo")
 options(device = grDevices::png)
 options(scipen = 0)
 
+tplot <- function(...) {
+    this.mar = par()$mar
+    this.mai = par()$mai
+    this.oma = par()$oma
+    on.exit({par(mar = this.mar, mai = this.mai)})
+    par(mar = c(0,0,0,0), mai = c(0,0,0,0))
+    plot(c(0.25, 0.75), c(0.25, 0.75), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+    text(x = 0.5, y = 0.5, paste(...),
+          cex = 1.6, col = "black")
+    ## text(x = 0.5, y = 0.5, paste("The following is text that'll appear in a plot window.\n",
+    ##                          "As you can see, it's in the plot window\n",
+    ##                          "One might imagine useful informaiton here"),
+    ##       cex = 1.6, col = "black")
+}
+
+
+quiet <- function(this_expr) {
+    suppressWarnings({
+        suppressPackageStartupMessages({
+            capture.output(
+                capture.output(
+                    ... = substitute(this_expr),
+                    file = "/dev/null",
+                    type = "output"),
+                file = "/dev/null",
+                type = "message"
+            )
+        })
+    })
+}
+
+
+
 names2 <- function(x) {
     nm = names(x)
     if (is.null(nm))
@@ -215,6 +248,14 @@ rereq3 <- function(..., force = TRUE, unload = TRUE)
         ## library(lib, character.only = T)
     }
     suppressMessages(forceload(.force = T))
+}
+
+no.dev <- function() {
+    evalq({
+        for (d in dev.list()) {
+            dev.off(d)
+        }
+    }, envir = globalenv())
 }
 
 detach2 <- function(lib = "Flow", force = TRUE, unload = TRUE) {
@@ -626,8 +667,10 @@ go.R <- function() {
     )
     evalq(
     {
+        suppressWarnings({suppressPackageStartupMessages({
         source("~/lab/home/khadi/git/khscripts/.Rprofile");
         source("~/lab/home/khadi/git/khscripts/startup.R")
+        })})
     }, globalenv()
     )
 }
@@ -703,5 +746,7 @@ system.time2 <- function (expr, gcFirst = FALSE)
     structure(new.time - time, class = "proc_time")
 }
 overwritefun("system.time2", "system.time", "base")
+
+somejit <- function(x, factor = 1e-6) {set.seed(10); jitter(x, factor = factor)}
 
 ## private_lib()

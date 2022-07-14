@@ -37,6 +37,7 @@
 (global-set-key (kbd "M-<up>") `previous-buffer)
 (global-set-key (kbd "M-<down>") `next-buffer)
 (global-set-key (kbd "C-c '") `check-parens)
+(global-set-key (kbd "C-x C-j") `redraw-display)
 (global-set-key [drag-mouse-0] `mouse-set-region)
 ;; (global-set-key [left-margin drag-mouse-1] `mouse-drag-vertical-line)
 ;; (global-set-key [left-divider down-mouse-1] `mouse-drag-vertical-line)
@@ -178,14 +179,14 @@
 ;; (global-set-key (kbd "S-C-<right>") 'enlarge-window)
 
 ;; Smooth scrolling
-;; (setq scroll-step            1
-;;       scroll-conservatively  10000)
-;; (setq hscroll-step 1)
+(setq scroll-step            1
+      scroll-conservatively  10000)
+(setq hscroll-step 1)
 
-;; Default settings
-(setq scroll-step            0
-      scroll-conservatively  0)
-(setq hscroll-step 0)
+;; ;; Default settings
+;; (setq scroll-step            0
+;;       scroll-conservatively  0)
+;; (setq hscroll-step 0)
 
 ;; custom funs
 (defun back-window ()
@@ -552,7 +553,6 @@ vi style of % jumping to matching brace."
 ;;(ac-config-default)
 
 (global-set-key "\C-c$" 'toggle-truncate-lines)
-
 (set-default 'truncate-lines t)
 
 ;;(add-to-list 'load-path "~/.emacs.d/ac")

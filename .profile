@@ -30,6 +30,8 @@ export protobuf_LIBS=$HOME/software/protobuf/lib/libprotobuf.a
 
 MANPATH=$MANPATH:$HOME/share/man
 
+export GITHUB_PAT=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
+
 
 PATH="/gpfs/commons/home/khadi/perl5/bin${PATH:+:${PATH}}"; export PATH;
 PERL5LIB="/gpfs/commons/home/khadi/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;

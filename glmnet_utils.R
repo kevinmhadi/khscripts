@@ -75,7 +75,7 @@ my_predict = function(mypre, newdat, method = "robust") {
     if (identical(method, "robust")) {
         mp = mapply(function(x,y) {
             (x - y["x.median"]) / (y["x.q90"] - y["x.q10"])
-        }, qm, mypp[nm], SIMPLIFY = F)
+        }, qm, mypre[nm], SIMPLIFY = F)
     }
     do.assign(newdat, setColnames(as.data.frame(mp), nm))
 }
@@ -93,8 +93,8 @@ do.pp = function(dat, vars, method = c("center", "scale"), prefun = NULL, rangeB
     }
     if (!is.null(method) && is.character(method)){
         if (identical(method, "robust")) {            
-            pp = dat %>% select(!!vars) %>% mypreprocess
-            dat = my_predict(dat)
+            pp = dat %>% select(!!vars) %>% my_preprocess
+            dat = my_predict(pp, dat)
         } else {
             pp = preProcess(dat %>% select(!!vars), method = method, rangeBounds = rangeBounds, verbose = verbose)
             dat = predict(pp, dat)
@@ -111,7 +111,7 @@ predict.pp = function(pp.res, newdat, apply.prefun = TRUE) {
     odat = copy3(newdat)
     if (is.function(apply.prefun) || (!is.null(pp.res$prefun) && isTRUE(apply.prefun) && is.function(pp.res$prefun))) {
       if (is.function(apply.prefun)) pp.res$prefun = apply.prefun
-      for (v in vars)
+      for (v in pp.res$vars)
         newdat[[v]] = pp.res$prefun(newdat[[v]])
     } else {
       pp.res$prefun = NULL
@@ -188,7 +188,11 @@ fitglmnet = function(var, lambda = NULL, family = "multinomial", ycol, dat) {
 }
 
 
-mylambdas <- function(M = 2, N = 10, step = 0.005) {
+# mylambdas <- function(M = 2, N = 10, step = 0.005) {
+#     return(10^(seq(M, -N, -abs(step))))
+# }
+
+mylambdas <- function(M = 2, N = 10, step = 0.1) {
     return(10^(seq(M, -N, -abs(step))))
 }
 
@@ -302,7 +306,7 @@ fitglmnet = function(var, lambda = 0, family = "multinomial", ycol, dat,
 }
 
 
-fitrandomforest = function(var, ycol, dat) {
+fitrandomforest <- function(var, ycol, dat, ...) {
   if (missing(ycol)) ycol = "fmut"
   if (missing(dat)) {
     message("attempting to grab variable 'fulldat' from env stack")
@@ -320,7 +324,7 @@ fitrandomforest = function(var, ycol, dat) {
   ## rfdat = cbind(asdf(x), mutstat = y)
   form = formula(sprintf("%s ~ %s", ycol, paste(var, collapse = "+")))
   message("formula: ", deparse(form))
-  rfmod = randomForest(form, data = rfdat, ntree = 1000, importance = TRUE)
+  rfmod = randomForest(form, data = rfdat, ntree = 1000, importance = TRUE, ...)
   return(rfmod)
 }
 
@@ -373,6 +377,23 @@ fit_classifier <- function(mod, data, s = 0, alpha = 1, exact = FALSE) {
 
 
 
+fit_rforest <- function (mod, data) {
+    data = copy(data)
+    classnames = mod$classes
+    scores = as.data.frame.matrix(predict(mod, data, type = "prob"))
+    out = copy(data)
+    for (i in 1:NCOL(scores))
+        out[[colnames(scores)[[i]]]] = scores[[i]]
+    ## out = out %>% mutate(scores)
+    out$classes = predict(mod, data, type = "class")
+    out$NRSUM = rowSums(qmat(out,,classnames[-1]))
+    
+    ## data$NRSUM = rowSums(qmat(data, , classnames[-1]))
+    return(out)
+}
+
+
+
 glmnet_aic = function(fit) {
   tLL <- fit$nulldev - deviance(fit)
   k <- fit$df
@@ -382,19 +403,26 @@ glmnet_aic = function(fit) {
 }
 
 
-get_pred = function(mod, newdata, feats, type = "response", s = 0, alpha = 1, exact = FALSE) {
-  cls.mod = class(mod)[1]
-  if (cls.mod == "cv.glmnet") cls.mod = class(mod$glmnet.fit)[1]
-  if (cls.mod == "multnet") {
+get_pred <- function(mod, newdata, feats, type = "response", s = 0, alpha = 1, exact = FALSE) {
+  cls.mod = class(mod)
+  if (any(cls.mod == "cv.glmnet")) cls.mod = class(mod$glmnet.fit)[1]
+  if (any(cls.mod == "multnet")) {
     prd = predict(mod, select(newdata, !!feats) %>% asm, type = type, s = s, alpha = alpha, type.multinomial = "grouped", exact = exact)
     if (length(dim(prd)) == 3) {
       dnm2 = dimnames(prd)[[2]]
       dim(prd) = dim(prd)[1:2]
       dimnames(prd) = list(NULL, dnm2)
     }
-  } else if (cls.mod == "lognet") {
+  } else if (any(cls.mod == "lognet")) {
     prd = predict(mod, select(newdata, !!feats) %>% asm, type = type, s = s, alpha = alpha, exact = exact) %>%
       setColnames(mod$classnames[2])
+  } else if (any(cls.mod == "randomForest")) {
+      ## type means different things for random forest
+      if (identical(type, "class"))
+          type = "response"
+      else if (identical(type, "response"))
+          type = "prob"
+      prd = predict(mod, newdata, type = type)
   }
   return(prd)
 }
@@ -487,176 +515,207 @@ score_randomforest = function(data, features, labels = "lab", lambda = 0, mod) {
 feature_importance <- function(ixfold, xfolds, dat, lambda = 0, vars, seed = 10, ycol, debug = FALSE,
                                rpart = FALSE, permute_varlist = NULL, added_testd = NULL,
                                caret_preprocess = do.pp(traind, vars = vars, method = "range", prefun = log1p),
-                               only_positive = FALSE,
+                               only_positive = FALSE, standardize = FALSE, model.type = c("glm", "glmnet", "randomforest"),
                                s = 0, alpha = 1
                                ) {
     tryCatch({
-    if (debug) browser()
-    nm = names(xfolds[ixfold])
-    xfold = xfolds[[ixfold]]
-    message("testing split: ", ixfold, " ", nm)
-    traind = copy(dat[xfold$train,])
-    testd = copy(dat[xfold$test,])
+        if (debug) browser()
+        nm = names(xfolds[ixfold])
+        xfold = xfolds[[ixfold]]
+        message("testing split: ", ixfold, " ", nm)
+        traind = copy(dat[xfold$train,])
+        testd = copy(dat[xfold$test,])
 
-    if (!is.null(added_testd)) {
-        added_testd = copy(added_testd[pair %in% setdiff(pair, c(traind$pair, testd$pair))])
-        if (NROW(added_testd) > 0)
-            testd = rbind(testd[, added := FALSE], added_testd[, added := TRUE], fill = T)
-    } else {
-        testd$added = FALSE
-    }
-
-    set.seed(seed);
-
-    traind = copy3(traind)
-    traind$fmut = traind[[ycol]]
-    testd = copy3(testd)
-    testd$fmut = testd[[ycol]]
-
-    if (!is.null(caret_preprocess)) {
-        if (is.character(caret_preprocess) && caret_preprocess[1] %in% c("range", "scale")) {
-            pp = preProcess(select(traind, !!vars), method = caret_preprocess)
-            traind = predict(pp, traind)
-            testd = predict(pp, testd)
-        } else if (is.function(caret_preprocess)) {
-            traind = traind %>% mutate_at(vars(!!vars), caret_preprocess)
-            testd = testd %>% mutate_at(vars(!!vars), caret_preprocess)
-        } else if (inherits(caret_preprocess, "carprep")) {
-            traind = caret_preprocess$dat
-            prep.res = predict.pp(caret_preprocess, testd)
-            testd = prep.res$newdat
-        } else if (inherits(caret_preprocess, c("expression", "call"))) {
-            caret_preprocess = eval(caret_preprocess)
-            traind = caret_preprocess$dat
-            prep.res = predict.pp(caret_preprocess, testd)
-            testd = prep.res$newdat
+        if (!is.null(added_testd)) {
+            added_testd = copy(added_testd[pair %in% setdiff(pair, c(traind$pair, testd$pair))])
+            if (NROW(added_testd) > 0)
+                testd = rbind(testd[, added := FALSE], added_testd[, added := TRUE], fill = T)
+        } else {
+            testd$added = FALSE
         }
-    }
- 
 
-    if (length(levels(traind$fmut)) > 2) {
-        family = "multinomial"
-    } else {
-        family = "binomial"
-    }
+        set.seed(seed);
 
-    trainglm = fitcvglmnet(vars, family = family, dat = traind, ycol = ycol, only_positive = only_positive, standardize = FALSE, lambda = mylambdas())
+        traind = copy3(traind)
+        traind$fmut = traind[[ycol]]
+        testd = copy3(testd)
+        testd$fmut = testd[[ycol]]
 
-    testd = fit_classifier(trainglm, testd, s = s, alpha = alpha)
-
-    cls.mod = class(trainglm)[1]
-    if (identical(cls.mod, "cv.glmnet")) {
-        gmod = trainglm$glmnet.fit
-    } else {
-        gmod = trainglm
-    }
-    classnames = gmod$classnames
-    if (length(classnames) == 2) {
-        classnames = classnames[2]
-    }
-    scores = qmat(testd,,classnames)
-
-
-    testd$fold_id = nm
-    testd$Method = "all"
-
-    off_diag = function(x) {
-        diag(x) = NA
-        as.vector(x) %>% na.omit
-    }
-
-    get_accuracy = function(confus_mat) {
-        correct = diag(confus_mat)
-        sum(correct) / sum(off_diag(confus_mat), correct)
-    }
-
-    indiv.levels = levels(testd[[ycol]])[-1]
-    full_mod_indiv_accuracy = c()
-    if (length(indiv.levels) > 1) {
-        for (i in indiv.levels) {
-            indiv.mat = as.matrix(table(refactor(testd[[ycol]], i),
-              refactor(factor(testd$classes, levels = levels(testd[[ycol]])), i)))
-            full_mod_indiv_accuracy = c(full_mod_indiv_accuracy, setNames(get_accuracy(indiv.mat), i))
+        if (!is.null(caret_preprocess)) {
+            if (is.character(caret_preprocess) && caret_preprocess[1] %in% c("range", "scale")) {
+                pp = preProcess(select(traind, !!vars), method = caret_preprocess)
+                traind = predict(pp, traind)
+                testd = predict(pp, testd)
+            } else if (is.function(caret_preprocess)) {
+                traind = traind %>% mutate_at(vars(!!vars), caret_preprocess)
+                testd = testd %>% mutate_at(vars(!!vars), caret_preprocess)
+            } else if (inherits(caret_preprocess, "carprep")) {
+                traind = caret_preprocess$dat
+                prep.res = predict.pp(caret_preprocess, testd)
+                testd = prep.res$newdat
+            } else if (inherits(caret_preprocess, c("expression", "call"))) {
+                caret_preprocess = eval(caret_preprocess)
+                traind = caret_preprocess$dat
+                prep.res = predict.pp(caret_preprocess, testd)
+                testd = prep.res$newdat
+            }
         }
-    }
 
-    confus_mat = as.matrix(table(testd[[ycol]], factor(testd$classes, levels = levels(testd[[ycol]]))))
-    full_mod_accuracy = c(FULL = get_accuracy(confus_mat))
 
-    lvars = as.list(vars)
-
-    if (!is.null(permute_varlist)) {
-        ## .NotYetImplemented()
-        if (is.character(permute_varlist))
-            pvar = list(permute_varlist)
-        else if (is.list(permute_varlist)) {
-            pvar = permute_varlist
-        } else if (! is.list(permute_varlist)) {
-            warning("ignoring permute_list")
-            pvar = list()
+        if (length(levels(traind$fmut)) > 2) {
+            family = "multinomial"
+        } else {
+            family = "binomial"
         }
-        lvars = c(lvars, pvar)
-    }
 
-    permute_lst = purrr::transpose(lapply(lvars, function(v, seed = 10) {
-        testd_permute = copy(testd)
-        testd_permute$fold_id = nm
-        set.seed(seed)
-        for (i in 1:NROW(v))
-            testd_permute[[v[i]]] = sample(testd_permute[[v[i]]])
-        testd_permute$Method = paste(v, collapse = ", ")
-        permute_classes = get_pred(trainglm, testd_permute, vars, type = "class")
-        permut_s = asdf(get_pred(trainglm, testd_permute, vars, type = "response"))
-        if (NCOL(permut_s) == 1)
-            colnames(permut_s) = levels(testd[[ycol]])[2]
-        for (i in seq_len(NCOL(permut_s)))
-            testd_permute[[names(permut_s)[i]]] = permut_s[[i]]
-        permute_roc = make_roc(testd_permute, ycol, colnames(permut_s))[
-           ,Method := testd_permute$Method[1]][
-           ,fold_id := nm]
+        model.type = intersect(model.type, c("glm", "glmnet", "randomforest"))
+
+        if (length(model.type) > 1) {
+            model.type = model.type[1]
+        }
+
+
+
+        if (identical(model.type, "glm")) {
+            trainglm = fitcvglmnet(vars, family = family, dat = traind, ycol = ycol, only_positive = only_positive, standardize = standardize, lambda = mylambdas())
+            testd = fit_classifier(trainglm, testd, s = s, alpha = alpha)
+        } else if (identical(model.type, "glmnet")) {
+            trainglm = fitglmnet(vars, family = family, dat = traind, ycol = ycol, only_positive = only_positive, standardize = standardize, lambda = mylambdas())
+            testd = fit_classifier(trainglm, testd, s = s, alpha = alpha)
+        } else if (identical(model.type, "randomforest")) {
+            trainglm = fitrandomforest(var = vars, dat = traind, ycol = ycol)
+            testd = fit_rforest(trainglm, testd)
+        }
+        
+        if (any(class(trainglm) %in% c("cv.glmnet", "glmnet"))) {
+            co = as.data.frame(as.matrix(coef(trainglm, s = s))) %>% rn2col("feat") %>% as.data.table
+            co$nm = nm
+            # co$xfold = xfold
+        } else {
+            co = NULL
+        }
+
+
+        cls.mod = class(trainglm)[1]
+        if (identical(cls.mod, "cv.glmnet")) {
+            gmod = trainglm$glmnet.fit
+        } else {
+            gmod = trainglm
+        }
+        if (any(class(gmod) == "glmnet"))
+            classnames = gmod$classnames
+        else if (any(class(gmod) == "randomForest"))
+            classnames = gmod$classes
+
+        if (length(classnames) == 2) {
+            classnames = classnames[2]
+        }
+        scores = qmat(testd,,classnames)
+
+
+        testd$fold_id = nm
+        testd$Method = "all"
+
+        off_diag = function(x) {
+            diag(x) = NA
+            as.vector(x) %>% na.omit
+        }
+
+        get_accuracy = function(confus_mat) {
+            correct = diag(confus_mat)
+            sum(correct) / sum(off_diag(confus_mat), correct)
+        }
 
         indiv.levels = levels(testd[[ycol]])[-1]
-        indiv.accuracy = c()
+        full_mod_indiv_accuracy = c()
         if (length(indiv.levels) > 1) {
             for (i in indiv.levels) {
                 indiv.mat = as.matrix(table(refactor(testd[[ycol]], i),
-              refactor(factor(permute_classes, levels = levels(testd[[ycol]])), i)))
-                indiv.accuracy = c(indiv.accuracy, setNames(get_accuracy(indiv.mat), i))
+                  refactor(factor(testd$classes, levels = levels(testd[[ycol]])), i)))
+                full_mod_indiv_accuracy = c(full_mod_indiv_accuracy, setNames(get_accuracy(indiv.mat), i))
             }
         }
-        indiv.dec.accuracy = full_mod_indiv_accuracy[names(indiv.accuracy)] - indiv.accuracy
-        confus_mat_permute = as.matrix(table(testd[[ycol]], factor(permute_classes, levels = levels(testd[[ycol]]))))
-        dec_accuracy = data.table(feature = paste(v, collapse = ", "), decrease_accuracy = full_mod_accuracy - get_accuracy(confus_mat_permute))[, which := "FULL"]
-        dec_accuracy = dec_accuracy[rep_len(1:NROW(dec_accuracy), NROW(dec_accuracy) + NROW(indiv.accuracy))]
-        dec_accuracy[-1, decrease_accuracy := indiv.dec.accuracy]
-        dec_accuracy[-1, which := names(indiv.dec.accuracy)]
-        list(dec_accuracy = dec_accuracy,
-             roc = permute_roc,
-             testd = testd_permute)
-    }))
 
-    dec_accuracy = rbindlist(permute_lst$dec_accuracy)
-    dec_accuracy$fold_id = nm
+        confus_mat = as.matrix(table(testd[[ycol]], factor(testd$classes, levels = levels(testd[[ycol]]))))
+        full_mod_accuracy = c(FULL = get_accuracy(confus_mat))
 
-    bigroc = rbind(rbindlist(permute_lst$roc),
-                   make_roc(testd, ycol, classnames)[, Method := "all"][, fold_id := nm])
+        lvars = as.list(vars)
+
+        if (!is.null(permute_varlist)) {
+            ## .NotYetImplemented()
+            if (is.character(permute_varlist))
+                pvar = list(permute_varlist)
+            else if (is.list(permute_varlist)) {
+                pvar = permute_varlist
+            } else if (! is.list(permute_varlist)) {
+                warning("ignoring permute_list")
+                pvar = list()
+            }
+            lvars = c(lvars, pvar)
+        }
+
+        permute_lst = purrr::transpose(lapply(lvars, function(v, seed = 10) {
+            testd_permute = copy(testd)
+            testd_permute$fold_id = nm
+            set.seed(seed)
+            for (i in 1:NROW(v))
+                testd_permute[[v[i]]] = sample(testd_permute[[v[i]]])
+            testd_permute$Method = paste(v, collapse = ", ")
+            permute_classes = get_pred(trainglm, testd_permute, vars, type = "class")
+            permut_s = asdf(get_pred(trainglm, testd_permute, vars, type = "response"))
+            if (NCOL(permut_s) == 1)
+                colnames(permut_s) = levels(testd[[ycol]])[2]
+            for (i in seq_len(NCOL(permut_s)))
+                testd_permute[[names(permut_s)[i]]] = permut_s[[i]]
+            permute_roc = make_roc(testd_permute, ycol, colnames(permut_s))[
+               ,Method := testd_permute$Method[1]][
+               ,fold_id := nm]
+
+            indiv.levels = levels(testd[[ycol]])[-1]
+            indiv.accuracy = c()
+            if (length(indiv.levels) > 1) {
+                for (i in indiv.levels) {
+                    indiv.mat = as.matrix(table(refactor(testd[[ycol]], i),
+                  refactor(factor(permute_classes, levels = levels(testd[[ycol]])), i)))
+                    indiv.accuracy = c(indiv.accuracy, setNames(get_accuracy(indiv.mat), i))
+                }
+            }
+            indiv.dec.accuracy = full_mod_indiv_accuracy[names(indiv.accuracy)] - indiv.accuracy
+            confus_mat_permute = as.matrix(table(testd[[ycol]], factor(permute_classes, levels = levels(testd[[ycol]]))))
+            dec_accuracy = data.table(feature = paste(v, collapse = ", "), decrease_accuracy = full_mod_accuracy - get_accuracy(confus_mat_permute))[, which := "FULL"]
+            dec_accuracy = dec_accuracy[rep_len(1:NROW(dec_accuracy), NROW(dec_accuracy) + NROW(indiv.accuracy))]
+            dec_accuracy[-1, decrease_accuracy := indiv.dec.accuracy]
+            dec_accuracy[-1, which := names(indiv.dec.accuracy)]
+            list(dec_accuracy = dec_accuracy,
+                 roc = permute_roc,
+                 testd = testd_permute)
+        }))
+
+        dec_accuracy = rbindlist(permute_lst$dec_accuracy)
+        dec_accuracy$fold_id = nm
+
+        bigroc = rbind(rbindlist(permute_lst$roc),
+                       make_roc(testd, ycol, classnames)[, Method := "all"][, fold_id := nm])
 
 
-    ## mlab = mroclab(testd[[ycol]])
-    ## mpred = mrocpred(get_pred(trainglm, testd, vars))
+        ## mlab = mroclab(testd[[ycol]])
+        ## mpred = mrocpred(get_pred(trainglm, testd, vars))
 
-    ## if (class(trainglm)[1] == "lognet")
-    ##     mlab = mlab[,2,drop=F]
+        ## if (class(trainglm)[1] == "lognet")
+        ##     mlab = mlab[,2,drop=F]
 
-    outd = rbind(rbindlist(permute_lst$testd), testd)
+        outd = rbind(rbindlist(permute_lst$testd), testd)
 
-    ret = list(dec_accuracy = dec_accuracy,
-         ## lab = mlab, mpred = mpred,
-         roc = bigroc,
-         classes = classes,
-         scores = scores,
-         outd = outd)
-    return(ret)
+        ret = list(
+            dec_accuracy = dec_accuracy,
+            ## lab = mlab, mpred = mpred,
+            roc = bigroc,
+            classes = testd$classes,
+            scores = scores,
+            outd = outd,
+            coef = co
+        )
+        return(ret)
     }, error = function(e) printerr(ixfold))
 };  ifun <- feature_importance
 

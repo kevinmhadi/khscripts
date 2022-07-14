@@ -9,7 +9,7 @@
 
 # set -a
 stty -ixon -ixoff
-export PS1='\n\s:\!:\h:\n\w\n \$ '
+export PS1='\n\s:\!:\H:\n\w\n \$ '
 
 # module load gcc/8.2.0 ## only for rstan
 module load gcc/9.2.0 ## only for rstan
