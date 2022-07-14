@@ -253,6 +253,7 @@ rereq3 <- function(..., force = TRUE, unload = TRUE)
                 eval(parse(text = sprintf("require(%s)", lib)), globalenv())
             }
         }
+    }
     suppressMessages(forceload(.force = T))
 }
 
