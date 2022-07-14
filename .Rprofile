@@ -242,11 +242,17 @@ rereq3 <- function(..., force = TRUE, unload = TRUE)
                 setHook(pev,
                         list("forceall12340987" = function(...) forceall(envir = asNamespace(lib))))
             }
+            ## do.call(require, c(alist(package = lib, character.only = T),
+            ##                    otherarg))
+            if (NROW(otherarg)) {
+                is.char = sapply(otherarg, is.character)
+                otherarg[is.char] = paste0("\"", otherarg[is.char], "\"")
+                otherargs = paste(paste(names(otherarg), "=", unlist(otherarg)), collapse = ",")
+                eval(parse(text = sprintf("require(%s,%s)", lib, otherargs)), globalenv())
+            } else {
+                eval(parse(text = sprintf("require(%s)", lib)), globalenv())
+            }
         }
-        expr = parse(text = sprintf("require(%s)", lib))
-        eval(expr, globalenv())
-        ## library(lib, character.only = T)
-    }
     suppressMessages(forceload(.force = T))
 }
 
@@ -749,4 +755,3 @@ overwritefun("system.time2", "system.time", "base")
 
 somejit <- function(x, factor = 1e-6) {set.seed(10); jitter(x, factor = factor)}
 
-## private_lib()
