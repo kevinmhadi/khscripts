@@ -34,6 +34,44 @@ quiet <- function(this_expr) {
     })
 }
 
+Sys.setenv("PLOTCACHE" = "~/Dropbox/plotcache")
+replotly = function(plotly_obj, plotcache_dir = NULL, verbose = TRUE) {
+    require(plotly)
+    if (is.null(plotcache_dir)) {
+        plotcache_dir = Sys.getenv("PLOTCACHE")
+    }
+    if (!file.exists(plotcache_dir)) {
+        plotcache_dir = "~/Dropbox/plotcache"
+    }
+    if (!file.exists(plotcache_dir)) {
+        plotcache_dir = "~/"
+    }
+    set.seed(NULL) # prevent overwrites
+    if (is.character(plotly_obj) && grepl(".rds$", plotly_obj)) {
+        if (file.exists(plotly_obj)) {
+            outrds = plotly_obj
+            outhtml = sub(".rds$", ".html", outrds)
+            print(list(rds = outrds, html = outhtml))
+            plotly_obj = readRDS(plotly_obj)
+            return(plotly_obj)
+        } else {
+            NULL
+        }
+    }
+    if (verbose) {
+        message("plotting to ", plotcache_dir)
+    }
+    outfile = tempfile(pattern = "plot", tmpdir = plotcache_dir)
+    outrds = paste0(outfile, ".rds")
+    outhtml = paste0(outfile, ".html")
+    if (!inherits(plotly_obj, c("plotly", "htmlwidget"))) {
+        plotly_obj = plotly_build(plotly_obj)
+    }
+    saveRDS(plotly_obj, outrds)
+    htmlwidgets::saveWidget(ggpl, outhtml, selfcontained = TRUE)
+    return(list(rds = outrds, html = outhtml))
+}
+
 
 
 names2 <- function(x) {
