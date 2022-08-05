@@ -67,7 +67,7 @@ replotly = function(plotly_obj, plotcache_dir = NULL, verbose = TRUE) {
     if (!inherits(plotly_obj, c("plotly", "htmlwidget"))) {
         plotly_obj = plotly_build(plotly_obj)
     }
-    saveRDS(plotly_obj, outrds)
+    saveRDS(plotly_obj, outrds, version = 2)
     htmlwidgets::saveWidget(ggpl, outhtml, selfcontained = TRUE)
     return(list(rds = outrds, html = outhtml))
 }
@@ -611,7 +611,10 @@ asn2 <- function (x, value, ns, pos = -1, envir = as.environment(pos))
     invisible(NULL)
 }
 
-saveRDS <- function (object, file = "", ascii = FALSE, version = NULL, compress = TRUE,
+saveRDS <- function (object, file = "", ascii = FALSE,
+                     ## version = NULL,
+                     version = 2,
+                     compress = TRUE,
                      refhook = NULL) {
     if (is.character(file)) {
         if (file == "")
