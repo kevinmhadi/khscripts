@@ -1,6 +1,7 @@
 ## only do if interactive shell
 [[ $- == *i* ]] || return 0
 
+export PATH=$(pwd)/score-client-5.8.1/bin:$PATH
 
 # Source global definitions
 # if [ -f /etc/bashrc ]; then

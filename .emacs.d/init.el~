@@ -553,7 +553,7 @@ vi style of % jumping to matching brace."
 ;;(ac-config-default)
 
 (global-set-key "\C-c$" 'toggle-truncate-lines)
-(set-default 'truncate-lines t)
+(set-default 'truncate-lines nil)
 
 ;;(add-to-list 'load-path "~/.emacs.d/ac")
 ;;(require 'auto-complete-config)
@@ -583,7 +583,7 @@ vi style of % jumping to matching brace."
  '(package-check-signature nil)
  '(package-selected-packages
    (quote
-    (magit dracula-theme highlight-indent-guides evil eval-in-repl undo-tree term-keys goto-chg)))
+    (smartparens magit dracula-theme highlight-indent-guides evil eval-in-repl undo-tree term-keys goto-chg)))
  '(pop-up-windows nil)
  '(tool-bar-mode nil)
  '(tooltip-mode nil)
@@ -593,7 +593,7 @@ vi style of % jumping to matching brace."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "grey0" :foreground "grey75" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 1 :width normal :foundry "default" :family "default"))))
+ '(default ((t (:inherit nil :stipple nil :background "grey10" :foreground "grey75" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 1 :width normal :foundry "default" :family "default"))))
  '(minibuffer-prompt ((t (:weight bold :foreground "blue"))))
  '(mode-line-buffer-id ((t (:background "grey80" :foreground "grey20" :inverse-video t))))
  '(mode-line-inactive ((t (:inherit mode-line :background "grey25" :foreground "grey45" :box (:line-width -1 :color "grey40") :weight light)))))

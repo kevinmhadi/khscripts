@@ -5,7 +5,11 @@ export TERM=xterm-256color
 export LOCKPRG='/bin/true'
 export LD_LIBRARY_PATH=/gpfs/commons/groups/imielinski_lab/Software/libtiff/lib:/gpfs/commons/home/mimielinski/software/libfftw3/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/gpfs/commons/groups/imielinski_lab/Software/protobuf/lib:~/modules/Snowman:$LD_LIBRARY_PATH:~/modules/Snowman/lib
+
 export PATH=~/.local/bin:/gpfs/commons/groups/imielinski_lab/Software/mosh2/mosh-1.3.2/bin:/gpfs/commons/groups/imielinski_lab/Software/protobuf/bin:~/software/libtiff/bin:~/software/libtiff/lib:~/.aspera/connect/bin:~/software/xsel-1.2.0/bin:~/software/gsl-2.4:~/lab/.local/bin/:~/git/dapars/:~/lab/git/MACS/bin/:~/scripts/:~/modules/Snowman/:~/modules/STAR:/nethome/mimielinski/Software/sshpass-1.05:~/Software/sratoolkit.2.5.7-centos_linux64/bin:~/Software/HMMCopy/HMMcopy/bin/:~/Software/UCSC/:~/software/emacs-25.2/bin:$PATH:$HOME/bin:$HOME/dev/scripts/:$HOME/Scripts/bash:~/lab/Software/CPLEX/CPLEX_Studio/cplex/bin/x86-64_linux/:${HOME}/scripts_kh
+
+export PATH=~/score-client-5.8.1/bin:$PATH
+
 export SKI_DB_ROOT="~/DB/"
 export SKI_SOFTWARE_ROOT="~/Software/"
 export GIT_HOME="~/git"

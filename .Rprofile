@@ -3,7 +3,7 @@ options(bitmapType="cairo")
 options(device = grDevices::png)
 options(scipen = 0)
 
-tplot <- function(...) {
+tplot = function(...) {
     this.mar = par()$mar
     this.mai = par()$mai
     this.oma = par()$oma
@@ -19,7 +19,7 @@ tplot <- function(...) {
 }
 
 
-quiet <- function(this_expr) {
+quiet = function(this_expr) {
     suppressWarnings({
         suppressPackageStartupMessages({
             capture.output(
@@ -74,7 +74,7 @@ replotly = function(plotly_obj, plotcache_dir = NULL, verbose = TRUE) {
 
 
 
-names2 <- function(x) {
+names2 = function(x) {
     nm = names(x)
     if (is.null(nm))
         return(rep_len("", length(x)))
@@ -82,7 +82,7 @@ names2 <- function(x) {
         return(nm)
 }
 
-`names2<-` <- function(x, value, useempty = FALSE) {
+`names2=` = function(x, value, useempty = FALSE) {
     names(x) = if (!is.null(value))
                    rep_len(value, length(x))
                else {
@@ -92,7 +92,7 @@ names2 <- function(x) {
     return(x)
 }
 
-forceload <- function(envir = globalenv(), .force = FALSE) {
+forceload = function(envir = globalenv(), .force = FALSE) {
     if (!exists("envload_34507213048974")) {
         envload_34507213048974 = new.env(parent = globalenv())
         globasn(envload_34507213048974)
@@ -137,7 +137,7 @@ forceload <- function(envir = globalenv(), .force = FALSE) {
     }
 }
 
-forcefun <- function(envir = globalenv(), evalenvir = globalenv()) {
+forcefun = function(envir = globalenv(), evalenvir = globalenv()) {
     funnames = as.character(lsf.str(envir = envir))
     for (fun in funnames) {
         tryCatch( {
@@ -149,7 +149,7 @@ forcefun <- function(envir = globalenv(), evalenvir = globalenv()) {
 
 
 
-relib2 <- function(lib = 'Flow', force = TRUE, unload = TRUE)
+relib2 = function(lib = 'Flow', force = TRUE, unload = TRUE)
 {
     suppressMessages(forceload(.force = T))
     if (sprintf("package:%s", lib) %in% search())
@@ -164,7 +164,7 @@ relib2 <- function(lib = 'Flow', force = TRUE, unload = TRUE)
     suppressMessages(forceload(.force = T))
 }
 
-relib3 <- function(..., force = TRUE, unload = TRUE)
+relib3 = function(..., force = TRUE, unload = TRUE)
 {
     if (!exists("envload_34507213048974")) {
         envload_34507213048974 = new.env(parent = globalenv())
@@ -178,7 +178,7 @@ relib3 <- function(..., force = TRUE, unload = TRUE)
         envload_34507213048974$pkvec = pkvec
     }
     suppressMessages(forceload(.force = T))
-    names2 <- function(x) {
+    names2 = function(x) {
         nm = names(x)
         if (is.null(nm))
             return(rep_len("", length(x)))
@@ -226,7 +226,7 @@ relib3 <- function(..., force = TRUE, unload = TRUE)
     suppressMessages(forceload(.force = T))
 }
 
-rereq3 <- function(..., force = TRUE, unload = TRUE)
+rereq3 = function(..., force = TRUE, unload = TRUE)
 {
     if (!exists("envload_34507213048974")) {
         envload_34507213048974 = new.env(parent = globalenv())
@@ -240,7 +240,7 @@ rereq3 <- function(..., force = TRUE, unload = TRUE)
         envload_34507213048974$pkvec = pkvec
     }
     suppressMessages(forceload(.force = T))
-    names2 <- function(x) {
+    names2 = function(x) {
         nm = names(x)
         if (is.null(nm))
             return(rep_len("", length(x)))
@@ -295,7 +295,7 @@ rereq3 <- function(..., force = TRUE, unload = TRUE)
     suppressMessages(forceload(.force = T))
 }
 
-no.dev <- function() {
+no.dev = function() {
     evalq({
         for (d in dev.list()) {
             dev.off(d)
@@ -303,7 +303,7 @@ no.dev <- function() {
     }, envir = globalenv())
 }
 
-detach2 <- function(lib = "Flow", force = TRUE, unload = TRUE) {
+detach2 = function(lib = "Flow", force = TRUE, unload = TRUE) {
     suppressMessages(forceload(.force = T))
     if (sprintf("package:%s", lib) %in% search())
     {
@@ -314,7 +314,7 @@ detach2 <- function(lib = "Flow", force = TRUE, unload = TRUE) {
     suppressMessages(forceload(.force = T))
 }
 
-library2 <- function(x, ...) {
+library2 = function(x, ...) {
     suppressMessages(forceload(.force = T))
     arg = as.list(match.call())[["x"]]
     if (is.symbol(arg)) {
@@ -329,9 +329,9 @@ library2 <- function(x, ...) {
     suppressMessages(forceload(.force = T))
 }
 
-library3 <- function (...)
+library3 = function (...)
 {
-    names2 <- function(x) {
+    names2 = function(x) {
         nm = names(x)
         if (is.null(nm))
             return(rep_len("", length(x)))
@@ -374,7 +374,7 @@ library3 <- function (...)
     suppressMessages(forceload(.force = T))
 }
 
-require3 <- function (...)
+require3 = function (...)
 {
     names2 = function(x) {
         nm = names(x)
@@ -420,11 +420,11 @@ require3 <- function (...)
 }
 
 
-force2 <- function(x)
+force2 = function(x)
     tryCatch(x, error = function(e) NULL)
 
 
-forceall <- function(invisible = TRUE, envir = parent.frame(), evalenvir = parent.frame()) {
+forceall = function(invisible = TRUE, envir = parent.frame(), evalenvir = parent.frame()) {
     if (!exists("envload_34507213048974")) {
         envload_34507213048974 = new.env(parent = globalenv())
         globasn(envload_34507213048974)
@@ -483,7 +483,7 @@ overwriteR6 = function (newfun, oldfun, r6gen, meth = "public_methods", package 
     NULL
 }
 
-globasn <- function (obj, var = NULL, return_obj = TRUE, envir = .GlobalEnv,
+globasn = function (obj, var = NULL, return_obj = TRUE, envir = .GlobalEnv,
                      verbose = TRUE, vareval = F)
 {
     var = as.list(match.call())$var
@@ -517,7 +517,7 @@ globasn <- function (obj, var = NULL, return_obj = TRUE, envir = .GlobalEnv,
     }
 }
 
-overwritefun <- function (newfun, oldfun, package, envir = globalenv())
+overwritefun = function (newfun, oldfun, package, envir = globalenv())
 {
     if (is.character(newfun) && is.character(oldfun) && missing(package))
         stop("must specify package for oldfun")
@@ -549,22 +549,22 @@ overwritefun <- function (newfun, oldfun, package, envir = globalenv())
     globasn(.newfun, oldfun, vareval = T)
 }
 
-asn2 <- function (x, value, ns, pos = -1, envir = as.environment(pos))
+asn2 = function (x, value, ns, pos = -1, envir = as.environment(pos))
 {
-    nf <- sys.nframe()
+    nf = sys.nframe()
     if (missing(ns)) {
-        nm <- attr(envir, "name", exact = TRUE)
+        nm = attr(envir, "name", exact = TRUE)
         if (is.null(nm) || substr(nm, 1L, 8L) != "package:")
             stop("environment specified is not a package")
-        ns <- asNamespace(substring(nm, 9L))
+        ns = asNamespace(substring(nm, 9L))
     }
-    else ns <- asNamespace(ns)
-    ns_name <- getNamespaceName(ns)
+    else ns = asNamespace(ns)
+    ns_name = getNamespaceName(ns)
     if (bindingIsLocked(x, ns)) {
-        in_load <- Sys.getenv("_R_NS_LOAD_")
+        in_load = Sys.getenv("_R_NS_LOAD_")
         if (nzchar(in_load)) {
             if (in_load != ns_name) {
-                msg <- gettextf("changing locked binding for %s in %s whilst loading %s",
+                msg = gettextf("changing locked binding for %s in %s whilst loading %s",
                                 sQuote(x), sQuote(ns_name), sQuote(in_load))
                 if (!in_load %in% c("Matrix", "SparseM"))
                     warning(msg, call. = FALSE, domain = NA, immediate. = TRUE)
@@ -577,7 +577,7 @@ asn2 <- function (x, value, ns, pos = -1, envir = as.environment(pos))
         }
         unlockBinding(x, ns)
         assign(x, value, envir = ns, inherits = FALSE)
-        w <- options("warn")
+        w = options("warn")
         on.exit(options(w))
         options(warn = -1)
         lockBinding(x, ns)
@@ -586,24 +586,24 @@ asn2 <- function (x, value, ns, pos = -1, envir = as.environment(pos))
         assign(x, value, envir = ns, inherits = FALSE)
     }
     if (!isBaseNamespace(ns)) {
-        S3 <- .getNamespaceInfo(ns, "S3methods")
+        S3 = .getNamespaceInfo(ns, "S3methods")
         if (!length(S3))
             return(invisible(NULL))
-        S3names <- S3[, 3L]
+        S3names = S3[, 3L]
         if (x %in% S3names) {
-            i <- match(x, S3names)
-            genfun <- get(S3[i, 1L], mode = "function", envir = parent.frame())
+            i = match(x, S3names)
+            genfun = get(S3[i, 1L], mode = "function", envir = parent.frame())
             if (.isMethodsDispatchOn() && methods::is(genfun,
                                                       "genericFunction"))
-                genfun <- tryCatch(methods::slot(genfun, "default")@methods$ANY,
+                genfun = tryCatch(methods::slot(genfun, "default")@methods$ANY,
                                    error = function(e) genfun)
-            defenv <- if (typeof(genfun) == "closure") {
+            defenv = if (typeof(genfun) == "closure") {
                           environment(genfun)
                       } else {
                           .BaseNamespaceEnv
                       }
-            S3Table <- get(".__S3MethodsTable__.", envir = defenv)
-            remappedName <- paste(S3[i, 1L], S3[i, 2L], sep = ".")
+            S3Table = get(".__S3MethodsTable__.", envir = defenv)
+            remappedName = paste(S3[i, 1L], S3[i, 2L], sep = ".")
             if (exists(remappedName, envir = S3Table, inherits = FALSE))
                 assign(remappedName, value, S3Table)
         }
@@ -611,7 +611,7 @@ asn2 <- function (x, value, ns, pos = -1, envir = as.environment(pos))
     invisible(NULL)
 }
 
-saveRDS <- function (object, file = "", ascii = FALSE,
+saveRDS = function (object, file = "", ascii = FALSE,
                      ## version = NULL,
                      version = 2,
                      compress = TRUE,
@@ -621,11 +621,11 @@ saveRDS <- function (object, file = "", ascii = FALSE,
             stop("'file' must be non-empty string")
         if (!dir.exists(dirname(file)))
             system2("mkdir", c("-p", dirname(file)))
-        object <- object
-        mode <- if (ascii %in% FALSE)
+        object = object
+        mode = if (ascii %in% FALSE)
                     "wb"
                 else "w"
-        con <- if (is.logical(compress))
+        con = if (is.logical(compress))
                    if (compress)
                        gzfile(file, mode)
                    else file(file, mode)
@@ -637,7 +637,7 @@ saveRDS <- function (object, file = "", ascii = FALSE,
     else if (inherits(file, "connection")) {
         if (!missing(compress))
             warning("'compress' is ignored unless 'file' is a file name")
-        con <- file
+        con = file
     }
     else stop("bad 'file' argument")
     .Internal(serializeToConn(object, con, ascii, version, refhook))
@@ -651,10 +651,10 @@ overwritefun('saveRDS','saveRDS', package = "base")
 ## if you don't wrap this in a function,
 ## and just run it manually after startup,
 ## everything goes bollocks...
-startup <- function() {
-    `:::.new` <- function (pkg, name) {
-        pkg <- as.character(substitute(pkg))
-        name <- as.character(substitute(name))
+startup = function() {
+    `:::.new` = function (pkg, name) {
+        pkg = as.character(substitute(pkg))
+        name = as.character(substitute(name))
         pev = packageEvent(pkg, "onLoad")
         gh = getHook(pev)
         if (length(gh) == 0 || is.null(gh$forceall12340987)) {
@@ -666,9 +666,9 @@ startup <- function() {
         return(out)
     }
 
-    `::.new` <- function (pkg, name) {
-        pkg <- as.character(substitute(pkg))
-        name <- as.character(substitute(name))
+    `::.new` = function (pkg, name) {
+        pkg = as.character(substitute(pkg))
+        name = as.character(substitute(name))
         pev = packageEvent(pkg, "onLoad")
         gh = getHook(pev)
         if (length(gh) == 0 || is.null(gh$forceall12340987)) {
@@ -701,7 +701,7 @@ Sys.setenv(DEFAULT_BSGENOME = "~/DB/references/hg19/human_g1k_v37_decoy.chrom.si
 ww = with
 wn = within
 
-go.R <- function() {
+go.R = function() {
     eval(
         quote(
             .libPaths(
@@ -723,7 +723,7 @@ go.R <- function() {
     )
 }
 
-do.dev <- function() {
+do.dev = function() {
     ## evalq({startup(); library3(devtools)}, globalenv())
     ## eval(quote(.libPaths(unique(c("/gpfs/commons/groups/imielinski_lab/lib/R-4.0.2_KH", .libPaths())))), globalenv())
     eval(quote({
@@ -741,7 +741,7 @@ do.dev <- function() {
         bla = ""}), globalenv())
 }
 
-private_lib <- function(suffix = "_KH") {
+private_lib = function(suffix = "_KH") {
     libs = .libPaths()
     orig = utils::tail(libs, 1)
     addon = Sys.getenv("R_LIBS")
@@ -763,7 +763,7 @@ private_lib <- function(suffix = "_KH") {
     invisible(NULL)
 }
 
-test.start <- function() {
+test.start = function() {
     eval(quote({
         startup(); library3(khtools, skitools);
         tailf = khtools::tailf
@@ -774,26 +774,26 @@ test.start <- function() {
     ## }, globalenv())
 }
 
-system.time2 <- function (expr, gcFirst = FALSE) 
+system.time2 = function (expr, gcFirst = FALSE) 
 {
-    ppt <- function(y) {
+    ppt = function(y) {
         if (!is.na(y[4L])) 
-            y[1L] <- y[1L] + y[4L]
+            y[1L] = y[1L] + y[4L]
         if (!is.na(y[5L])) 
-            y[2L] <- y[2L] + y[5L]
+            y[2L] = y[2L] + y[5L]
         paste(formatC(y[1L:3L]), collapse = " ")
     }
     if (gcFirst) 
         gc(FALSE)
-    time <- proc.time()
+    time = proc.time()
     on.exit(message("Timing stopped at: ", ppt(proc.time() - 
                                                time)))
     expr
-    new.time <- proc.time()
+    new.time = proc.time()
     on.exit()
     structure(new.time - time, class = "proc_time")
 }
 overwritefun("system.time2", "system.time", "base")
 
-somejit <- function(x, factor = 1e-6) {set.seed(10); jitter(x, factor = factor)}
+somejit = function(x, factor = 1e-6) {set.seed(10); jitter(x, factor = factor)}
 
