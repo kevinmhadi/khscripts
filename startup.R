@@ -7,22 +7,38 @@ Sys.setenv(PATH = paste("~/software/bcftools-1.9", Sys.getenv("PATH"), sep = ":"
 Sys.setenv(BCFTOOLS_PLUGINS = "/gpfs/commons/groups/imielinski_lab/Software/bcftools-1.9/plugins")
 
 startup();
-require3(
-    withr,
-    skitools,
-    gGnome,
-    Flow,
-    dplyr,
-    bamUtils,
-    skidb,
-    naturalsort,
-    magrittr,
-    signature.tools.lib,
-    tidyr,
-    MASS,
-    khtools,
-    wesanderson
-)
+library(withr)
+library(skitools)
+library(gGnome)
+library(Flow)
+library(dplyr)
+library(bamUtils)
+library(skidb)
+library(naturalsort)
+library(magrittr)
+library(signature.tools.lib)
+library(tidyr)
+library(MASS)
+library(khtools)
+library(wesanderson)
+forceload(.force = T)
+
+## require3(
+##     withr,
+##     skitools,
+##     gGnome,
+##     Flow,
+##     dplyr,
+##     bamUtils,
+##     skidb,
+##     naturalsort,
+##     magrittr,
+##     signature.tools.lib,
+##     tidyr,
+##     MASS,
+##     khtools,
+##     wesanderson
+## )
 
 ## source("~/lab/home/khadi/git/khscripts/patch_gtrack.R")
 

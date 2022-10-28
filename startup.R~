@@ -20,7 +20,8 @@ require3(
     signature.tools.lib,
     tidyr,
     MASS,
-    khtools
+    khtools,
+    wesanderson
 )
 
 ## source("~/lab/home/khadi/git/khscripts/patch_gtrack.R")

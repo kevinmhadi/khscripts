@@ -19,17 +19,30 @@ tplot = function(...) {
 }
 
 
-quiet = function(this_expr) {
-    suppressWarnings({
-        suppressPackageStartupMessages({
-            capture.output(
-                capture.output(
-                    ... = substitute(this_expr),
-                    file = "/dev/null",
-                    type = "output"),
-                file = "/dev/null",
-                type = "message"
-            )
+quiet = function(this_expr, do_global = TRUE) {
+    pf = parent.frame()
+    fout = file(nullfile(), open = "wt")
+    suppressMessages({
+        suppressWarnings({
+            suppressPackageStartupMessages({
+                sink(fout, type = "output")
+                sink(fout, type = "message");
+                if (do_global)
+                    eval(this_expr, envir = globalenv())
+                else
+                    eval(this_expr, envir = pf)
+                sink()
+                sink()
+            })
+                ## capture.output(
+                ##     capture.output(
+                ##         ... = this_expr,
+                ##         file = "/dev/null",
+                ##         type = "output"),
+                ##     file = "/dev/null",
+                ##     type = "message"
+                ## )
+            ## })
         })
     })
 }
