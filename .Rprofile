@@ -22,6 +22,7 @@ tplot = function(...) {
 quiet = function(this_expr, do_global = TRUE) {
     pf = parent.frame()
     fout = file(nullfile(), open = "wt")
+    on.exit({closeAllConnections()})
     suppressMessages({
         suppressWarnings({
             suppressPackageStartupMessages({
@@ -33,6 +34,7 @@ quiet = function(this_expr, do_global = TRUE) {
                     eval(this_expr, envir = pf)
                 sink()
                 sink()
+                ## close(fout)
             })
                 ## capture.output(
                 ##     capture.output(
