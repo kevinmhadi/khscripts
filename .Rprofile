@@ -22,23 +22,25 @@ tplot = function(...) {
 quiet = function(this_expr, do_global = TRUE) {
     pf = parent.frame()
     fout = file(nullfile(), open = "wt")
-    suppressMessages({
-        suppressWarnings({
-            suppressPackageStartupMessages({
-                sink(fout, type = "output")
-                sink(fout, type = "message");
-                if (do_global)
-                    eval(this_expr, envir = globalenv())
-                else
-                    eval(this_expr, envir = pf)
-                sink()
-                sink()
-                i <- sink.number(type = "message")
-                if (i > 0L) 
-                    sink(stderr(), type = "message")
-                n <- sink.number()
-                if (n > 0L) 
-                    for (i in seq_len(n)) sink()
+    on.exit({
+        i <- sink.number(type = "message")
+        if (i > 0L) 
+            sink(stderr(), type = "message")
+        n <- sink.number()
+        if (n > 0L) 
+            for (i in seq_len(n)) sink()
+    })
+        suppressMessages({
+            suppressWarnings({
+                suppressPackageStartupMessages({
+                    sink(fout, type = "output")
+                    sink(fout, type = "message");
+                    if (do_global)
+                        eval(this_expr, envir = globalenv())
+                    else
+                        eval(this_expr, envir = pf)
+                    sink()
+                    sink()                
             })
         })
     })
