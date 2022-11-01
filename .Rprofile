@@ -22,7 +22,6 @@ tplot = function(...) {
 quiet = function(this_expr, do_global = TRUE) {
     pf = parent.frame()
     fout = file(nullfile(), open = "wt")
-    on.exit({closeAllConnections()})
     suppressMessages({
         suppressWarnings({
             suppressPackageStartupMessages({
@@ -34,19 +33,37 @@ quiet = function(this_expr, do_global = TRUE) {
                     eval(this_expr, envir = pf)
                 sink()
                 sink()
-                ## close(fout)
+                i <- sink.number(type = "message")
+                if (i > 0L) 
+                    sink(stderr(), type = "message")
+                n <- sink.number()
+                if (n > 0L) 
+                    for (i in seq_len(n)) sink()
             })
-                ## capture.output(
-                ##     capture.output(
-                ##         ... = this_expr,
-                ##         file = "/dev/null",
-                ##         type = "output"),
-                ##     file = "/dev/null",
-                ##     type = "message"
-                ## )
-            ## })
         })
     })
+}
+
+close_all_connections = function() { 
+    i <- sink.number(type = "message")
+    if (i > 0L) 
+        sink(stderr(), type = "message")
+    n <- sink.number()
+    if (n > 0L) 
+        for (i in seq_len(n)) sink()
+    gc()
+    ## only connections that are not jupyter related
+    cons = as.integer(rownames(subset(
+        as.data.frame(showConnections(all = FALSE)), 
+        !description == "output" & !class == "textConnection" & 
+        !mode == "wr" & !text == "text" & 
+        !isopen == "opened" & !`can read` == "no" & 
+        !`can write` == "yes"
+    )))
+    # set <- getAllConnections()
+    # set <- set[set > 2L]
+    for (i in seq_along(cons)) close(getConnection(cons[i]))
+    invisible()
 }
 
 Sys.setenv("PLOTCACHE" = "~/Dropbox/plotcache")
