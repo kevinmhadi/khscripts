@@ -30,6 +30,7 @@ tplot = function(...) {
 quiet = function(this_expr, do_global = TRUE, set = FALSE) {
     pf = parent.frame()
     fout = file(nullfile(), open = "wt")
+    fout2 = file(nullfile(), open = "wt")
     if (!isTRUE(set)) {
         on.exit({
             i <- sink.number(type = "message")
@@ -46,11 +47,13 @@ quiet = function(this_expr, do_global = TRUE, set = FALSE) {
         suppressWarnings({
             suppressPackageStartupMessages({
                 sink(fout, type = "output")
-                sink(fout, type = "message");
-                if (do_global)
-                    eval(this_expr, envir = globalenv())
-                else
-                    eval(this_expr, envir = pf)
+                sink(fout2, type = "message");
+                tryCatch({
+                    if (do_global)
+                        eval(this_expr, envir = globalenv())
+                    else
+                        eval(this_expr, envir = pf)
+                }, error = function(e) invisible())
                 invisible()
             })
         })
@@ -58,8 +61,6 @@ quiet = function(this_expr, do_global = TRUE, set = FALSE) {
 }
 
 unquiet = function() {
-    sink()
-    sink()
     i <- sink.number(type = "message")
     if (i > 0L) 
         sink(stderr(), type = "message")
