@@ -32,8 +32,6 @@ quiet = function(this_expr, do_global = TRUE, set = FALSE) {
     fout = file(nullfile(), open = "wt")
     if (!isTRUE(set)) {
         on.exit({
-            sink()
-            sink()                
             i <- sink.number(type = "message")
             if (i > 0L) 
                 sink(stderr(), type = "message")
@@ -41,6 +39,7 @@ quiet = function(this_expr, do_global = TRUE, set = FALSE) {
             if (n > 0L) 
                 for (i in seq_len(n)) sink()
             gc()
+            invisible()
         })
     }
     suppressMessages({
@@ -52,6 +51,7 @@ quiet = function(this_expr, do_global = TRUE, set = FALSE) {
                     eval(this_expr, envir = globalenv())
                 else
                     eval(this_expr, envir = pf)
+                invisible()
             })
         })
     })
@@ -67,6 +67,7 @@ unquiet = function() {
     if (n > 0L) 
         for (i in seq_len(n)) sink()
     gc()
+    invisible()
 }
 
 close_all_connections = function() { 
