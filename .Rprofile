@@ -3,6 +3,14 @@ options(bitmapType="cairo")
 options(device = grDevices::png)
 options(scipen = 0)
 
+isTRUE = function(x) {
+    identical(x, TRUE)
+}
+
+isFALSE = function(x) {
+    identical(x, FALSE)
+}
+
 tplot = function(...) {
     this.mar = par()$mar
     this.mai = par()$mai
@@ -19,31 +27,46 @@ tplot = function(...) {
 }
 
 
-quiet = function(this_expr, do_global = TRUE) {
+quiet = function(this_expr, do_global = TRUE, set = FALSE) {
     pf = parent.frame()
     fout = file(nullfile(), open = "wt")
-    on.exit({
-        i <- sink.number(type = "message")
-        if (i > 0L) 
-            sink(stderr(), type = "message")
-        n <- sink.number()
-        if (n > 0L) 
-            for (i in seq_len(n)) sink()
-    })
-        suppressMessages({
-            suppressWarnings({
-                suppressPackageStartupMessages({
-                    sink(fout, type = "output")
-                    sink(fout, type = "message");
-                    if (do_global)
-                        eval(this_expr, envir = globalenv())
-                    else
-                        eval(this_expr, envir = pf)
-                    sink()
-                    sink()                
+    if (isTRUE(set)) {
+        on.exit({
+            sink()
+            sink()                
+            i <- sink.number(type = "message")
+            if (i > 0L) 
+                sink(stderr(), type = "message")
+            n <- sink.number()
+            if (n > 0L) 
+                for (i in seq_len(n)) sink()
+            gc()
+        })
+    }
+    suppressMessages({
+        suppressWarnings({
+            suppressPackageStartupMessages({
+                sink(fout, type = "output")
+                sink(fout, type = "message");
+                if (do_global)
+                    eval(this_expr, envir = globalenv())
+                else
+                    eval(this_expr, envir = pf)
             })
         })
     })
+}
+
+unquiet = function() {
+    sink()
+    sink()
+    i <- sink.number(type = "message")
+    if (i > 0L) 
+        sink(stderr(), type = "message")
+    n <- sink.number()
+    if (n > 0L) 
+        for (i in seq_len(n)) sink()
+    gc()
 }
 
 close_all_connections = function() { 
