@@ -431,6 +431,7 @@ library3 = function (...)
         ##                    otherarg))
     }
     suppressMessages(forceload(.force = T))
+    invisible()
 }
 
 require3 = function (...)
@@ -476,6 +477,7 @@ require3 = function (...)
         }
     }
     suppressMessages(forceload(.force = T))
+    invisible()
 }
 
 
@@ -539,7 +541,7 @@ overwriteR6 = function (newfun, oldfun, r6gen, meth = "public_methods", package 
     environment(.newfun) = environment(tmpfun)
     attributes(.newfun) = attributes(tmpfun)
     r6[[meth]][[oldfun]] = .newfun
-    NULL
+    invisible()
 }
 
 globasn = function (obj, var = NULL, return_obj = TRUE, envir = .GlobalEnv,
@@ -572,7 +574,7 @@ globasn = function (obj, var = NULL, return_obj = TRUE, envir = .GlobalEnv,
         invisible(obj)
     }
     else {
-        NULL
+        invisible()
     }
 }
 
@@ -606,6 +608,7 @@ overwritefun = function (newfun, oldfun, package, envir = globalenv())
     attributes(.newfun) = attributes(tmpfun)
     evalq(asn2(oldfun, .newfun, ns = nmpkg), environment(), parent.frame())
     globasn(.newfun, oldfun, vareval = T)
+    invisible()
 }
 
 asn2 = function (x, value, ns, pos = -1, envir = as.environment(pos))
