@@ -30,7 +30,7 @@ tplot = function(...) {
 quiet = function(this_expr, do_global = TRUE, set = FALSE) {
     pf = parent.frame()
     fout = file(nullfile(), open = "wt")
-    if (isTRUE(set)) {
+    if (!isTRUE(set)) {
         on.exit({
             sink()
             sink()                
