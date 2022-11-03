@@ -40,6 +40,8 @@ quiet = function(this_expr, do_global = TRUE, set = FALSE) {
             if (n > 0L) 
                 for (i in seq_len(n)) sink()
             gc()
+            close(fout, type = "wt")
+            close(fout2, type = "wt")
             invisible()
         })
     }
