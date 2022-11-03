@@ -196,6 +196,7 @@ forceload = function(envir = globalenv(), .force = FALSE) {
     } else {
         message("nothing to forceload")
     }
+    invisible()
 }
 
 forcefun = function(envir = globalenv(), evalenvir = globalenv()) {
@@ -206,6 +207,7 @@ forcefun = function(envir = globalenv(), evalenvir = globalenv()) {
             eval(force(get(fun, envir = envir)), envir = evalenvir)
         }, error = function(e) message("could not force load ", fun))
     }
+    invisible()
 }
 
 
@@ -223,6 +225,7 @@ relib2 = function(lib = 'Flow', force = TRUE, unload = TRUE)
     txt = sprintf("library2(%s)", lib)
     eval(parse(text = txt))
     suppressMessages(forceload(.force = T))
+    invisible()
 }
 
 relib3 = function(..., force = TRUE, unload = TRUE)
@@ -285,6 +288,7 @@ relib3 = function(..., force = TRUE, unload = TRUE)
         ## library(lib, character.only = T)
     }
     suppressMessages(forceload(.force = T))
+    invisible()
 }
 
 rereq3 = function(..., force = TRUE, unload = TRUE)
@@ -354,6 +358,7 @@ rereq3 = function(..., force = TRUE, unload = TRUE)
         }
     }
     suppressMessages(forceload(.force = T))
+    invisible()
 }
 
 no.dev = function() {
@@ -362,6 +367,7 @@ no.dev = function() {
             dev.off(d)
         }
     }, envir = globalenv())
+    invisible()
 }
 
 detach2 = function(lib = "Flow", force = TRUE, unload = TRUE) {
@@ -373,6 +379,7 @@ detach2 = function(lib = "Flow", force = TRUE, unload = TRUE) {
         tryCatch(unload(lib), error = function(e) NULL)
     }
     suppressMessages(forceload(.force = T))
+    invisible()
 }
 
 library2 = function(x, ...) {
@@ -388,6 +395,7 @@ library2 = function(x, ...) {
     }
     library(lib, character.only = T, ...)
     suppressMessages(forceload(.force = T))
+    invisible()
 }
 
 library3 = function (...)
@@ -803,6 +811,7 @@ do.dev = function() {
             eval(quote({document(); install(dependencies = F, quick = F)}), envir = pf)
         };
         bla = ""}), globalenv())
+    invisible()
 }
 
 private_lib = function(suffix = "_KH") {
@@ -824,7 +833,7 @@ private_lib = function(suffix = "_KH") {
         message("setting library path(s) to: ", paste0(union(addon, orig)), collapse = ", ")
         eval(expr, globalenv())
     }
-    invisible(NULL)
+    invisible()
 }
 
 test.start = function() {
