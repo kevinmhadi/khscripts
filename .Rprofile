@@ -716,6 +716,24 @@ saveRDS = function (object, file = "", ascii = FALSE,
 }
 overwritefun('saveRDS','saveRDS', package = "base")
 
+staveRDS = function (object, file, note = NULL, version = 2, ..., verbose = FALSE) 
+{
+    stamped.file = gsub(".rds$", paste(".", timestamp(), ".rds", 
+        sep = ""), file, ignore.case = TRUE)
+    saveRDS(object, stamped.file, version = version, ...)
+    if (file.exists(file)) {
+        if (verbose) 
+            message("Removing existing ", file)
+        system(paste("rm", file))
+    }
+    if (verbose) 
+        message("Symlinking ", file, " to ", stamped.file)
+    system(paste("ln -sfn", normalizePath(stamped.file), file))
+    if (!is.null(note)) {
+        writeLines(note, paste0(stamped.file, ".readme"))
+    }
+}
+
 ## proceed with caution
 #######################
 #######################
