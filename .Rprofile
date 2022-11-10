@@ -56,6 +56,8 @@ quiet = function(this_expr, do_global = TRUE, set = FALSE) {
                     else
                         eval(this_expr, envir = pf)
                 }, error = function(e) invisible())
+                close(fout, type = "wt")
+                close(fout2, type = "wt")
                 invisible()
             })
         })
