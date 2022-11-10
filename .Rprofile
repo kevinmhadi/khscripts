@@ -716,8 +716,14 @@ saveRDS = function (object, file = "", ascii = FALSE,
 }
 overwritefun('saveRDS','saveRDS', package = "base")
 
+timestamp = function () 
+{
+    return(gsub("[\\:\\-]", "", gsub("\\s", "_", Sys.time())))
+}
+
 staveRDS = function (object, file, note = NULL, version = 2, ..., verbose = FALSE) 
 {
+    
     stamped.file = gsub(".rds$", paste(".", timestamp(), ".rds", 
         sep = ""), file, ignore.case = TRUE)
     saveRDS(object, stamped.file, version = version, ...)
