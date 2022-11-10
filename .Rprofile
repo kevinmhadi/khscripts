@@ -33,6 +33,8 @@ quiet = function(this_expr, do_global = TRUE, set = FALSE) {
     fout2 = file(nullfile(), open = "wt")
     if (!isTRUE(set)) {
         on.exit({
+            close(fout, type = "wt")
+            close(fout2, type = "wt")
             i <- sink.number(type = "message")
             if (i > 0L) 
                 sink(stderr(), type = "message")
@@ -40,8 +42,6 @@ quiet = function(this_expr, do_global = TRUE, set = FALSE) {
             if (n > 0L) 
                 for (i in seq_len(n)) sink()
             gc()
-            close(fout, type = "wt")
-            close(fout2, type = "wt")
             invisible()
         })
     }
