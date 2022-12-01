@@ -54,6 +54,10 @@ quiet = function(this_expr, do_global = TRUE, set = FALSE) {
                     else
                         eval(this_expr, envir = pf)
                 }, error = function(e) invisible())
+                tryCatch(close(fout), error = function(e) invisible())
+                tryCatch(close(fout2), error = function(e) invisible())
+                tryCatch(sink(), error = function(e) invisible())
+                tryCatch(sink(), error = function(e) invisible())
                 invisible()
             })
         })
